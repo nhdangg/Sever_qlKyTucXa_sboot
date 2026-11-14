@@ -12,7 +12,7 @@ WORKDIR /app
 # Tạo sẵn thư mục uploads/avatars để tránh lỗi không tìm thấy đường dẫn khi lưu ảnh
 RUN mkdir -p uploads/avatars
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/*.war app.war
 ENV PORT = 8912
 EXPOSE 8912
 ENTRYPOINT ["java", "-Xmx380m", "-Xss256k", "-jar", "app.jar"]
