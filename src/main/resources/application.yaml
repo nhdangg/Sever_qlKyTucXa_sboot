@@ -14,9 +14,9 @@ spring:
       max-request-size: 30MB
 
   datasource:
-    url: jdbc:mysql://localhost:3306/DB_QL_KyTucXa?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    url: jdbc:mysql://ballast.proxy.rlwy.net:34952/railway?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
-    password: root
+    password: RGZwmmScLsAnDEaswkubDRCyLgpxczOa
   jpa:
     hibernate:
       ddl-auto: update
