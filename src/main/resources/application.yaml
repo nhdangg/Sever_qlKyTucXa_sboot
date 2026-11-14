@@ -14,7 +14,8 @@ spring:
       max-request-size: 30MB
 
   datasource:
-    url: jdbc:mysql://ballast.proxy.rlwy.net:34952/railway?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    url: jdbc:mysql://ballast.proxy.rlwy.net:34952/DB_QL_KyTucXa?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    # url: jdbc:mysql://localhost:3306/DB_QL_KyTucXa?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: root
     password: RGZwmmScLsAnDEaswkubDRCyLgpxczOa
   jpa:
@@ -35,14 +36,14 @@ server:
 jwt:
   signer-key: ${JWT_SIGNER_KEY:"d41d8cd98f00b204e9800998ecf8427e068b5a034d610811e2f754388e6e5a4f1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"}
   valid-duration: 900 # 15 phut (tinh bang giay)
-  refreshable-duration: 604800 # 7 ngay (tinh bang giay)
-  max-session-duration: 604800 # 7 ngay (tinh bang giay)
+  refreshable-duration: 604800 # 7 ngay 
+  max-session-duration: 604800 # 7 ngay 
   reuse-grace-seconds: 10 # 10 giay an han cho request dong thoi
 
 telegram:
   bot:
-    token: "8618706792:AAFVvRqPukDp3EuD-7sGq9C_RMTQVcJd2LY" # Điền Token nhận từ @BotFather (ví dụ: 123456789:ABCdef...)
-    admin-chat-id: "6269527548" # Điền Chat ID của Quản trị viên (lấy khi nhắn /start cho bot)
+    token: "8618706792:AAFVvRqPukDp3EuD-7sGq9C_RMTQVcJd2LY" # token từ @BotFather
+    admin-chat-id: "6269527548" # id lấy từ botchat (/start)
     polling-enabled: true
     polling-interval-ms: 500
     server-url: "http://localhost:8912/QLyKyTucXa"
@@ -52,10 +53,10 @@ app:
   upload:
     # Thư mục lưu ảnh/tệp khi upload:
     # - Môi trường Dev (mặc định): lưu vào thư mục 'uploads' trong project
-    # - Môi trường Deploy (Linux VPS / Docker): có thể cấu hình qua biến môi trường UPLOAD_DIR (VD: /var/data/kytucxa/uploads)
+    # - Môi trường Deploy (Linux VPS / Docker): có thể cấu hình qua biến môi trường UPLOAD_DIR(VD: /var/data/kytucxa/uploads)
     dir: ${UPLOAD_DIR:uploads}
 
 sepay:
-  webhook-token: ${SEPAY_WEBHOOK_TOKEN:"fhdj41@jgjei50@j%io1!g47fs@bg^gjks"} # Khóa API xác thực SePay Webhook (tự động nhận diện từ SePay)
+  webhook-token: ${SEPAY_WEBHOOK_TOKEN:"fhdj41@jgjei50@j%io1!g47fs@bg^gjks"} # Khóa API xác thực SePay Webhook(tự động nhận diện từ SePay)
 
 
