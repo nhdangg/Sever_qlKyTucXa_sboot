@@ -12,4 +12,4 @@ RUN mkdir -p uploads/avatars
 COPY --from=build /app/target/*.war app.war
 ENV PORT = 8912
 EXPOSE 8912
-ENTRYPOINT ["java", "-Xmx380m", "-Xss256k", "-war", "app.war"]
+ENTRYPOINT ["java", "-Xmx380m", "-Xss256k", "-jar", "app.war"]
