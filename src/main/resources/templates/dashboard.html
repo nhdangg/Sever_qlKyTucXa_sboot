@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Bảng điều khiển tổng quan')}"></head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside th:replace="~{fragments/layout :: sidebar('dashboard')}"></aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Topbar -->
+        <nav th:replace="~{fragments/layout :: topbar('Bảng Điều Khiển Hệ Thống')}"></nav>
+
+        <!-- Content Body -->
+        <div class="content-body">
+            <!-- 1. Role-Adaptive Hero Banner - Phong cách Đại Học Công Nghiệp Việt Trì -->
+            <div id="roleHeroBanner" class="role-hero-banner theme-admin mb-4">
+                <div class="row align-items-center g-3 position-relative z-1">
+                    <div class="col-12 col-lg-8">
+                        <div
+                            class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-2 small mb-2" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25);">
+                            <i id="heroBadgeIcon" class="bi bi-shield-lock-fill text-warning"></i>
+                            <span id="heroBadgeText" class="fw-semibold text-uppercase" style="letter-spacing: 0.4px;">Hệ Thống Quản Lý Ký Túc Xá Chính Quy</span>
+                        </div>
+                        <h3 class="fw-bold mb-1">
+                            Xin chào, <span class="user-display-name">Quản trị viên</span>!
+                        </h3>
+                        <p class="mb-0 text-white text-opacity-90 small" id="heroSubtitle">
+                            Theo dõi thời gian thực tình hình lưu trú, công suất phòng ở, tài chính hóa đơn và bảo trì
+                            cơ sở vật chất toàn Ký túc xá.
+                        </p>
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-end">
+                        <div class="d-inline-flex flex-wrap gap-2">
+                            <button class="btn btn-univ-banner-solid btn-sm fw-bold rounded-2 px-3 py-2 shadow-sm"
+                                onclick="loadDashboardData(true)">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Làm mới số liệu
+                            </button>
+                            <a th:href="@{/rooms}"
+                                class="btn btn-univ-banner-outline btn-sm fw-semibold rounded-2 px-3 py-2">
+                                <i class="bi bi-grid-3x3-gap me-1"></i> Sơ đồ phòng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Core KPI Metrics Row (All Management Roles) -->
+            <div class="row g-2 g-sm-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div class="card-stat">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase"
+                                style="font-size: 0.74rem; letter-spacing: 0.04em;">Quy mô Tòa & Phòng</div>
+                            <div class="d-flex align-items-baseline gap-2 mt-2">
+                                <h3 class="fw-bold mb-0 text-dark" id="statRooms">0</h3>
+                                <span class="text-muted small">phòng / <b id="statBuildings">0</b> tòa</span>
+                            </div>
+                            <div class="mt-2 small">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold" id="statRoomsAvailable">
+                                    <i class="bi bi-door-open me-1"></i>0 phòng trống
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-icon blue">
+                            <i class="bi bi-buildings-fill"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card-stat">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase"
+                                style="font-size: 0.74rem; letter-spacing: 0.04em;">Sinh viên Lưu trú</div>
+                            <div class="d-flex align-items-baseline gap-2 mt-2">
+                                <h3 class="fw-bold mb-0 text-dark" id="statStudents">0</h3>
+                                <span class="text-muted small">cư dân</span>
+                            </div>
+                            <div class="mt-2 small">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" id="statActiveContracts">
+                                    <i class="bi bi-file-earmark-check me-1"></i>0 hợp đồng hiệu lực
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-icon purple">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card-stat">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase"
+                                style="font-size: 0.74rem; letter-spacing: 0.04em;">Công nợ & Hóa đơn</div>
+                            <div class="d-flex align-items-baseline gap-2 mt-2">
+                                <h3 class="fw-bold mb-0 text-danger" id="statInvoicesUnpaid">0</h3>
+                                <span class="text-danger small fw-bold">chưa thu</span>
+                            </div>
+                            <div class="mt-2 small">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold" id="statRevenuePaid">
+                                    <i class="bi bi-cash-stack me-1"></i>Đã thu: 0 đ
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-icon rose">
+                            <i class="bi bi-receipt-cutoff"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card-stat">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase"
+                                style="font-size: 0.74rem; letter-spacing: 0.04em;">Yêu cầu Bảo trì</div>
+                            <div class="d-flex align-items-baseline gap-2 mt-2">
+                                <h3 class="fw-bold mb-0 text-warning" style="color: #d97706 !important;" id="statMaintPending">0</h3>
+                                <span class="small fw-bold" style="color: #d97706 !important;">đang chờ sửa</span>
+                            </div>
+                            <div class="mt-2 small">
+                                <span class="badge bg-light text-secondary border fw-semibold" id="statMaintTotal">
+                                    <i class="bi bi-tools me-1"></i>Tổng: 0 yêu cầu
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-icon amber">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Role-Specific Workspace Strip -->
+            <!-- 3A. Dành riêng cho ADMIN: Quản trị Hệ thống, Tài khoản & Bảo mật 2FA -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white role-admin-only">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <span
+                            class="badge bg-light text-dark border px-2 py-1 mb-1">QUYỀN QUẢN TRỊ TỐI CAO (ADMIN)</span>
+                        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-cpu-fill text-primary me-2"></i>Giám sát Hệ
+                            thống, Phân quyền RBAC & Bảo mật</h6>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <i class="bi bi-person-check-fill text-primary me-1"></i>Tài khoản hệ thống: <b
+                                id="adminStatUsers">...</b>
+                        </span>
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <i class="bi bi-person-workspace text-primary me-1"></i>Nhân sự KTX: <b
+                                id="adminStatStaffs">...</b>
+                        </span>
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <i class="bi bi-telegram text-primary me-1"></i>2FA Telegram: <b>Đang bật (Admin)</b>
+                        </span>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/admin/users}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-person-fill-lock"></i></div>
+                            <div>
+                                <div class="fw-bold small">Tài khoản & RBAC</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Quản lý User, 4 Role & 35 Quyền</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/admin/database}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-database-fill-gear"></i></div>
+                            <div>
+                                <div class="fw-bold small">CSDL 28 Bảng KTX</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Tra cứu & kiểm tra dữ liệu gốc</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/settings}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-telegram"></i></div>
+                            <div>
+                                <div class="fw-bold small">Bảo mật 2FA Telegram</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Cấu hình Bot & Phê duyệt đăng nhập</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/admin/security}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-shield-exclamation"></i></div>
+                            <div>
+                                <div class="fw-bold small">An ninh & Kỷ luật</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Biên bản vi phạm & Khách ra vào</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3B. Dành riêng cho MANAGER (Trưởng Ban Quản Lý): Phê duyệt Hợp đồng, Phát hành Hóa đơn, Quản lý Nhân sự & Tài sản -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white role-manager-only d-none">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="badge bg-light text-dark border px-2 py-1 mb-1">TRƯỞNG BAN QUẢN LÝ (MANAGER)</span>
+                        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-briefcase-fill text-primary me-2"></i>Phê duyệt
+                            Hợp đồng, Tài chính & Điều phối Nhân sự</h6>
+                    </div>
+                    <span class="badge bg-light text-secondary border px-3 py-2">
+                        <i class="bi bi-check2-all text-primary me-1"></i>Toàn quyền duyệt hợp đồng, phát hành hóa đơn &
+                        quản lý CSVC
+                    </span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/contracts}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-file-earmark-check-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Phê duyệt Hợp đồng</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Duyệt & thanh lý hợp đồng nội trú</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/invoices}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-cash-coin"></i></div>
+                            <div>
+                                <div class="fw-bold small">Phát hành Hóa đơn</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Duyệt công nợ & đối soát thanh toán</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/admin/staff}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-person-badge-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Quản lý Nhân sự</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Phân công cán bộ quản lý tòa nhà</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/admin/assets}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-box-seam-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Tài sản & Thiết bị</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Kiểm kê trang thiết bị các phòng</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3C. Dành riêng cho STAFF (Nhân viên KTX): Vận hành trực ban hàng ngày -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white role-staff-only d-none">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="badge bg-light text-dark border px-2 py-1 mb-1">CA TRỰC VẬN HÀNH (STAFF)</span>
+                        <h6 class="fw-bold mb-0 text-dark"><i
+                                class="bi bi-clipboard2-check-fill text-primary me-2"></i>Nghiệp vụ Trực ban, Điện nước
+                            & Xử lý Sự cố</h6>
+                    </div>
+                    <span class="badge bg-light text-secondary border px-3 py-2">
+                        <i class="bi bi-clock-history me-1"></i>Cập nhật trạng thái phòng, ghi điện nước, thu tiền & sửa chữa
+                    </span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/rooms}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-door-open-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Sơ đồ Phòng & Giường</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Kiểm tra chỗ trống & đổi trạng thái</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/invoices}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Ghi Điện nước & Thu phí</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Lập hóa đơn nháp & xác nhận thu tiền</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/maintenance}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-wrench-adjustable-circle-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Xử lý Báo hỏng</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Tiếp nhận & hoàn tất sửa chữa phòng</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a th:href="@{/contracts}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-file-earmark-plus-fill"></i></div>
+                            <div>
+                                <div class="fw-bold small">Soạn Hợp đồng Lưu trú</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Tạo hợp đồng mới cho sinh viên</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Occupancy Breakdown & Building Overview Row -->
+            <div class="row g-4 mb-4">
+                <!-- Phân bổ trạng thái phòng ở -->
+                <div class="col-12 col-lg-5">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Tỷ lệ lấp đầy
+                                & Trạng thái phòng</h6>
+                            <span class="badge bg-light text-dark border" id="occupancyPercentBadge">0% lấp đầy</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Công suất giường đang sử dụng</span>
+                                <span class="fw-bold text-dark" id="bedUsageText">0 / 0 chỗ</span>
+                            </div>
+                            <div class="progress rounded-pill" style="height: 10px;">
+                                <div id="bedUsageBar" class="progress-bar bg-primary rounded-pill" role="progressbar"
+                                    style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 bg-light border-start border-4 border-success">
+                                    <div class="text-muted small">Phòng còn trống</div>
+                                    <div class="fs-5 fw-bold text-success" id="roomCountAvailable">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 bg-light border-start border-4 border-primary">
+                                    <div class="text-muted small">Phòng đang ở</div>
+                                    <div class="fs-5 fw-bold text-primary" id="roomCountOccupied">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 bg-light border-start border-4 border-danger">
+                                    <div class="text-muted small">Phòng đã kín</div>
+                                    <div class="fs-5 fw-bold text-danger" id="roomCountFull">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 rounded-3 bg-light border-start border-4 border-warning">
+                                    <div class="text-muted small">Đang bảo trì</div>
+                                    <div class="fs-5 fw-bold text-warning" style="color: #d97706 !important;" id="roomCountMaintenance">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách Tòa nhà đang vận hành -->
+                <div class="col-12 col-lg-7">
+                    <div class="table-custom shadow-sm h-100">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-building text-primary me-2"></i>Danh sách Tòa nhà
+                                Ký Túc Xá</h6>
+                            <a th:href="@{/buildings}" class="small text-primary text-decoration-none fw-semibold">Quản
+                                lý tòa nhà <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mã tòa</th>
+                                        <th>Tên tòa nhà</th>
+                                        <th>Phân khu</th>
+                                        <th>Số tầng</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="buildingOverviewBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">Đang tải danh sách tòa
+                                            nhà...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Detailed Operational Tables Row -->
+            <div class="row g-4">
+                <!-- Sinh viên lưu trú mới -->
+                <div class="col-12 col-lg-7">
+                    <div class="table-custom shadow-sm h-100">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-people-fill text-primary me-2"></i>Hồ sơ Sinh viên nội trú</h6>
+                                <span class="badge bg-light text-secondary border fw-normal" id="studentLimitBadge">Tối đa 5 dòng</span>
+                            </div>
+                            <a th:href="@{/students}" class="small text-primary text-decoration-none fw-semibold">Xem
+                                tất cả <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>MSSV</th>
+                                        <th>Họ và tên</th>
+                                        <th>Khoa / Lớp</th>
+                                        <th>Số điện thoại</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">Đang tải dữ liệu...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yêu cầu bảo trì & Hóa đơn cần chú ý -->
+                <div class="col-12 col-lg-5">
+                    <div class="table-custom shadow-sm h-100">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-white">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-tools text-warning me-2"></i>Yêu cầu Bảo trì gần đây</h6>
+                                <span class="badge bg-light text-secondary border fw-normal" id="maintLimitBadge">Tối đa 5 dòng</span>
+                            </div>
+                            <a th:href="@{/maintenance}" class="small text-primary text-decoration-none fw-semibold">Xử
+                                lý ngay <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mã YC</th>
+                                        <th>Phòng</th>
+                                        <th>Nội dung sự cố</th>
+                                        <th>Ưu tiên</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintenanceTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">Đang tải dữ liệu...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Bảng Thông báo Nội bộ & Cư dân (thong_bao - /api/notifications) -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mt-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="fw-bold mb-0"><i class="bi bi-megaphone-fill text-primary me-2"></i>Thông báo Điều hành & Bản tin Cư dân KTX</h6>
+                            <span class="badge bg-light text-secondary border fw-normal" id="notifLimitBadge">5 thông báo mới nhất</span>
+                        </div>
+                        <span class="text-muted small">Phát hành thông báo thu tiền điện nước, lịch kiểm tra phòng, nội quy tới toàn bộ sinh viên và nhân viên</span>
+                    </div>
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 role-manager-up" onclick="openNotificationModal()">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Đăng Thông báo mới
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tiêu đề thông báo</th>
+                                <th>Nội dung chi tiết</th>
+                                <th>Đối tượng nhận</th>
+                                <th>Ngày đăng</th>
+                                <th>Trạng thái</th>
+                                <th class="text-center" style="width: 140px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardNotificationBody">
+                            <tr><td colspan="6" class="text-center text-muted py-3">Đang tải thông báo...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Đăng Thông báo Mới -->
+    <div class="modal fade" id="notificationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-megaphone-fill text-primary me-2"></i>Đăng Thông báo Ký Túc Xá</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="notificationForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Tiêu đề thông báo <span class="text-danger">*</span></label>
+                            <input type="text" id="notifTitleInput" class="form-control" placeholder="VD: Thông báo chốt chỉ số điện nước tháng 11/2026" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Đối tượng nhận</label>
+                            <select id="notifTargetTypeInput" class="form-select">
+                                <option value="ALL">Toàn bộ Sinh viên & Nhân viên KTX (ALL)</option>
+                                <option value="ROLE">Theo nhóm vai trò (ROLE)</option>
+                                <option value="BUILDING">Theo Tòa nhà (BUILDING)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Nội dung thông báo <span class="text-danger">*</span></label>
+                            <textarea id="notifContentInput" class="form-control" rows="3" placeholder="Nhập nội dung chi tiết thông báo..." required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4 fw-semibold" onclick="saveNotification()">Đăng & Phát hành ngay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            customizeHeroByRole();
+            loadDashboardData(false);
+        });
+
+        function customizeHeroByRole() {
+            const user = Auth.getUser();
+            const role = (user.role || 'ADMIN').toUpperCase();
+            const banner = document.getElementById('roleHeroBanner');
+            const badgeIcon = document.getElementById('heroBadgeIcon');
+            const badgeText = document.getElementById('heroBadgeText');
+            const subtitle = document.getElementById('heroSubtitle');
+
+            banner.classList.remove('theme-admin', 'theme-manager', 'theme-staff');
+
+            if (role === 'MANAGER') {
+                banner.classList.add('theme-manager');
+                badgeIcon.className = 'bi bi-award-fill text-warning';
+                badgeText.textContent = 'Ban Quản Lý Ký Túc Xá • Trưởng Ban Điều Hành (MANAGER)';
+                subtitle.textContent = 'Quản lý toàn diện tòa nhà, phê duyệt hợp đồng lưu trú, phát hành hóa đơn công nợ và điều phối nhân sự KTX.';
+            } else if (role === 'STAFF') {
+                banner.classList.add('theme-staff');
+                badgeIcon.className = 'bi bi-person-workspace text-white';
+                badgeText.textContent = 'Trực Ban Vận Hành KTX • Cán Bộ Quản Lý Ký Túc Xá (STAFF)';
+                subtitle.textContent = 'Theo dõi sơ đồ phòng ở, tiếp nhận sinh viên, ghi chỉ số điện nước, thu tiền hóa đơn và xử lý yêu cầu sửa chữa.';
+            } else {
+                banner.classList.add('theme-admin');
+                badgeIcon.className = 'bi bi-shield-lock-fill text-warning';
+                badgeText.textContent = 'Hệ Thống Quản Trị • Ban Quản Trị Ký Túc Xá Chính Quy (ADMIN)';
+                subtitle.textContent = 'Kiểm soát cơ sở dữ liệu KTX, phân quyền RBAC, cấu hình bảo mật 2FA Telegram và giám sát vận hành toàn trường.';
+            }
+        }
+
+        async function loadDashboardData(showToast) {
+            try {
+                const user = Auth.getUser();
+                const role = (user.role || 'ADMIN').toUpperCase();
+
+                // Gọi song song các API cốt lõi (sử dụng /all khi có hỗ trợ hoặc lấy từ Page_Response)
+                const [buildingRes, roomRes, studentRes, contractRes, invoiceRes, maintRes, bedRes] = await Promise.all([
+                    apiFetch('/buildings/all').catch(() => apiFetch('/buildings').catch(() => ({ result: [] }))),
+                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms').catch(() => ({ result: [] }))),
+                    apiFetch('/students/all').catch(() => apiFetch('/students').catch(() => ({ result: [] }))),
+                    apiFetch('/contracts/all').catch(() => apiFetch('/contracts').catch(() => ({ result: [] }))),
+                    apiFetch('/invoices?size=100').catch(() => ({ result: [] })),
+                    apiFetch('/maintenance-requests?size=100').catch(() => ({ result: [] })),
+                    apiFetch('/beds').catch(() => ({ result: [] }))
+                ]);
+
+                const buildings = unwrapList(buildingRes);
+                const rooms = unwrapList(roomRes);
+                const students = unwrapList(studentRes);
+                const contracts = unwrapList(contractRes);
+                const invoices = unwrapList(invoiceRes);
+                const requests = unwrapList(maintRes);
+                const beds = unwrapList(bedRes);
+
+                // 1. Thống kê Tòa nhà & Phòng
+                document.getElementById('statBuildings').textContent = buildings.length;
+                document.getElementById('statRooms').textContent = rooms.length;
+
+                // Tính toán chính xác phân loại phòng dựa trên giường thực tế
+                let roomCountAvailable = 0;
+                let roomCountOccupied = 0;
+                let roomCountFull = 0;
+                let roomCountMaintenance = 0;
+
+                rooms.forEach(r => {
+                    if (r.status === 'MAINTENANCE' || r.status === 'BAO_TRI') {
+                        roomCountMaintenance++;
+                        return;
+                    }
+                    const rBeds = beds.filter(b => b.roomId === r.roomId);
+                    if (rBeds.length > 0) {
+                        const occ = rBeds.filter(b => b.status === 'OCCUPIED').length;
+                        if (occ === 0) {
+                            roomCountAvailable++;
+                        } else if (occ === rBeds.length) {
+                            roomCountFull++;
+                        } else {
+                            roomCountOccupied++;
+                        }
+                    } else {
+                        const occ = Number(r.currentOccupancy) || 0;
+                        const cap = Number(r.capacity) || 4;
+                        if (occ === 0) roomCountAvailable++;
+                        else if (occ >= cap) roomCountFull++;
+                        else roomCountOccupied++;
+                    }
+                });
+
+                document.getElementById('statRoomsAvailable').textContent = `${roomCountAvailable} phòng trống`;
+                document.getElementById('roomCountAvailable').textContent = roomCountAvailable;
+                document.getElementById('roomCountOccupied').textContent = roomCountOccupied;
+                document.getElementById('roomCountFull').textContent = roomCountFull;
+                document.getElementById('roomCountMaintenance').textContent = roomCountMaintenance;
+
+                // 2. Tính công suất giường thực tế từ CSDL (bảng giuong)
+                const totalBeds = beds.length > 0 ? beds.length : rooms.reduce((sum, r) => sum + (r.capacity || 4), 0);
+                const occupiedBeds = beds.length > 0
+                    ? beds.filter(b => b.status === 'OCCUPIED').length
+                    : rooms.reduce((sum, r) => sum + (r.currentOccupancy || 0), 0);
+                const pct = totalBeds > 0 ? Math.min(100, Math.round((occupiedBeds / totalBeds) * 100)) : 0;
+                document.getElementById('occupancyPercentBadge').textContent = `${pct}% lấp đầy`;
+                document.getElementById('bedUsageText').textContent = `${occupiedBeds} / ${totalBeds} chỗ`;
+                document.getElementById('bedUsageBar').style.width = `${pct}%`;
+
+                // 3. Render bảng Tòa nhà
+                const bTbody = document.getElementById('buildingOverviewBody');
+                if (buildings.length === 0) {
+                    bTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu tòa nhà</td></tr>';
+                } else {
+                    bTbody.innerHTML = buildings.slice(0, 5).map(b => `
+                    <tr>
+                        <td class="fw-bold text-primary">${b.buildingCode || '-'}</td>
+                        <td class="fw-semibold">${b.buildingName || '-'}</td>
+                        <td>
+                            <span class="badge ${b.genderType === 'MALE' ? 'bg-primary-subtle text-primary' : (b.genderType === 'FEMALE' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info')}">
+                                ${b.genderType === 'MALE' ? 'Khu Nam' : (b.genderType === 'FEMALE' ? 'Khu Nữ' : 'Hỗn hợp')}
+                            </span>
+                        </td>
+                        <td>${b.numFloors || '-'} tầng</td>
+                        <td>
+                            <span class="badge ${b.status === 'ACTIVE' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">
+                                ${b.status === 'ACTIVE' ? 'Hoạt động' : (b.status || 'ACTIVE')}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+                }
+
+                // 4. Thống kê Sinh viên & Hợp đồng
+                document.getElementById('statStudents').textContent = students.length;
+                const activeContracts = contracts.filter(c => c.status === 'ACTIVE').length;
+                document.getElementById('statActiveContracts').textContent = `${activeContracts || contracts.length} hợp đồng lưu trú`;
+
+                const studentTbody = document.getElementById('studentTableBody');
+                const studentLimitBadge = document.getElementById('studentLimitBadge');
+                if (studentLimitBadge) {
+                    studentLimitBadge.textContent = `Hiển thị ${Math.min(5, students.length)} / ${students.length}`;
+                }
+                if (students.length === 0) {
+                    studentTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Chưa có hồ sơ sinh viên</td></tr>';
+                } else {
+                    studentTbody.innerHTML = students.slice(0, 5).map(s => {
+                        let badge = '<span class="badge bg-success-subtle text-success">Đang nội trú</span>';
+                        if (s.status === 'INACTIVE') {
+                            badge = '<span class="badge bg-secondary-subtle text-secondary">Đã rời KTX</span>';
+                        } else if (s.status === 'PENDING') {
+                            badge = '<span class="badge bg-warning-subtle text-warning">Chờ duyệt</span>';
+                        }
+                        return `
+                        <tr>
+                            <td class="fw-bold text-primary">${s.studentCode || '-'}</td>
+                            <td>
+                                <div class="fw-semibold text-dark">${s.fullName || '-'}</div>
+                                <div class="small text-muted" style="font-size: 0.72rem;">${s.gender === 'MALE' ? 'Nam' : 'Nữ'}</div>
+                            </td>
+                            <td class="small text-secondary text-truncate" style="max-width: 130px;" title="${s.className || s.faculty || '-'}">${s.className || s.faculty || '-'}</td>
+                            <td class="small">${s.phone || '-'}</td>
+                            <td>${badge}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+
+                // 5. Thống kê Hóa đơn & Doanh thu (Hóa đơn chưa thu: ISSUED, UNPAID, OVERDUE, PARTIALLY_PAID)
+                const unpaidCount = invoices.filter(i => i.status !== 'PAID' && i.status !== 'CANCELLED').length;
+                const paidRevenue = invoices
+                    .filter(i => i.status === 'PAID')
+                    .reduce((sum, i) => sum + (Number(i.totalAmount) || 0), 0);
+
+                document.getElementById('statInvoicesUnpaid').textContent = unpaidCount;
+                document.getElementById('statRevenuePaid').textContent = `Đã thu: ${formatCurrency(paidRevenue)}`;
+
+                // 6. Thống kê Bảo trì
+                const pendingMaint = requests.filter(m => m.status !== 'COMPLETED').length;
+                document.getElementById('statMaintPending').textContent = pendingMaint;
+                document.getElementById('statMaintTotal').textContent = `Tổng: ${requests.length} yêu cầu`;
+
+                const maintTbody = document.getElementById('maintenanceTableBody');
+                const maintLimitBadge = document.getElementById('maintLimitBadge');
+                if (maintLimitBadge) {
+                    maintLimitBadge.textContent = `Hiển thị ${Math.min(5, requests.length)} / ${requests.length}`;
+                }
+                if (requests.length === 0) {
+                    maintTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Không có sự cố tồn đọng</td></tr>';
+                } else {
+                    maintTbody.innerHTML = requests.slice(0, 5).map(m => {
+                        const pBadge = m.priority === 'HIGH'
+                            ? '<span class="badge bg-danger-subtle text-danger">Khẩn cấp</span>'
+                            : (m.priority === 'MEDIUM'
+                                ? '<span class="badge bg-warning-subtle text-warning">Trung bình</span>'
+                                : '<span class="badge bg-light text-secondary border">Thường</span>');
+                        const sBadge = m.status === 'COMPLETED'
+                            ? '<span class="badge bg-success-subtle text-success">Hoàn thành</span>'
+                            : (m.status === 'IN_PROGRESS'
+                                ? '<span class="badge bg-info-subtle text-info">Đang sửa</span>'
+                                : '<span class="badge bg-warning-subtle text-warning">Chờ xử lý</span>');
+                        return `
+                        <tr>
+                            <td class="fw-bold text-primary small">${m.requestCode || '-'}</td>
+                            <td><span class="badge bg-light text-dark border">${m.roomNumber || '-'}</span></td>
+                            <td class="text-truncate small" style="max-width: 120px;" title="${m.description || ''}">${m.description || '-'}</td>
+                            <td>${pBadge}</td>
+                            <td>${sBadge}</td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+
+                // 7. Nếu là ADMIN: tải thêm số lượng User và Nhân sự
+                if (role === 'ADMIN') {
+                    const [uRes, stRes] = await Promise.all([
+                        apiFetch('/users').catch(() => ({ result: [] })),
+                        apiFetch('/staffs/all').catch(() => apiFetch('/staffs').catch(() => ({ result: [] })))
+                    ]);
+                    const users = unwrapList(uRes);
+                    const staffs = unwrapList(stRes);
+                    document.getElementById('adminStatUsers').textContent = users.length;
+                    document.getElementById('adminStatStaffs').textContent = staffs.length;
+                }
+
+                await loadDashboardNotifications(role);
+
+                if (showToast) {
+                    showToastSuccess('Đã cập nhật dữ liệu mới nhất!');
+                }
+            } catch (e) {
+                console.error('Lỗi tải dữ liệu dashboard:', e);
+            }
+        }
+
+        async function loadDashboardNotifications(role) {
+            const tbody = document.getElementById('dashboardNotificationBody');
+            if (!tbody) return;
+            const canManageNotif = (role === 'ADMIN' || role === 'MANAGER');
+            try {
+                const res = canManageNotif
+                    ? await apiFetch('/notifications?size=20').catch(() => apiFetch('/notifications/published'))
+                    : await apiFetch('/notifications/published');
+                const list = unwrapList(res);
+                const notifLimitBadge = document.getElementById('notifLimitBadge');
+                if (notifLimitBadge) {
+                    notifLimitBadge.textContent = `Hiển thị ${Math.min(5, list.length)} / ${list.length}`;
+                }
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Chưa có thông báo nào.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.slice(0, 5).map(n => `
+                    <tr>
+                        <td class="fw-bold text-primary">${n.title}</td>
+                        <td class="small text-secondary">${n.content}</td>
+                        <td><span class="badge bg-light text-dark border">${n.targetType || 'ALL'}</span></td>
+                        <td class="small">${formatDate(n.publishedAt || n.createdAt)}</td>
+                        <td>
+                            <span class="badge ${n.isPublished ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
+                                ${n.isPublished ? 'Đã phát hành' : 'Bản nháp'}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            ${canManageNotif ? `
+                                ${!n.isPublished ? `<button class="btn btn-sm btn-outline-success me-1" onclick="publishNotif('${n.notificationId}')" title="Phát hành"><i class="bi bi-send-check"></i></button>` : ''}
+                                <button class="btn btn-sm btn-light text-danger" onclick="deleteNotif('${n.notificationId}')" title="Xóa"><i class="bi bi-trash"></i></button>
+                            ` : '<span class="badge bg-light text-secondary border">Đã xem</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Chưa có thông báo.</td></tr>';
+            }
+        }
+
+        function openNotificationModal() {
+            document.getElementById('notifTitleInput').value = '';
+            document.getElementById('notifContentInput').value = '';
+            new bootstrap.Modal(document.getElementById('notificationModal')).show();
+        }
+
+        async function saveNotification() {
+            const title = document.getElementById('notifTitleInput').value.trim();
+            const content = document.getElementById('notifContentInput').value.trim();
+            const targetType = document.getElementById('notifTargetTypeInput').value;
+            if (!title || !content) {
+                showToastError('Vui lòng nhập Tiêu đề và Nội dung thông báo!');
+                return;
+            }
+            try {
+                await apiFetch('/notifications', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, content, targetType, isPublished: true })
+                });
+                bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+                showToastSuccess('Đã đăng thông báo thành công!');
+                const user = Auth.getUser() || {};
+                await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function publishNotif(id) {
+            try {
+                await apiFetch(`/notifications/${id}/publish`, { method: 'PUT' });
+                showToastSuccess('Đã phát hành thông báo!');
+                const user = Auth.getUser() || {};
+                await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteNotif(id) {
+            if (!await showConfirm('Xóa thông báo?', 'Bạn có chắc muốn xóa thông báo này?')) return;
+            try {
+                await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa thông báo!');
+                const user = Auth.getUser() || {};
+                await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1103 @@
+:root {
+    --primary-color: #003366;
+    --primary-hover: #002244;
+    --primary-light: #e7f1ff;
+    --univ-navy: #003366;
+    --univ-navy-dark: #002244;
+    --univ-navy-deep: #001933;
+    --univ-blue: #0056b3;
+    --univ-blue-light: #e7f1ff;
+    --univ-blue-subtle: #f0f7ff;
+    --univ-cyan: #0284c7;
+    --sidebar-bg: #003366;
+    --sidebar-color: rgba(255, 255, 255, 0.85);
+    --sidebar-active-bg: rgba(255, 255, 255, 0.18);
+    --sidebar-active-color: #ffffff;
+    --body-bg: #f8fafc;
+    --card-border: #cbd5e1;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--body-bg);
+    color: #334155;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles - Đồng nhất 1 màu Xanh Navy (#003366) từ trên xuống dưới */
+.sidebar {
+    width: 268px;
+    background: var(--univ-navy);
+    height: 100vh;
+    max-height: 100vh;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.sidebar .brand {
+    padding: 20px 24px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+}
+
+.sidebar .brand i {
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 14px 12px 24px 12px;
+    margin: 0;
+    flex: 1 1 0px !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+}
+
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.sidebar-menu .menu-header {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #93c5fd;
+    padding: 14px 12px 6px;
+    font-weight: 700;
+}
+
+.sidebar-menu .nav-item {
+    margin-bottom: 3px;
+}
+
+.sidebar-menu .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    color: rgba(255, 255, 255, 0.85);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.sidebar-menu .nav-link i {
+    font-size: 1.1rem;
+    width: 22px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.82);
+    transition: color 0.15s ease;
+}
+
+.sidebar-menu .nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-menu .nav-link:hover i {
+    color: #ffffff;
+}
+
+.sidebar-menu .nav-link.active {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.sidebar-menu .nav-link.active i {
+    color: #ffffff !important;
+}
+
+.sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+    background: var(--univ-navy);
+    z-index: 10;
+}
+
+.user-profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ffffff;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.user-profile-badge .user-display-role {
+    color: #bfdbfe !important;
+}
+
+.user-profile-badge .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: var(--univ-navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.sidebar-logout-btn {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.sidebar-logout-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* Main Content Area */
+.main-wrapper {
+    margin-left: 268px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-navbar {
+    height: 68px;
+    max-height: 68px;
+    min-height: 68px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.top-navbar h5 {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 0 !important;
+    line-height: 1.25;
+}
+
+.top-navbar .btn,
+.top-navbar .btn *,
+.top-navbar a,
+.top-navbar span,
+.top-navbar .dropdown-toggle,
+.top-navbar .user-display-name,
+.top-navbar .user-display-role {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    word-break: keep-all !important;
+}
+
+.topbar-notification-list {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.topbar-notification-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.topbar-notification-list::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+.topbar-notification-list::-webkit-scrollbar-track {
+    background-color: #f8fafc;
+}
+
+.topbar-notification-list .notification-item:hover {
+    background-color: #f8fafc !important;
+}
+
+.content-body {
+    padding: 28px;
+    flex-grow: 1;
+}
+
+/* Role Hero Banner on Dashboard - 1 Màu chủ đạo ĐH Công Nghiệp Việt Trì (#003366) */
+.role-hero-banner {
+    border-radius: 12px;
+    padding: 26px 30px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--univ-navy) !important;
+    background-image: none !important;
+    box-shadow: 0 4px 16px rgba(0, 51, 102, 0.16);
+}
+
+.role-hero-banner::after {
+    display: none !important;
+}
+
+.role-hero-banner.theme-admin,
+.role-hero-banner.theme-manager,
+.role-hero-banner.theme-staff {
+    background-color: var(--univ-navy) !important;
+    background-image: none !important;
+}
+
+/* Custom Cards */
+.card-stat {
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    height: 100%;
+}
+
+.card-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 51, 102, 0.08);
+    border-color: #cce0ff;
+}
+
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.45rem;
+    flex-shrink: 0;
+    background-color: #f0f7ff;
+    border: 1px solid #cce0ff;
+    color: var(--univ-navy);
+}
+
+.stat-icon.blue {
+    background-color: #e0f2fe !important;
+    border: 1px solid #bae6fd !important;
+    color: #0284c7 !important;
+}
+
+.stat-icon.purple {
+    background-color: #ede9fe !important;
+    border: 1px solid #ddd6fe !important;
+    color: #6366f1 !important;
+}
+
+.stat-icon.rose,
+.stat-icon.red {
+    background-color: #fee2e2 !important;
+    border: 1px solid #fecaca !important;
+    color: #dc2626 !important;
+}
+
+.stat-icon.amber,
+.stat-icon.orange {
+    background-color: #fef3c7 !important;
+    border: 1px solid #fde68a !important;
+    color: #d97706 !important;
+}
+
+.stat-icon.green {
+    background-color: #dcfce7 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #16a34a !important;
+}
+
+/* Action Tile Card - 1 Màu chủ đạo đồng bộ */
+.action-tile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    text-decoration: none;
+    color: #1e293b;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.action-tile:hover {
+    border-color: var(--univ-navy);
+    background: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 51, 102, 0.08);
+    color: var(--univ-navy);
+}
+
+.action-tile-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    background-color: #f0f7ff !important;
+    border: 1px solid #cce0ff !important;
+    color: var(--univ-navy) !important;
+}
+
+/* Custom Tables Responsive */
+.table-custom {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-custom table {
+    margin-bottom: 0;
+    min-width: 620px;
+}
+
+.table-custom th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap;
+}
+
+.table-custom td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+/* Table Responsive chuẩn hóa cho toàn bộ các view */
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    border-radius: 12px;
+}
+
+.table-responsive > table {
+    min-width: 620px;
+    margin-bottom: 0;
+}
+
+.table-responsive > table th,
+.table-responsive > table td {
+    white-space: nowrap;
+}
+
+.table-wrap-cell,
+.table-custom td.table-wrap-cell,
+.table-responsive > table td.table-wrap-cell,
+.table-custom td.text-wrap-cell,
+.table-responsive > table td.text-wrap-cell {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.table-responsive.table-compact-scroll > table {
+    min-width: 420px;
+}
+
+/* Room Grid */
+.min-w-0 {
+    min-width: 0 !important;
+}
+
+.room-card {
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 16px;
+    background: #ffffff;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.room-card:hover {
+    border-color: var(--univ-navy, #003366);
+    box-shadow: 0 6px 16px rgba(0, 51, 102, 0.1);
+}
+
+.room-badge {
+    font-size: 0.74rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    display: inline-block;
+}
+
+/* Telegram 2FA Pulsing Radar Animation */
+.radar-box {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.radar-circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(34, 158, 217, 0.25);
+    animation: radarPulse 2s infinite;
+}
+
+.radar-icon {
+    font-size: 2.5rem;
+    color: #229ed9;
+    z-index: 2;
+}
+
+@keyframes radarPulse {
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Backdrop mờ khi mở Sidebar trên Mobile/Tablet */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(3px);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sidebar-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==========================================================================
+   HỆ THỐNG RESPONSIVE CHO TOÀN BỘ VIEW (MOBILE, IPAD/TABLET, DESKTOP)
+   ========================================================================== */
+
+/* 1. MÀN HÌNH DI ĐỘNG (Smartphones: <= 575.98px) */
+@media (max-width: 575.98px) {
+    /* Topbar */
+    .top-navbar {
+        height: 60px;
+        padding: 0 14px;
+    }
+    .top-navbar h5 {
+        font-size: 0.98rem;
+    }
+
+    /* Content Body */
+    .content-body {
+        padding: 14px 12px;
+    }
+
+    /* Role Hero Banner */
+    .role-hero-banner {
+        padding: 18px 16px;
+        border-radius: 14px;
+    }
+    .role-hero-banner h3 {
+        font-size: 1.25rem;
+    }
+    .role-hero-banner p#heroSubtitle {
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    /* Thẻ thống kê KPI */
+    .card-stat {
+        padding: 12px 14px;
+        border-radius: 14px;
+    }
+    .card-stat h3 {
+        font-size: 1.2rem !important;
+    }
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.15rem;
+        border-radius: 10px;
+    }
+
+    /* Action Tiles */
+    .action-tile {
+        padding: 12px;
+        gap: 10px;
+    }
+    .action-tile-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+    .action-tile h6 {
+        font-size: 0.88rem;
+        margin-bottom: 2px;
+    }
+
+    /* Modal trên mobile */
+    .modal-dialog {
+        margin: 0.45rem;
+        max-width: calc(100% - 0.9rem);
+    }
+    .modal-content {
+        border-radius: 16px;
+    }
+    .modal-body {
+        padding: 14px;
+    }
+    .modal-footer {
+        padding: 10px 14px;
+        gap: 6px;
+    }
+    .modal-footer .btn {
+        flex: 1 1 100%;
+        margin: 0 !important;
+    }
+
+    /* Chống iOS Safari tự động zoom in khi nhập form */
+    .form-control, .form-select {
+        font-size: 15px !important;
+    }
+
+    /* Bảng dữ liệu */
+    .table-custom th, .table-custom td {
+        padding: 9px 12px;
+        font-size: 0.82rem;
+    }
+}
+
+/* 2. MÁY TÍNH BẢNG / IPAD PORTRAIT (Tablets: 576px - 991.98px) */
+@media (min-width: 576px) and (max-width: 991.98px) {
+    .top-navbar {
+        height: 64px;
+        padding: 0 20px;
+    }
+    .content-body {
+        padding: 20px 18px;
+    }
+    .role-hero-banner {
+        padding: 22px 24px;
+    }
+    .card-stat {
+        padding: 16px 18px;
+    }
+}
+
+/* 3. ĐIỀU KHIỂN SIDEBAR TRÊN TẤT CẢ THIẾT BỊ < 992px */
+@media (max-width: 991.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 1050;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .main-wrapper {
+        margin-left: 0 !important;
+    }
+}
+
+/* ============================================================== */
+/* 4. UNIFIED FORM & MODAL SYSTEM (ĐỒNG BỘ TOÀN BỘ FORM)          */
+/* ============================================================== */
+
+/* Khung Card & Khối lọc dữ liệu (Filter Form Toolbar) */
+.card-custom, .card.card-custom {
+    background: #ffffff;
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Modal Window Standards */
+.modal-content {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 35px rgba(0, 34, 68, 0.15) !important;
+    overflow: hidden !important;
+    background-color: #ffffff !important;
+}
+
+.modal-header {
+    background-color: #ffffff !important;
+    border-bottom: 2px solid var(--univ-navy, #003366) !important;
+    padding: 14px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.modal-header .modal-title {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: var(--univ-navy, #003366) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.modal-header .btn-close {
+    opacity: 0.65;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    padding: 8px !important;
+    margin: -4px -4px -4px auto !important;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.modal-body {
+    padding: 20px !important;
+    background-color: #ffffff !important;
+    color: #334155;
+    font-size: 0.9rem;
+}
+
+.modal-footer {
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 12px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+}
+
+/* Standardized Form Controls, Selects, Inputs */
+.form-label {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin-bottom: 5px !important;
+    display: inline-block;
+}
+
+.form-label .text-danger {
+    margin-left: 2px;
+}
+
+.form-control, .form-select {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.88rem !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--univ-navy, #003366) !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 51, 102, 0.15) !important;
+    outline: none !important;
+}
+
+.form-control::placeholder {
+    color: #94a3b8 !important;
+    font-size: 0.84rem;
+}
+
+.form-control-sm, .form-select-sm {
+    padding: 0.3rem 0.55rem !important;
+    font-size: 0.82rem !important;
+    border-radius: 5px !important;
+}
+
+.input-group-text {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+    font-size: 0.88rem !important;
+}
+
+/* Buttons in Forms & Modals - 1 Màu chủ đạo ĐH Công Nghiệp Việt Trì */
+.btn-univ-primary,
+.btn-primary {
+    background-color: var(--univ-navy, #003366) !important;
+    border-color: var(--univ-navy, #003366) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.btn-univ-primary:hover,
+.btn-univ-primary:focus,
+.btn-univ-primary:active,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--univ-navy, #003366) !important;
+    border-color: var(--univ-navy, #003366) !important;
+    color: #ffffff !important;
+    opacity: 0.92 !important;
+    box-shadow: 0 2px 8px rgba(0, 51, 102, 0.25) !important;
+}
+
+.btn-outline-univ,
+.btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--univ-navy, #003366) !important;
+    color: var(--univ-navy, #003366) !important;
+    font-weight: 600 !important;
+    transition: opacity 0.15s ease, background-color 0.15s ease !important;
+}
+
+.btn-outline-univ:hover,
+.btn-outline-univ:focus,
+.btn-outline-univ:active,
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    background-color: rgba(0, 51, 102, 0.06) !important;
+    border-color: var(--univ-navy, #003366) !important;
+    color: var(--univ-navy, #003366) !important;
+    opacity: 0.95 !important;
+}
+
+/* Banner Action Buttons - Không đổi màu khi hover */
+.btn-univ-banner-solid {
+    background-color: #ffffff !important;
+    border: 1px solid #ffffff !important;
+    color: var(--univ-navy, #003366) !important;
+    font-weight: 700 !important;
+    transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.btn-univ-banner-solid:hover,
+.btn-univ-banner-solid:focus {
+    background-color: #ffffff !important;
+    border-color: #ffffff !important;
+    color: var(--univ-navy, #003366) !important;
+    opacity: 0.92 !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn-univ-banner-outline {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    transition: opacity 0.15s ease, border-color 0.15s ease !important;
+}
+
+.btn-univ-banner-outline:hover,
+.btn-univ-banner-outline:focus {
+    background-color: transparent !important;
+    border-color: #ffffff !important;
+    color: #ffffff !important;
+    opacity: 0.92 !important;
+}
+
+.modal-footer .btn {
+    border-radius: 6px !important;
+    font-size: 0.85rem !important;
+    padding: 6px 18px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+.modal-footer .btn-light, .modal-footer .btn-secondary, .modal-footer .btn-outline-secondary {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+.modal-footer .btn-light:hover, .modal-footer .btn-secondary:hover, .modal-footer .btn-outline-secondary:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+}
+
+/* Alert Boxes Inside Forms */
+.modal-body .alert {
+    border-radius: 6px !important;
+    font-size: 0.82rem !important;
+    padding: 10px 14px !important;
+    border-left: 4px solid !important;
+}
+
+.modal-body .alert-primary {
+    background-color: #eef5fc !important;
+    border-color: #bfdbfe !important;
+    border-left-color: #003366 !important;
+    color: #1e3a8a !important;
+}
+
+.modal-body .alert-info {
+    background-color: #f0f9ff !important;
+    border-color: #bae6fd !important;
+    border-left-color: #0284c7 !important;
+    color: #0369a1 !important;
+}
+
+.modal-body .alert-warning {
+    background-color: #fffbeb !important;
+    border-color: #fde68a !important;
+    border-left-color: #d97706 !important;
+    color: #92400e !important;
+}
+
+.modal-body .alert-success {
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+    border-left-color: #16a34a !important;
+    color: #166534 !important;
+}
+
+/* ============================================================== */
+/* 5. KHỐI CHỨC NĂNG FORM CHUẨN ĐẠI HỌC VIỆT NAM (FORM FIELDSETS) */
+/* ============================================================== */
+.form-section-title {
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: var(--univ-navy, #003366) !important;
+    letter-spacing: 0.4px !important;
+    padding: 7px 12px !important;
+    background: #e7f1ff !important;
+    border-left: 4px solid var(--univ-navy, #003366) !important;
+    border-radius: 0 4px 4px 0 !important;
+    margin: 14px 0 10px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.form-section-title i {
+    font-size: 0.95rem;
+    color: var(--univ-navy, #003366);
+}
+
+.form-section-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 12px 14px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Header thương hiệu trường trên Sidebar */
+.sidebar-univ-brand {
+    height: 68px;
+    min-height: 68px;
+    padding: 0 16px;
+    background: var(--univ-navy);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sidebar-univ-logo {
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.sidebar-univ-name-vn {
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+
+.sidebar-univ-name-sub {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #bfdbfe;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+/* Hotline Trực ban trên Topbar */
+.topbar-hotline-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: #334155;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+}
+
+.topbar-hotline-box i {
+    color: #0b5ed7;
+    font-size: 1rem;
+}
+
+.topbar-hotline-number {
+    font-weight: 700;
+    color: #003366;
+}
+
+/* ==========================================================================
+   CHUẨN HÓA MENU NGANG (HORIZONTAL TABS: NAV-PILLS & NAV-TABS)
+   Đồng bộ 1 màu chủ đạo Xanh Hải Quân (#003366) gọn gàng, dễ nhìn
+   ========================================================================== */
+.nav-pills {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 4px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    gap: 4px !important;
+}
+
+.nav-pills .nav-link {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 7px 14px !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: #f1f5f9 !important;
+    color: var(--univ-navy, #003366) !important;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: var(--univ-navy, #003366) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(0, 51, 102, 0.18) !important;
+}
+
+.nav-pills .nav-link.active .badge {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-pills .nav-link code {
+    color: inherit !important;
+    font-family: inherit !important;
+}
+
+.nav-tabs {
+    border-bottom: 1px solid #e2e8f0 !important;
+    gap: 4px;
+}
+
+.nav-tabs .nav-link {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.86rem !important;
+    padding: 9px 16px !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    background: transparent !important;
+    transition: all 0.15s ease !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--univ-navy, #003366) !important;
+    border-bottom-color: #cbd5e1 !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--univ-navy, #003366) !important;
+    border-bottom: 2px solid var(--univ-navy, #003366) !important;
+    background: transparent !important;
+}
+
+

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Báo hỏng & Sửa chữa')}"></head>
+
+<body>
+
+    <aside th:replace="~{fragments/layout :: sidebar('maintenance')}"></aside>
+
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Quản lý Báo hỏng & Sửa chữa')}"></nav>
+
+        <div class="content-body">
+            <!-- Thanh Tab trạng thái + Bộ lọc & Thao tác trên 1 hàng ngang đồng bộ -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" id="maintStatusTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-semibold py-1 px-3 small" data-status="" onclick="selectMaintStatusTab(this, '')">
+                            <i class="bi bi-grid-fill me-1"></i>Tất cả <span class="badge bg-white text-dark ms-1" id="countMaintAll">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-semibold py-1 px-3 small" data-status="PENDING" onclick="selectMaintStatusTab(this, 'PENDING')">
+                            <span class="d-inline-block rounded-circle bg-warning me-1" style="width:8px;height:8px;"></span>Chờ xử lý <span class="badge bg-light text-dark border ms-1" id="countMaintPending">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-semibold py-1 px-3 small" data-status="IN_PROGRESS" onclick="selectMaintStatusTab(this, 'IN_PROGRESS')">
+                            <span class="d-inline-block rounded-circle bg-info me-1" style="width:8px;height:8px;"></span>Đang sửa chữa <span class="badge bg-light text-dark border ms-1" id="countMaintProgress">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-semibold py-1 px-3 small" data-status="COMPLETED" onclick="selectMaintStatusTab(this, 'COMPLETED')">
+                            <span class="d-inline-block rounded-circle bg-success me-1" style="width:8px;height:8px;"></span>Đã hoàn thành <span class="badge bg-light text-dark border ms-1" id="countMaintCompleted">0</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <div class="input-group input-group-sm" style="width: 220px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="maintSearchInput" class="form-control border-start-0"
+                            placeholder="Tìm mã YC, phòng, mô tả..." oninput="renderMaintenanceTable()">
+                    </div>
+                    <select id="maintFilterPriority" class="form-select form-select-sm" style="width: 145px;" onchange="renderMaintenanceTable()">
+                        <option value="">-- Mức ưu tiên --</option>
+                        <option value="HIGH">Khẩn cấp</option>
+                        <option value="MEDIUM">Bình thường</option>
+                        <option value="LOW">Thấp</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1 px-3 shadow-sm"
+                        onclick="openCreateMaintModal()">
+                        <i class="bi bi-plus-circle-fill"></i> Tạo Yêu cầu Sửa chữa
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-custom shadow-sm">
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 115px;">Mã yêu cầu</th>
+                                <th style="width: 85px;">Phòng</th>
+                                <th style="width: 130px;">Người báo</th>
+                                <th>Mô tả sự cố hư hỏng</th>
+                                <th style="width: 115px;">Mức độ ưu tiên</th>
+                                <th style="width: 125px;">Trạng thái xử lý</th>
+                                <th style="width: 110px;">Ngày tiếp nhận</th>
+                                <th class="text-end pe-3" style="width: 175px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">Đang tải danh sách yêu cầu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tạo Yêu cầu Sửa chữa - Chuẩn ĐH Công Nghiệp Việt Trì -->
+    <div class="modal fade" id="maintModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-tools me-2"></i>TIẾP NHẬN SỰ CỐ & ĐIỀU PHỐI SỬA CHỮA
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="maintForm">
+                        <div class="form-section-title">
+                            <i class="bi bi-geo-alt-fill"></i>I. ĐỊA ĐIỂM & PHÒNG Ở GẶP SỰ CỐ
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Mã yêu cầu <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="requestCode" class="form-control" placeholder="VD: SC-101-01"
+                                        required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Phòng gặp sự cố <span
+                                            class="text-danger">*</span></label>
+                                    <select id="maintRoomSelect" class="form-select">
+                                        <option value="">-- Đang tải phòng --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-wrench"></i>II. THIẾT BỊ & CHI TIẾT SỰ CỐ
+                        </div>
+                        <div class="form-section-box">
+                            <div class="mb-2">
+                                <label class="form-label">Hạng mục thiết bị</label>
+                                <select id="maintCategory" class="form-select">
+                                    <option value="Hệ thống điện / Đèn">Hệ thống điện / Đèn chiếu sáng</option>
+                                    <option value="Đường ống nước / Vòi nước">Đường ống nước / Vòi nước rò rỉ</option>
+                                    <option value="Điều hòa / Bình nóng lạnh">Điều hòa / Bình nóng lạnh</option>
+                                    <option value="Giường / Bàn ghế / Cửa">Giường / Bàn ghế / Khóa cửa</option>
+                                    <option value="Internet / Wifi">Hạ tầng mạng / Wifi KTX</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Mô tả sự cố chi tiết <span
+                                        class="text-danger">*</span></label>
+                                <textarea id="description" class="form-control" rows="3"
+                                    placeholder="VD: Hỏng vòi nước bồn rửa mặt phòng P.101, rò rỉ nước liên tục..."
+                                    required></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-speedometer2"></i>III. MỨC ĐỘ KHẨN CẤP & TIẾN ĐỘ XỬ LÝ
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Mức độ ưu tiên</label>
+                                    <select id="priority" class="form-select">
+                                        <option value="MEDIUM">Bình thường (Trong ngày)</option>
+                                        <option value="HIGH">Khẩn cấp (Xử lý ngay)</option>
+                                        <option value="LOW">Thấp (Chưa cấp bách)</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Tiến độ xử lý</label>
+                                    <select id="maintStatus" class="form-select">
+                                        <option value="PENDING">Chờ xử lý (PENDING)</option>
+                                        <option value="IN_PROGRESS">Đang sửa chữa (IN_PROGRESS)</option>
+                                        <option value="COMPLETED">Đã hoàn thành (COMPLETED)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="saveMaint()"><i class="bi bi-floppy-fill me-1"></i>Lưu phiếu báo hỏng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi tiết Yêu cầu Sửa chữa -->
+    <div class="modal fade" id="maintDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clipboard2-check-fill me-2"></i>CHI TIẾT PHIẾU BÁO HỎNG & SỬA CHỮA
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="maintDetailBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        let maintModal = null;
+        let maintDetailModal = null;
+        let availableRooms = [];
+        let allMaintRequests = [];
+        let selectedMaintStatus = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            maintModal = new bootstrap.Modal(document.getElementById('maintModal'));
+            maintDetailModal = new bootstrap.Modal(document.getElementById('maintDetailModal'));
+            loadRoomOptions();
+            loadMaintenanceRequests();
+        });
+
+        async function loadRoomOptions() {
+            try {
+                const res = await apiFetch('/rooms/all').catch(() => apiFetch('/rooms'));
+                availableRooms = unwrapList(res);
+                const sel = document.getElementById('maintRoomSelect');
+                if (availableRooms.length > 0) {
+                    sel.innerHTML = availableRooms.map(r =>
+                        `<option value="${r.roomId}">${r.roomNumber} (${r.buildingName || 'KTX'})</option>`
+                    ).join('');
+                } else {
+                    sel.innerHTML = '<option value="">Phòng mặc định</option>';
+                }
+            } catch (e) {
+                console.warn('Không tải được danh sách phòng:', e);
+            }
+        }
+
+        function selectMaintStatusTab(btn, status) {
+            document.querySelectorAll('#maintStatusTabs .nav-link').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMaintStatus = status || '';
+            renderMaintenanceTable();
+        }
+
+        async function loadMaintenanceRequests() {
+            const tbody = document.getElementById('maintTableBody');
+            try {
+                const res = await apiFetch('/maintenance-requests?size=100');
+                allMaintRequests = unwrapList(res);
+
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                setTxt('countMaintAll', allMaintRequests.length);
+                setTxt('countMaintPending', allMaintRequests.filter(m => !m.status || m.status === 'PENDING').length);
+                setTxt('countMaintProgress', allMaintRequests.filter(m => m.status === 'IN_PROGRESS').length);
+                setTxt('countMaintCompleted', allMaintRequests.filter(m => m.status === 'COMPLETED').length);
+
+                renderMaintenanceTable();
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderMaintenanceTable() {
+            const tbody = document.getElementById('maintTableBody');
+            const keyword = (document.getElementById('maintSearchInput')?.value || '').trim().toLowerCase();
+            const priorityFilter = document.getElementById('maintFilterPriority')?.value || '';
+
+            const filtered = allMaintRequests.filter(m => {
+                const st = m.status || 'PENDING';
+                if (selectedMaintStatus && st !== selectedMaintStatus) return false;
+                if (priorityFilter && (m.priority || 'MEDIUM') !== priorityFilter) return false;
+                if (keyword) {
+                    const hay = `${m.requestCode || ''} ${m.roomNumber || ''} ${m.reportedByUsername || ''} ${m.description || ''}`.toLowerCase();
+                    if (!hay.includes(keyword)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Hiện không có sự cố nào phù hợp bộ lọc.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(m => {
+                let badgeClass = 'bg-warning-subtle text-warning';
+                let statusText = 'Chờ xử lý';
+                if (m.status === 'IN_PROGRESS') {
+                    badgeClass = 'bg-info-subtle text-info';
+                    statusText = 'Đang sửa chữa';
+                } else if (m.status === 'COMPLETED') {
+                    badgeClass = 'bg-success-subtle text-success';
+                    statusText = 'Đã hoàn thành';
+                }
+
+                const priorityLabel = m.priority === 'HIGH' ? 'Khẩn cấp' : (m.priority === 'LOW' ? 'Thấp' : 'Bình thường');
+                const priorityClass = m.priority === 'HIGH' ? 'bg-danger-subtle text-danger' : 'bg-light text-dark border';
+                const descSafe = (m.description || '-').replace(/"/g, '&quot;');
+
+                return `
+                <tr>
+                    <td class="fw-bold text-primary">
+                        <a href="javascript:void(0)" class="text-decoration-none fw-bold text-primary" onclick="openMaintDetailModal('${m.requestId}')">${m.requestCode || '-'}</a>
+                    </td>
+                    <td><span class="badge bg-light text-dark border fw-semibold">${m.roomNumber || 'P.101'}</span></td>
+                    <td class="small text-secondary text-truncate" style="max-width: 125px;" title="${m.reportedByUsername || 'Sinh viên'}">${m.reportedByUsername || 'Sinh viên'}</td>
+                    <td class="fw-medium text-truncate" style="max-width: 280px;" title="${descSafe}">${m.description || '-'}</td>
+                    <td>
+                        <span class="badge ${priorityClass}">${priorityLabel}</span>
+                    </td>
+                    <td><span class="badge ${badgeClass}">${statusText}</span></td>
+                    <td>${formatDate(m.requestedDate || m.createdAt || new Date())}</td>
+                    <td class="text-end pe-3">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick="openMaintDetailModal('${m.requestId}')" title="Xem chi tiết">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            ${m.status !== 'COMPLETED' ? `
+                                <button class="btn btn-sm btn-outline-success py-1 px-2 fw-medium" style="width: 88px;" onclick="updateMaintStatus('${m.requestId}')" title="Đánh dấu hoàn thành">
+                                    <i class="bi bi-check-circle me-1"></i>Đã xong
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-light text-muted border py-1 px-2" style="width: 88px; opacity: 0.65; cursor: default;" disabled title="Đã hoàn thành sửa chữa">
+                                    <i class="bi bi-check2-all text-success me-1"></i>Đã xong
+                                </button>
+                            `}
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteMaint('${m.requestId}')" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        function openMaintDetailModal(requestId) {
+            const m = allMaintRequests.find(item => String(item.requestId) === String(requestId));
+            if (!m) return;
+
+            let statusText = 'Chờ xử lý';
+            let badgeClass = 'bg-warning-subtle text-warning';
+            if (m.status === 'IN_PROGRESS') {
+                statusText = 'Đang sửa chữa';
+                badgeClass = 'bg-info-subtle text-info';
+            } else if (m.status === 'COMPLETED') {
+                statusText = 'Đã hoàn thành';
+                badgeClass = 'bg-success-subtle text-success';
+            }
+            const priorityLabel = m.priority === 'HIGH' ? 'Khẩn cấp' : (m.priority === 'LOW' ? 'Thấp' : 'Bình thường');
+
+            document.getElementById('maintDetailBody').innerHTML = `
+                <div class="form-section-box mb-0">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <div>
+                            <div class="text-muted small">Mã phiếu báo hỏng</div>
+                            <div class="fw-bold fs-6 text-primary">${m.requestCode || '-'}</div>
+                        </div>
+                        <span class="badge ${badgeClass} px-3 py-2">${statusText}</span>
+                    </div>
+                    <div class="row g-3 small">
+                        <div class="col-6">
+                            <div class="text-muted">Phòng gặp sự cố</div>
+                            <div class="fw-semibold text-dark mt-1"><i class="bi bi-door-open me-1 text-primary"></i>${m.roomNumber || 'P.101'}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Người báo sự cố</div>
+                            <div class="fw-semibold text-dark mt-1"><i class="bi bi-person me-1 text-secondary"></i>${m.reportedByUsername || 'Sinh viên'}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Mức độ ưu tiên</div>
+                            <div class="fw-semibold text-dark mt-1">${priorityLabel}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted">Ngày tiếp nhận</div>
+                            <div class="fw-semibold text-dark mt-1">${formatDate(m.requestedDate || m.createdAt || new Date())}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted mb-1">Mô tả chi tiết sự cố hư hỏng</div>
+                            <div class="p-2 rounded bg-white border text-dark fw-medium">${m.description || '-'}</div>
+                        </div>
+                        ${m.resolutionNote ? `
+                        <div class="col-12">
+                            <div class="text-muted mb-1">Ghi chú kết quả nghiệm thu</div>
+                            <div class="p-2 rounded bg-success-subtle text-success fw-medium">${m.resolutionNote}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            maintDetailModal.show();
+        }
+
+        function openCreateMaintModal() {
+            document.getElementById('requestCode').value = 'SC-' + Date.now().toString().slice(-6);
+            document.getElementById('description').value = '';
+            document.getElementById('priority').value = 'MEDIUM';
+            document.getElementById('maintStatus').value = 'PENDING';
+            maintModal.show();
+        }
+
+        async function saveMaint() {
+            const cat = document.getElementById('maintCategory').value;
+            const rawDesc = document.getElementById('description').value.trim();
+            const payload = {
+                requestCode: document.getElementById('requestCode').value.trim(),
+                roomId: document.getElementById('maintRoomSelect').value,
+                category: cat,
+                description: rawDesc.startsWith('[') ? rawDesc : `[${cat}] ${rawDesc}`,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('maintStatus').value
+            };
+
+            if (!payload.requestCode || !rawDesc) {
+                showToastError('Vui lòng nhập mô tả sự cố!');
+                return;
+            }
+
+            try {
+                await apiFetch('/maintenance-requests', { method: 'POST', body: JSON.stringify(payload) });
+                showToastSuccess('Đã lưu yêu cầu sửa chữa vào CSDL!');
+                maintModal.hide();
+                loadMaintenanceRequests();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function updateMaintStatus(id) {
+            try {
+                await apiFetch(`/maintenance-requests/${id}/complete?resolutionNote=${encodeURIComponent('Đã hoàn thành sửa chữa thiết bị')}`, {
+                    method: 'PUT'
+                });
+                showToastSuccess('Đã cập nhật trạng thái: ĐÃ HOÀN THÀNH!');
+                loadMaintenanceRequests();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteMaint(id) {
+            const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa yêu cầu sửa chữa này không?');
+            if (!confirmed) return;
+
+            try {
+                await apiFetch(`/maintenance-requests/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa yêu cầu sửa chữa!');
+                loadMaintenanceRequests();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

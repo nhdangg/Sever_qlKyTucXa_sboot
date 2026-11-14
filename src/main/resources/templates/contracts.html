@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Quản lý Hợp đồng lưu trú')}"></head>
+
+<body>
+
+    <aside th:replace="~{fragments/layout :: sidebar('contracts')}"></aside>
+
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Quản lý Hợp đồng Lưu trú & Chuyển phòng')}"></nav>
+
+        <div class="content-body">
+            <!-- Thống kê nhanh -->
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="card border shadow-sm rounded-3 p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Tổng hợp đồng</div>
+                                <h4 class="fw-bold mb-0" style="color: var(--univ-navy);" id="statTotalContracts">0</h4>
+                            </div>
+                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                                style="width:40px;height:40px;color: var(--univ-navy);">
+                                <i class="bi bi-file-earmark-text-fill fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border shadow-sm rounded-3 p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Đang hiệu lực</div>
+                                <h4 class="fw-bold text-success mb-0" id="statActiveContracts">0</h4>
+                            </div>
+                            <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center"
+                                style="width:40px;height:40px;">
+                                <i class="bi bi-check-circle-fill fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border shadow-sm rounded-3 p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Chờ duyệt / Nháp</div>
+                                <h4 class="fw-bold text-warning mb-0" id="statPendingContracts">0</h4>
+                            </div>
+                            <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center"
+                                style="width:40px;height:40px;">
+                                <i class="bi bi-hourglass-split fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border shadow-sm rounded-3 p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Đơn xin chuyển phòng</div>
+                                <h4 class="fw-bold text-info mb-0" id="statTransfers">0</h4>
+                            </div>
+                            <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center"
+                                style="width:40px;height:40px;">
+                                <i class="bi bi-arrow-left-right fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thanh Menu ngang & Nút thao tác đồng bộ trên 1 hàng -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#tabContracts" type="button">
+                            <i class="bi bi-file-earmark-check-fill me-1"></i> Danh sách Hợp đồng Lưu trú
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#tabTransfers" type="button">
+                            <i class="bi bi-arrow-left-right me-1"></i> Yêu cầu Chuyển phòng của Sinh viên
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#tabPeriods" type="button">
+                            <i class="bi bi-calendar-range me-1"></i> Đợt Đăng ký Nội trú
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-primary btn-sm px-3 role-manager-up" onclick="openPeriodModal()">
+                        <i class="bi bi-calendar-plus me-1"></i> Mở Đợt Đăng ký
+                    </button>
+                    <button class="btn btn-primary btn-sm px-3" onclick="openCreateContractModal()">
+                        <i class="bi bi-plus-lg me-1"></i> Lập Hợp đồng mới
+                    </button>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <!-- TAB 1: DANH SÁCH HỢP ĐỒNG -->
+                <div class="tab-pane fade show active" id="tabContracts">
+                    <!-- Thanh Tìm kiếm & Lọc Hợp đồng Server-side -->
+                    <div class="card border shadow-sm rounded-3 p-3 mb-3 bg-white">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light border-end-0"><i
+                                            class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="contractSearchInput" class="form-control border-start-0"
+                                        placeholder="Tìm theo Mã HĐ, MSSV, Họ tên SV hoặc Số phòng..."
+                                        oninput="debouncedSearchContracts()">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select id="contractFilterPeriod" class="form-select form-select-sm" onchange="loadContracts(1)">
+                                    <option value="">-- Tất cả đợt đăng ký --</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select id="contractFilterStatus" class="form-select form-select-sm" onchange="loadContracts(1)">
+                                    <option value="">-- Tất cả trạng thái --</option>
+                                    <option value="ACTIVE">Đang hiệu lực (ACTIVE)</option>
+                                    <option value="PENDING">Chờ duyệt (PENDING)</option>
+                                    <option value="TERMINATED">Đã thanh lý (TERMINATED)</option>
+                                    <option value="CANCELLED">Đã hủy đơn (CANCELLED)</option>
+                                    <option value="REJECTED">Bị từ chối (REJECTED)</option>
+                                    <option value="EXPIRED">Hết hạn (EXPIRED)</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <select id="contractPageSizeSelect" class="form-select form-select-sm" onchange="loadContracts(1)">
+                                    <option value="10">10 dòng / trang</option>
+                                    <option value="20" selected>20 dòng / trang</option>
+                                    <option value="50">50 dòng / trang</option>
+                                    <option value="100">100 dòng / trang</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-custom shadow-sm bg-white rounded-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mã hợp đồng</th>
+                                        <th>Sinh viên</th>
+                                        <th>Phòng / Giường</th>
+                                        <th>Đợt đăng ký</th>
+                                        <th>Thời hạn</th>
+                                        <th>Tiền phòng / Cọc</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-center" style="width: 150px;">Thao tác theo Quyền</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contractTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Đang tải danh sách hợp
+                                            đồng...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="contractPaginationBar"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: YÊU CẦU CHUYỂN PHÒNG -->
+                <div class="tab-pane fade" id="tabTransfers">
+                    <div class="table-custom shadow-sm bg-white rounded-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Sinh viên / Mã HĐ</th>
+                                        <th>Từ Phòng / Giường</th>
+                                        <th>Sang Phòng / Giường</th>
+                                        <th>Ngày xin chuyển</th>
+                                        <th>Lý do</th>
+                                        <th>Người duyệt</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-center" style="width: 150px;">Phê duyệt (Manager/Admin)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transferTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Đang tải yêu cầu chuyển
+                                            phòng...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ĐỢT ĐĂNG KÝ -->
+                <div class="tab-pane fade" id="tabPeriods">
+                    <div class="card border shadow-sm rounded-3 p-3 mb-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold mb-0" style="color: var(--univ-navy);"><i class="bi bi-calendar-range me-2"></i>Đợt Đăng ký Lưu trú KTX</h6>
+                                <span class="text-muted small">Tự động chuyển đổi UPCOMING -> OPEN -> CLOSED theo mốc thời gian</span>
+                            </div>
+                            <div class="d-flex gap-2 role-manager-up">
+                                <button class="btn btn-outline-primary btn-sm px-3" onclick="syncPeriodStatuses()" title="Quét và cập nhật trạng thái đợt đăng ký ngay lập tức (/api/registration-periods/sync-statuses)">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ Trạng thái Đợt
+                                </button>
+                                <button class="btn btn-primary btn-sm px-3" onclick="openPeriodModal()">
+                                    <i class="bi bi-plus-lg me-1"></i> Mở Đợt Đăng ký mới
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-custom shadow-sm bg-white rounded-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Tên đợt đăng ký</th>
+                                        <th>Năm học</th>
+                                        <th>Ngày bắt đầu ở</th>
+                                        <th>Ngày kết thúc</th>
+                                        <th>Hạn đăng ký</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-center" style="width: 120px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="periodTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">Đang tải đợt đăng ký...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi tiết / In Hợp đồng -->
+    <div class="modal fade" id="contractDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0 text-white"><i
+                                class="bi bi-file-earmark-richtext-fill me-2"></i>HỒ SƠ HỢP ĐỒNG LƯU TRÚ KÝ TÚC XÁ</h5>
+                        <div class="small text-white text-opacity-85 mt-1" id="viewContractSub">Mã hợp đồng: -</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="viewContractBody">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i>In bản hợp đồng
+                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm / Sửa Hợp đồng - Chuẩn ĐH Công Nghiệp Việt Trì -->
+    <div class="modal fade" id="contractModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title" id="contractModalTitle">
+                        <i class="bi bi-file-earmark-text-fill me-2"></i>LẬP HỢP ĐỒNG LƯU TRÚ KÝ TÚC XÁ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="contractForm">
+                        <input type="hidden" id="contractId">
+                        
+                        <!-- Khối I: Mã & Đợt đăng ký -->
+                        <div class="form-section-title">
+                            <i class="bi bi-calendar-check-fill"></i>I. THÔNG TIN HỒ SƠ & ĐỢT ĐĂNG KÝ NỘI TRÚ
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Mã hợp đồng lưu trú <span class="text-danger">*</span></label>
+                                    <input type="text" id="contractCode" class="form-control"
+                                        placeholder="VD: HD-KTX-2026-001" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Đợt đăng ký nội trú <span class="text-danger">*</span></label>
+                                    <select id="contractPeriodSelect" class="form-select" required></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối II: Sinh viên & Bố trí chỗ ở -->
+                        <div class="form-section-title">
+                            <i class="bi bi-person-fill"></i>II. ĐỐI TƯỢNG SINH VIÊN & BỐ TRÍ PHÒNG Ở
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Sinh viên đăng ký lưu trú <span class="text-danger">*</span></label>
+                                    <input type="text" id="studentFilterInModal" class="form-control form-control-sm mb-1"
+                                        placeholder="Gõ MSSV hoặc tên để tìm nhanh sinh viên..."
+                                        oninput="searchStudentsForContractModal()">
+                                    <select id="contractStudentSelect" class="form-select" required></select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Bố trí Phòng & Giường nội trú <span class="text-danger">*</span></label>
+                                    <input type="text" id="bedFilterInModal" class="form-control form-control-sm mb-1"
+                                        placeholder="Gõ số phòng (VD: P.101) để lọc giường..."
+                                        oninput="filterBedsInContractModal()">
+                                    <select id="contractBedSelect" class="form-select" required onchange="onContractBedSelected()"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối III: Thời hạn & Trạng thái -->
+                        <div class="form-section-title">
+                            <i class="bi bi-clock-history"></i>III. THỜI HẠN LƯU TRÚ & TRẠNG THÁI HỢP ĐỒNG
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                                    <input type="date" id="startDate" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                                    <input type="date" id="endDate" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Trạng thái hợp đồng</label>
+                                    <select id="contractStatus" class="form-select">
+                                        <option value="ACTIVE">Đang hiệu lực (ACTIVE)</option>
+                                        <option value="PENDING_APPROVAL">Chờ Trưởng BQL duyệt (PENDING_APPROVAL)</option>
+                                        <option value="DRAFT">Bản nháp (DRAFT)</option>
+                                        <option value="EXPIRED">Hết hạn (EXPIRED)</option>
+                                        <option value="TERMINATED">Đã thanh lý (TERMINATED)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối IV: Đơn giá & Tiền cọc -->
+                        <div class="form-section-title">
+                            <i class="bi bi-cash-stack"></i>IV. ĐƠN GIÁ THUÊ PHÒNG & TIỀN CỌC THẾ CHÂN
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Đơn giá thuê phòng / tháng (VNĐ)</label>
+                                    <input type="number" id="monthlyFee" class="form-control" placeholder="Tự động theo loại phòng..." min="0"
+                                        step="10000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tiền đặt cọc thế chân (VNĐ)</label>
+                                    <input type="number" id="depositAmount" class="form-control" placeholder="Tự động theo loại phòng..." min="0"
+                                        step="10000">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="saveContract()"><i class="bi bi-floppy-fill me-1"></i>Lưu hợp đồng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Mở / Cập nhật Đợt Đăng ký -->
+    <div class="modal fade" id="periodModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar2-plus-fill me-2"></i><span id="periodModalTitle">MỞ ĐỢT ĐĂNG KÝ LƯU TRÚ KTX MỚI</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="periodForm">
+                        <input type="hidden" id="periodIdInput">
+                        <div class="mb-3">
+                            <label class="form-label">Tên đợt đăng ký <span class="text-danger">*</span></label>
+                            <input type="text" id="periodNameInput" class="form-control"
+                                placeholder="VD: Đợt đăng ký Học kỳ II (2026 - 2027)" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Năm học <span class="text-danger">*</span></label>
+                            <input type="text" id="periodYearInput" class="form-control" value="2026-2027" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Ngày bắt đầu</label>
+                                <input type="date" id="periodStartInput" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Ngày kết thúc</label>
+                                <input type="date" id="periodEndInput" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hạn chót nhận hồ sơ</label>
+                            <input type="date" id="periodDeadlineInput" class="form-control">
+                        </div>
+                        <div class="mb-3" id="periodStatusGroup" style="display: none;">
+                            <label class="form-label">Trạng thái đợt đăng ký</label>
+                            <select id="periodStatusInput" class="form-select">
+                                <option value="OPEN">OPEN (Đang mở tiếp nhận)</option>
+                                <option value="CLOSED">CLOSED (Đã đóng đợt)</option>
+                                <option value="UPCOMING">UPCOMING (Sắp diễn ra)</option>
+                                <option value="CANCELLED">CANCELLED (Hủy đợt)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="savePeriod()"><i class="bi bi-floppy me-1"></i><span id="periodSubmitBtnText">Tạo đợt đăng ký</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        let contractModal = null;
+        let contractDetailModal = null;
+        let periodModal = null;
+        let allContracts = [];
+        let allBeds = [];
+        let currentUserRole = 'ADMIN';
+        let currentContractPage = 1;
+        let contractSearchTimer = null;
+        let modalStudentSearchTimer = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            contractModal = new bootstrap.Modal(document.getElementById('contractModal'));
+            contractDetailModal = new bootstrap.Modal(document.getElementById('contractDetailModal'));
+            periodModal = new bootstrap.Modal(document.getElementById('periodModal'));
+
+            const user = Auth.getUser();
+            currentUserRole = ((user && user.role) || 'ADMIN').toUpperCase();
+
+            // Nếu là STAFF (chỉ có quyền CONTRACT_DRAFT, không có CONTRACT_MANAGE), mặc định trạng thái tạo mới là Chờ duyệt
+            if (currentUserRole === 'STAFF') {
+                document.getElementById('contractStatus').value = 'PENDING_APPROVAL';
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('periodStartInput').value = today;
+            document.getElementById('periodDeadlineInput').value = today;
+            const fiveMonths = new Date();
+            fiveMonths.setMonth(fiveMonths.getMonth() + 5);
+            document.getElementById('endDate').value = fiveMonths.toISOString().split('T')[0];
+            document.getElementById('periodEndInput').value = fiveMonths.toISOString().split('T')[0];
+
+            await Promise.all([
+                loadFormSelects(),
+                loadContracts(1),
+                loadTransfers(),
+                loadPeriods()
+            ]);
+        });
+
+        function canManageContract() {
+            return currentUserRole === 'ADMIN' || currentUserRole === 'MANAGER';
+        }
+
+        function debouncedSearchContracts() {
+            clearTimeout(contractSearchTimer);
+            contractSearchTimer = setTimeout(() => loadContracts(1), 300);
+        }
+
+        async function searchStudentsForContractModal() {
+            clearTimeout(modalStudentSearchTimer);
+            modalStudentSearchTimer = setTimeout(async () => {
+                const kw = document.getElementById('studentFilterInModal').value.trim();
+                try {
+                    const res = await apiFetch(`/students?page=1&size=30${kw ? '&keyword=' + encodeURIComponent(kw) : ''}`);
+                    const students = unwrapList(res);
+                    document.getElementById('contractStudentSelect').innerHTML = students.map(s =>
+                        `<option value="${s.studentId}">${s.studentCode} - ${s.fullName} (${s.className || s.faculty || ''})</option>`
+                    ).join('');
+                } catch (e) { }
+            }, 250);
+        }
+
+        function filterBedsInContractModal() {
+            const kw = document.getElementById('bedFilterInModal').value.toLowerCase().trim();
+            const filtered = !kw
+                ? allBeds.slice(0, 100)
+                : allBeds.filter(b =>
+                    (b.buildingName && b.buildingName.toLowerCase().includes(kw)) ||
+                    (b.roomNumber && b.roomNumber.toLowerCase().includes(kw)) ||
+                    (b.bedNumber && b.bedNumber.toLowerCase().includes(kw))
+                ).slice(0, 100);
+            document.getElementById('contractBedSelect').innerHTML = filtered.map(b => {
+                const typeText = b.roomTypeName ? ` - ${b.roomTypeName}` : '';
+                const priceText = b.pricePerMonth ? ` (${formatCurrency(b.pricePerMonth)}/tháng)` : '';
+                return `<option value="${b.bedId}" data-price="${b.pricePerMonth || ''}">${b.buildingName ? b.buildingName + ' - ' : ''}Phòng ${b.roomNumber}${typeText} - Giường ${b.bedNumber}${priceText} [${b.status === 'OCCUPIED' ? 'Đang có SV' : 'Còn trống'}]</option>`;
+            }).join('');
+            onContractBedSelected();
+        }
+
+        async function loadFormSelects() {
+            try {
+                const [stuRes, bedRes, perRes] = await Promise.all([
+                    apiFetch('/students?page=1&size=30'),
+                    apiFetch('/beds').catch(() => ({ result: [] })),
+                    apiFetch('/registration-periods/all').catch(() => apiFetch('/registration-periods'))
+                ]);
+                const students = unwrapList(stuRes);
+                allBeds = unwrapList(bedRes);
+                const periods = unwrapList(perRes);
+
+                document.getElementById('contractStudentSelect').innerHTML = students.map(s =>
+                    `<option value="${s.studentId}">${s.studentCode} - ${s.fullName} (${s.className || s.faculty || ''})</option>`
+                ).join('');
+
+                filterBedsInContractModal();
+
+                const periodOptions = periods.map(p =>
+                    `<option value="${p.periodId}">${p.periodName} (${p.academicYear || ''})</option>`
+                ).join('');
+                document.getElementById('contractPeriodSelect').innerHTML = periodOptions;
+                document.getElementById('contractFilterPeriod').innerHTML = '<option value="">-- Tất cả đợt đăng ký --</option>' + periodOptions;
+            } catch (e) {
+                console.warn('Lỗi tải danh mục form hợp đồng:', e);
+            }
+        }
+
+        async function loadContracts(page = 1) {
+            currentContractPage = page;
+            const tbody = document.getElementById('contractTableBody');
+            const keyword = document.getElementById('contractSearchInput').value.trim();
+            const status = document.getElementById('contractFilterStatus').value;
+            const periodId = document.getElementById('contractFilterPeriod').value;
+            const size = document.getElementById('contractPageSizeSelect').value || 20;
+
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    size: size,
+                    sortBy: 'createdAt',
+                    sortDir: 'desc'
+                });
+                if (keyword) params.append('keyword', keyword);
+                if (status) params.append('status', status);
+                if (periodId) params.append('periodId', periodId);
+
+                const res = await apiFetch(`/contracts?${params.toString()}`);
+                allContracts = unwrapList(res);
+                const totalElements = (res.pageInfo && res.pageInfo.totalElements != null) ? res.pageInfo.totalElements : allContracts.length;
+
+                document.getElementById('statTotalContracts').textContent = totalElements;
+                document.getElementById('statActiveContracts').textContent = allContracts.filter(c => c.status === 'ACTIVE').length;
+                document.getElementById('statPendingContracts').textContent = allContracts.filter(c => c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT').length;
+                renderPaginationBar('contractPaginationBar', res.pageInfo, 'loadContracts');
+
+                if (allContracts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không tìm thấy hợp đồng nào phù hợp điều kiện lọc.</td></tr>';
+                    return;
+                }
+
+                const isManagerUp = canManageContract();
+
+                tbody.innerHTML = allContracts.map(c => {
+                    let statusBadge = '<span class="badge bg-secondary-subtle text-secondary">' + (c.status || 'DRAFT') + '</span>';
+                    if (c.status === 'ACTIVE') {
+                        statusBadge = '<span class="badge bg-success-subtle text-success">Đang hiệu lực</span>';
+                    } else if (c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT') {
+                        statusBadge = '<span class="badge bg-warning-subtle text-warning">Chờ duyệt / Nháp</span>';
+                    } else if (c.status === 'TERMINATED') {
+                        statusBadge = '<span class="badge bg-danger-subtle text-danger">Đã thanh lý</span>';
+                    } else if (c.status === 'REJECTED') {
+                        statusBadge = '<span class="badge bg-danger-subtle text-danger">Bị từ chối</span>';
+                    } else if (c.status === 'CANCELLED') {
+                        statusBadge = '<span class="badge bg-secondary-subtle text-secondary">Đã hủy đơn</span>';
+                    } else if (c.status === 'EXPIRED') {
+                        statusBadge = '<span class="badge bg-dark-subtle text-dark">Hết hạn</span>';
+                    }
+
+                    const isPending = c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT';
+                    const showApproveBtn = isManagerUp && isPending;
+                    const showTerminateBtn = isManagerUp && c.status === 'ACTIVE';
+
+                    return `
+                    <tr>
+                        <td class="fw-bold text-truncate" style="max-width: 145px;" title="${c.contractCode}">
+                            <a href="javascript:void(0)" class="text-decoration-none" style="color: var(--univ-navy);" onclick="viewContractDetail('${c.contractId}')">${c.contractCode}</a>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="${c.studentFullName || ''}">${c.studentFullName || 'Sinh viên'}</div>
+                            <div class="small text-muted" style="font-size: 0.74rem;">${c.studentCode || ''}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary">${c.roomNumber || 'P.101'}</span>
+                            <span class="badge bg-light text-dark border">Giường ${c.bedNumber || 'G01'}</span>
+                        </td>
+                        <td class="small text-truncate" style="max-width: 165px;" title="${c.periodName || ''}">${c.periodName || 'Năm học 2026-2027'}</td>
+                        <td class="small">
+                            <div>${formatDate(c.startDate)} → ${formatDate(c.endDate)}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">${formatCurrency(c.monthlyFee || 0)}/tháng</div>
+                            <div class="small text-muted" style="font-size: 0.74rem;">Cọc: ${formatCurrency(c.depositAmount || 0)}</div>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td class="text-center">
+                            <div class="d-inline-flex gap-1">
+                                <button class="btn btn-sm btn-light text-primary" onclick="viewContractDetail('${c.contractId}')" title="Xem chi tiết hợp đồng">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-secondary" onclick="openEditContractModal('${c.contractId}')" title="Chỉnh sửa hợp đồng">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                ${showApproveBtn ? `
+                                    <button class="btn btn-sm btn-outline-success" onclick="approveContract('${c.contractId}')" title="Duyệt & Kích hoạt hợp đồng (Manager/Admin)">
+                                        <i class="bi bi-check2-circle"></i> Duyệt
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="rejectContract('${c.contractId}')" title="Từ chối duyệt đơn & Giải phóng giường (Manager/Admin)">
+                                        <i class="bi bi-x-circle"></i> Từ chối
+                                    </button>
+                                ` : ''}
+                                ${showTerminateBtn ? `
+                                    <button class="btn btn-sm btn-outline-warning" onclick="terminateContract('${c.contractId}')" title="Thanh lý / Chấm dứt hợp đồng (Manager/Admin)">
+                                        <i class="bi bi-x-octagon"></i>
+                                    </button>
+                                ` : ''}
+                                ${isManagerUp ? `
+                                    <button class="btn btn-sm btn-light text-danger" onclick="deleteContract('${c.contractId}')" title="Xóa hợp đồng (Manager/Admin)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
+        function viewContractDetail(id) {
+            const c = allContracts.find(x => x.contractId === id);
+            if (!c) return;
+            document.getElementById('viewContractSub').textContent = `Mã hợp đồng: ${c.contractCode} • Ngày ký: ${formatDate(c.signedDate || c.startDate)}`;
+            document.getElementById('viewContractBody').innerHTML = `
+            <div class="border rounded-4 p-4 bg-white">
+                <div class="text-center mb-4 border-bottom pb-3">
+                    <div class="fw-bold text-uppercase small text-secondary">Cộng hòa Xã hội Chủ nghĩa Việt Nam</div>
+                    <div class="small text-muted mb-2">Độc lập - Tự do - Hạnh phúc</div>
+                    <h5 class="fw-bold text-primary mb-1">HỢP ĐỒNG NỘI TRÚ KÝ TÚC XÁ SINH VIÊN</h5>
+                    <div class="small">Số: <b>${c.contractCode}</b></div>
+                </div>
+                <div class="row g-3 small mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100">
+                            <div class="fw-bold text-uppercase text-secondary mb-2">Bên A: Ban Quản lý Ký túc xá</div>
+                            <div>Đại diện duyệt: <b>${c.approvedByStaffName || 'Ban Quản lý Ký túc xá'}</b></div>
+                            <div>Đợt lưu trú: <b>${c.periodName || 'Năm học 2026 - 2027'}</b></div>
+                            <div>Trạng thái HĐ: <span class="badge bg-success">${c.status}</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light h-100">
+                            <div class="fw-bold text-uppercase text-secondary mb-2">Bên B: Sinh viên Nội trú</div>
+                            <div>Họ và tên: <b>${c.studentFullName || '-'}</b></div>
+                            <div>Mã số sinh viên: <b>${c.studentCode || '-'}</b></div>
+                            <div>Vị trí lưu trú: <b>Phòng ${c.roomNumber || '-'} • Giường ${c.bedNumber || '-'}</b></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 rounded-3 border small">
+                    <div class="fw-bold text-dark mb-2">Điều khoản Thời hạn & Tài chính:</div>
+                    <div class="row g-2">
+                        <div class="col-md-6">• Thời gian hiệu lực: <b>${formatDate(c.startDate)}</b> đến <b>${formatDate(c.endDate)}</b></div>
+                        <div class="col-md-6">• Đơn giá phòng hàng tháng: <b class="text-primary">${formatCurrency(c.monthlyFee || 0)} / tháng</b></div>
+                        <div class="col-md-6">• Tiền đặt cọc thế chân tài sản: <b>${formatCurrency(c.depositAmount || 0)}</b></div>
+                        <div class="col-md-6">• Ngày thanh lý (nếu có): <b>${c.terminatedDate ? formatDate(c.terminatedDate) + ' (' + (c.terminationReason || '') + ')' : 'Chưa thanh lý'}</b></div>
+                    </div>
+                </div>
+            </div>
+        `;
+            contractDetailModal.show();
+        }
+
+        async function loadTransfers() {
+            const tbody = document.getElementById('transferTableBody');
+            try {
+                const res = await apiFetch('/room-transfers?size=100');
+                const list = unwrapList(res);
+                document.getElementById('statTransfers').textContent = list.length;
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Chưa có yêu cầu chuyển phòng nào.</td></tr>';
+                    return;
+                }
+
+                const isManagerUp = canManageContract();
+                tbody.innerHTML = list.map(t => {
+                    const isPending = t.status === 'PENDING' || t.status === 'CHO_DUYET';
+                    const isApproved = t.status === 'APPROVED' || t.status === 'DA_DUYET';
+                    let badge = '<span class="badge bg-warning-subtle text-warning">Chờ duyệt</span>';
+                    if (isApproved) badge = '<span class="badge bg-success-subtle text-success">Đã duyệt</span>';
+                    else if (t.status === 'REJECTED' || t.status === 'TU_CHOI') badge = '<span class="badge bg-danger-subtle text-danger">Từ chối</span>';
+
+                    return `
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">${t.studentFullName || 'Sinh viên'}</div>
+                            <div class="small text-muted"><code>${t.contractCode || ''}</code></div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">${t.oldRoomNumber || '-'} • Giường ${t.oldBedNumber || '-'}</span></td>
+                        <td><span class="badge bg-primary-subtle text-primary">${t.newRoomNumber || '-'} • Giường ${t.newBedNumber || '-'}</span></td>
+                        <td>${formatDate(t.transferDate)}</td>
+                        <td class="small">${t.reason || '-'}</td>
+                        <td class="small text-secondary">${t.approvedByStaffName || '-'}</td>
+                        <td>${badge}</td>
+                        <td class="text-center">
+                            ${isManagerUp && isPending ? `
+                                <button class="btn btn-sm btn-success me-1" onclick="approveTransfer('${t.transferId}')" title="Duyệt chuyển phòng">
+                                    <i class="bi bi-check-lg"></i> Duyệt
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="rejectTransfer('${t.transferId}')" title="Từ chối">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            ` : '<span class="small text-muted">-</span>'}
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function loadPeriods() {
+            const tbody = document.getElementById('periodTableBody');
+            try {
+                const res = await apiFetch('/registration-periods/all').catch(() => apiFetch('/registration-periods'));
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Chưa có đợt đăng ký nào.</td></tr>';
+                    return;
+                }
+                const isManagerUp = canManageContract();
+                tbody.innerHTML = list.map(p => `
+                <tr>
+                    <td class="fw-bold text-dark">${p.periodName}</td>
+                    <td><span class="badge bg-primary-subtle text-primary">${p.academicYear}</span></td>
+                    <td>${formatDate(p.startDate)}</td>
+                    <td>${formatDate(p.endDate)}</td>
+                    <td>${formatDate(p.registrationDeadline)}</td>
+                    <td><span class="badge ${p.status === 'OPEN' || p.status === 'DANG_MO' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">${p.status}</span></td>
+                    <td class="text-center">
+                        ${isManagerUp ? `
+                            <button class="btn btn-sm btn-light text-primary me-1" title="Chỉnh sửa / Gia hạn đợt" onclick="editPeriod('${p.periodId}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light text-danger" title="Xóa đợt" onclick="deletePeriod('${p.periodId}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+            } catch (e) { }
+        }
+
+        function onContractBedSelected() {
+            const bedSelect = document.getElementById('contractBedSelect');
+            if (!bedSelect) return;
+            const selectedOpt = bedSelect.options[bedSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.dataset.price) {
+                const price = parseFloat(selectedOpt.dataset.price);
+                if (price > 0) {
+                    document.getElementById('monthlyFee').value = price;
+                    document.getElementById('depositAmount').value = price;
+                }
+            }
+        }
+
+        function openCreateContractModal() {
+            document.getElementById('contractModalTitle').textContent = 'Lập Hợp đồng lưu trú mới';
+            document.getElementById('contractId').value = '';
+            document.getElementById('contractCode').value = 'HD-KTX-' + Date.now().toString().slice(-6);
+            document.getElementById('monthlyFee').value = '';
+            document.getElementById('depositAmount').value = '';
+            document.getElementById('contractStatus').value = currentUserRole === 'STAFF' ? 'PENDING_APPROVAL' : 'ACTIVE';
+            onContractBedSelected();
+            contractModal.show();
+        }
+
+        function openEditContractModal(id) {
+            const c = allContracts.find(x => x.contractId === id);
+            if (!c) return;
+            document.getElementById('contractModalTitle').textContent = `Cập nhật Hợp đồng ${c.contractCode}`;
+            document.getElementById('contractId').value = c.contractId;
+            document.getElementById('contractCode').value = c.contractCode || '';
+            if (c.studentId) document.getElementById('contractStudentSelect').value = c.studentId;
+            if (c.bedId) document.getElementById('contractBedSelect').value = c.bedId;
+            if (c.periodId) document.getElementById('contractPeriodSelect').value = c.periodId;
+            document.getElementById('startDate').value = c.startDate || '';
+            document.getElementById('endDate').value = c.endDate || '';
+            document.getElementById('monthlyFee').value = c.monthlyFee != null ? c.monthlyFee : '';
+            document.getElementById('depositAmount').value = c.depositAmount != null ? c.depositAmount : '';
+            document.getElementById('contractStatus').value = c.status || 'ACTIVE';
+            contractModal.show();
+        }
+
+        async function saveContract() {
+            const id = document.getElementById('contractId').value;
+            const payload = {
+                contractCode: document.getElementById('contractCode').value.trim(),
+                studentId: document.getElementById('contractStudentSelect').value,
+                bedId: document.getElementById('contractBedSelect').value,
+                periodId: document.getElementById('contractPeriodSelect').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                monthlyFee: parseFloat(document.getElementById('monthlyFee').value || 0),
+                depositAmount: parseFloat(document.getElementById('depositAmount').value || 0),
+                status: document.getElementById('contractStatus').value
+            };
+
+            if (!payload.contractCode || !payload.startDate || !payload.endDate) {
+                showToastError('Vui lòng điền đủ mã hợp đồng và thời hạn!');
+                return;
+            }
+
+            try {
+                if (id) {
+                    await apiFetch(`/contracts/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Cập nhật hợp đồng thành công!');
+                } else {
+                    await apiFetch('/contracts', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Tạo hợp đồng thành công!');
+                }
+                contractModal.hide();
+                await loadFormSelects();
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function approveContract(id) {
+            const confirmed = await showConfirm('Phê duyệt Hợp đồng?', 'Xác nhận phê duyệt và kích hoạt hợp đồng lưu trú này?');
+            if (!confirmed) return;
+            try {
+                await apiFetch(`/contracts/${id}/approve`, { method: 'PUT' });
+                showToastSuccess('Đã phê duyệt và kích hoạt hợp đồng!');
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function rejectContract(id) {
+            const { value: reason } = await Swal.fire({
+                title: 'Từ chối duyệt Đơn đăng ký',
+                input: 'text',
+                inputLabel: 'Lý do từ chối (giường RESERVED sẽ được giải phóng về Còn trống)',
+                inputValue: 'Hồ sơ không đáp ứng điều kiện tiếp nhận',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận Từ chối',
+                cancelButtonText: 'Hủy'
+            });
+            if (!reason) return;
+            try {
+                await apiFetch(`/contracts/${id}/reject?reason=${encodeURIComponent(reason)}`, { method: 'PUT' });
+                showToastSuccess('Đã từ chối đơn đăng ký và giải phóng giường!');
+                await loadFormSelects();
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function terminateContract(id) {
+            const { value: reason } = await Swal.fire({
+                title: 'Thanh lý / Chấm dứt Hợp đồng',
+                input: 'text',
+                inputLabel: 'Lý do thanh lý hợp đồng (giường sẽ được trả về trạng thái Còn trống)',
+                inputValue: 'Sinh viên hoàn tất thủ tục trả phòng KTX',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận Thanh lý',
+                cancelButtonText: 'Hủy'
+            });
+            if (!reason) return;
+            try {
+                await apiFetch(`/contracts/${id}/terminate?reason=${encodeURIComponent(reason)}`, { method: 'PUT' });
+                showToastSuccess('Đã thanh lý hợp đồng và giải phóng giường!');
+                await loadFormSelects();
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteContract(id) {
+            const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa hợp đồng này không?');
+            if (!confirmed) return;
+
+            try {
+                await apiFetch(`/contracts/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa hợp đồng!');
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function approveTransfer(id) {
+            const confirmed = await showConfirm('Duyệt chuyển phòng?', 'Hệ thống sẽ tự động chuyển hợp đồng của sinh viên sang giường mới và giải phóng giường cũ.');
+            if (!confirmed) return;
+            try {
+                await apiFetch(`/room-transfers/${id}/approve`, { method: 'PUT' });
+                showToastSuccess('Đã duyệt yêu cầu chuyển phòng!');
+                loadTransfers();
+                loadContracts();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function rejectTransfer(id) {
+            const { value: reason } = await Swal.fire({
+                title: 'Từ chối yêu cầu chuyển phòng',
+                input: 'text',
+                inputLabel: 'Lý do từ chối',
+                inputValue: 'Phòng đăng ký chuyển đến hiện đã kín chỗ',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận từ chối',
+                cancelButtonText: 'Hủy'
+            });
+            if (!reason) return;
+            try {
+                await apiFetch(`/room-transfers/${id}/reject?reason=${encodeURIComponent(reason)}`, { method: 'PUT' });
+                showToastSuccess('Đã từ chối yêu cầu chuyển phòng!');
+                loadTransfers();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        function openPeriodModal() {
+            document.getElementById('periodIdInput').value = '';
+            document.getElementById('periodModalTitle').textContent = 'MỞ ĐỢT ĐĂNG KÝ LƯU TRÚ KTX MỚI';
+            document.getElementById('periodSubmitBtnText').textContent = 'Tạo đợt đăng ký';
+            document.getElementById('periodStatusGroup').style.display = 'none';
+            document.getElementById('periodNameInput').value = '';
+            document.getElementById('periodYearInput').value = '2026-2027';
+            document.getElementById('periodStartInput').value = '';
+            document.getElementById('periodEndInput').value = '';
+            document.getElementById('periodDeadlineInput').value = '';
+            periodModal.show();
+        }
+
+        async function editPeriod(id) {
+            try {
+                const res = await apiFetch(`/registration-periods/${id}`);
+                const p = res && res.result ? res.result : res;
+                if (!p) return;
+                document.getElementById('periodIdInput').value = p.periodId || '';
+                document.getElementById('periodModalTitle').textContent = 'CẬP NHẬT / GIA HẠN ĐỢT ĐĂNG KÝ';
+                document.getElementById('periodSubmitBtnText').textContent = 'Lưu cập nhật';
+                document.getElementById('periodStatusGroup').style.display = 'block';
+                document.getElementById('periodNameInput').value = p.periodName || '';
+                document.getElementById('periodYearInput').value = p.academicYear || '';
+                document.getElementById('periodStartInput').value = p.startDate || '';
+                document.getElementById('periodEndInput').value = p.endDate || '';
+                document.getElementById('periodDeadlineInput').value = p.registrationDeadline || '';
+                document.getElementById('periodStatusInput').value = p.status || 'OPEN';
+                periodModal.show();
+            } catch (e) {
+                showToastError(e.message || 'Không thể tải thông tin đợt đăng ký');
+            }
+        }
+
+        async function savePeriod() {
+            const periodId = document.getElementById('periodIdInput').value;
+            const payload = {
+                periodName: document.getElementById('periodNameInput').value.trim(),
+                academicYear: document.getElementById('periodYearInput').value.trim(),
+                startDate: document.getElementById('periodStartInput').value,
+                endDate: document.getElementById('periodEndInput').value,
+                registrationDeadline: document.getElementById('periodDeadlineInput').value,
+                status: periodId ? document.getElementById('periodStatusInput').value : 'OPEN'
+            };
+            if (!payload.periodName) {
+                showToastError('Vui lòng nhập tên đợt đăng ký!');
+                return;
+            }
+            try {
+                if (periodId) {
+                    await apiFetch(`/registration-periods/${periodId}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã cập nhật đợt đăng ký thành công!');
+                } else {
+                    await apiFetch('/registration-periods', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã tạo đợt đăng ký mới!');
+                }
+                periodModal.hide();
+                loadPeriods();
+                loadFormSelects();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deletePeriod(id) {
+            const confirmed = await showConfirm('Xóa đợt đăng ký?', 'Bạn có chắc muốn xóa đợt đăng ký này?');
+            if (!confirmed) return;
+            try {
+                await apiFetch(`/registration-periods/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa đợt đăng ký!');
+                loadPeriods();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function syncPeriodStatuses() {
+            try {
+                const res = await apiFetch('/registration-periods/sync-statuses', { method: 'POST' });
+                const count = (res && res.result !== undefined) ? res.result : 0;
+                showToastSuccess(`Đã đồng bộ trạng thái! Cập nhật ${count} đợt đăng ký.`);
+                loadPeriods();
+            } catch (e) {
+                showToastError(e.message || 'Lỗi đồng bộ đợt đăng ký');
+            }
+        }
+    </script>
+</body>
+
+</html>

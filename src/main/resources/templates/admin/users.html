@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Tài khoản, Vai trò & Phân quyền RBAC')}"></head>
+<body>
+
+<aside th:replace="~{fragments/layout :: sidebar('admin-users')}"></aside>
+
+<div class="main-wrapper">
+    <nav th:replace="~{fragments/layout :: topbar('Quản lý Tài khoản, Vai trò & Ma trận Phân quyền RBAC')}"></nav>
+
+    <div class="content-body">
+        <!-- Thanh Tab ngang + Nút thao tác chính đồng bộ -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#paneUsers" type="button">
+                        <i class="bi bi-people-fill me-1"></i> Tài khoản Người dùng
+                        <span class="badge bg-white text-dark ms-1" id="countUsersBadge">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#paneRoles" type="button">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Vai trò & Phân quyền (RBAC)
+                        <span class="badge bg-light text-dark border ms-1" id="countRolesBadge">0</span>
+                    </button>
+                </li>
+            </ul>
+
+            <button class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm role-admin-only" onclick="openCreateUserModal()">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm Tài khoản mới
+            </button>
+        </div>
+
+        <div class="tab-content">
+            <!-- TAB 1: DANH SÁCH TÀI KHOẢN (nguoi_dung) -->
+            <div class="tab-pane fade show active" id="paneUsers">
+                <!-- Bộ lọc & Tìm kiếm Tài khoản trên 1 hàng ngang gọn gàng -->
+                <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                            <div class="input-group input-group-sm" style="width: 280px;">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="userSearchKeyword" class="form-control border-start-0"
+                                       placeholder="Tìm theo username, email, số điện thoại..."
+                                       oninput="debouncedSearchUsers()" onkeydown="if(event.key==='Enter') loadUsers(1)">
+                            </div>
+                            <select id="userFilterRole" class="form-select form-select-sm" style="width: 200px;" onchange="loadUsers(1)">
+                                <option value="">-- Tất cả vai trò --</option>
+                            </select>
+                            <select id="userFilterStatus" class="form-select form-select-sm" style="width: 190px;" onchange="loadUsers(1)">
+                                <option value="">-- Tất cả trạng thái --</option>
+                                <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                                <option value="BANNED">Đã bị khóa (BANNED)</option>
+                                <option value="LOCKED">Tạm khóa (LOCKED)</option>
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="userPageSizeSelect" class="form-select form-select-sm" style="width: 130px;" onchange="loadUsers(1)">
+                                <option value="10" selected>10 dòng / trang</option>
+                                <option value="20">20 dòng / trang</option>
+                                <option value="50">50 dòng / trang</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary px-2" onclick="resetUserFilter()" title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 180px;">Tên đăng nhập</th>
+                                    <th>Email</th>
+                                    <th style="width: 135px;">Số điện thoại</th>
+                                    <th style="width: 165px;">Vai trò (Role)</th>
+                                    <th style="width: 120px;">Trạng thái</th>
+                                    <th style="width: 135px;">Đăng nhập cuối</th>
+                                    <th class="text-end pe-3" style="width: 150px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <tr><td colspan="7" class="text-center text-muted py-5">Đang tải danh sách tài khoản...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="userPaginationBar"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: VAI TRÒ & QUYỀN HẠN (vai_tro, quyen, vai_tro_quyen) -->
+            <div class="tab-pane fade" id="paneRoles">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-5">
+                        <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-person-badge-fill text-primary me-2"></i>Danh sách Vai trò Hệ thống</h6>
+                            <div id="rolesCardContainer" class="d-flex flex-column gap-2">
+                                <div class="text-muted small">Đang tải vai trò...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-7">
+                        <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0"><i class="bi bi-key-fill text-warning me-2"></i>Danh mục Quyền hạn Chi tiết</h6>
+                                <span class="badge bg-primary-subtle text-primary" id="countPermissionsBadge">0 quyền</span>
+                            </div>
+                            <div class="table-responsive border rounded-3" style="max-height: 540px;">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 195px;">Mã quyền</th>
+                                            <th style="width: 120px;">Phân hệ</th>
+                                            <th>Mô tả quyền thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="permissionsTableBody">
+                                        <tr><td colspan="3" class="text-center text-muted py-4">Đang tải danh mục quyền...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Tài Khoản Mới -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-person-plus-fill me-2"></i>TẠO TÀI KHOẢN NGƯỜI DÙNG MỚI
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="userForm">
+                    <div class="form-section-title"><i class="bi bi-shield-lock me-1"></i> I. TÀI KHOẢN ĐĂNG NHẬP & PHÂN QUYỀN</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Tên đăng nhập (Username) <span class="text-danger">*</span></label>
+                            <input type="text" id="newUsername" class="form-control form-control-sm" placeholder="VD: quanly_toa_b" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Mật khẩu khởi tạo <span class="text-danger">*</span></label>
+                            <input type="password" id="newPassword" class="form-control form-control-sm" placeholder="Tối thiểu 6 ký tự" required>
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label small fw-semibold">Gán Vai trò (Role) <span class="text-danger">*</span></label>
+                            <select id="newRoleId" class="form-select form-select-sm" required></select>
+                            <div class="alert alert-light border py-2 px-3 small mt-2 mb-0 text-muted">
+                                <i class="bi bi-info-circle text-primary me-1"></i><b>Lưu ý nghiệp vụ:</b>
+                                Trang này khởi tạo tài khoản Quản trị viên (ADMIN) và Quản lý (MANAGER).
+                                Tài khoản <b>Sinh viên</b> tạo tự động tại <a href="/students" class="fw-bold text-primary text-decoration-none">QL Sinh viên</a>; tài khoản <b>Nhân viên</b> tại <a href="/admin/staff" class="fw-bold text-primary text-decoration-none">QL Nhân viên</a>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-envelope me-1"></i> II. THÔNG TIN LIÊN HỆ & THÔNG BÁO</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Email cơ quan / liên hệ <span class="text-danger">*</span></label>
+                            <input type="email" id="newEmail" class="form-control form-control-sm" placeholder="user@kytucxa.edu.vn" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Số điện thoại liên lạc</label>
+                            <input type="text" id="newPhone" class="form-control form-control-sm" placeholder="0987654321">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitCreateUser()">
+                    <i class="bi bi-check2-circle me-1"></i>Tạo tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chỉnh sửa Tài Khoản (PUT /api/users/{userId}) -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>CHỈNH SỬA TÀI KHOẢN NGƯỜI DÙNG
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-section-title"><i class="bi bi-person-badge me-1"></i> I. TÀI KHOẢN & PHÂN QUYỀN HỆ THỐNG</div>
+                    <div class="form-section-box">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Tên đăng nhập</label>
+                                <input type="text" id="editUsername" class="form-control form-control-sm bg-light fw-bold text-secondary" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Vai trò (Role) <span class="text-danger">*</span></label>
+                                <select id="editRoleId" class="form-select form-select-sm" required></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-shield-check me-1"></i> II. THÔNG TIN LIÊN HỆ & MẬT KHẨU</div>
+                    <div class="form-section-box">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Email liên hệ <span class="text-danger">*</span></label>
+                                <input type="email" id="editEmail" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Số điện thoại</label>
+                                <input type="text" id="editPhone" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Đặt lại mật khẩu mới</label>
+                            <input type="password" id="editPassword" class="form-control form-control-sm" placeholder="Để trống nếu giữ nguyên mật khẩu cũ">
+                            <div class="form-text small text-muted">Nhập mật khẩu mới (tối thiểu 6 ký tự) nếu muốn reset.</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitEditUser()">
+                    <i class="bi bi-save me-1"></i>Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Quản trị Cấu hình Telegram 2FA (PATCH /api/users/{userId}/2fa) -->
+<div class="modal fade" id="user2faModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-shield-lock-fill me-2"></i>CẤU HÌNH XÁC THỰC 2 LỚP (TELEGRAM 2FA)
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <input type="hidden" id="user2faTargetUserId">
+                <div class="form-section-title"><i class="bi bi-telegram me-1"></i> THÔNG TIN LIÊN KẾT BẢO MẬT</div>
+                <div class="form-section-box">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold text-secondary">Tài khoản được cấu hình</label>
+                        <input type="text" id="user2faTargetUsername" class="form-control form-control-sm bg-light fw-bold" readonly>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label small fw-semibold">Telegram Chat ID</label>
+                        <input type="text" id="user2faChatIdInput" class="form-control form-control-sm" placeholder="VD: 6269527548 (Để trống nếu muốn tắt 2FA)">
+                        <div class="form-text small text-muted">Chat ID lấy từ bot Telegram để gửi mã OTP khi đăng nhập.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Đóng
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitUser2fa()">
+                    <i class="bi bi-check2-circle me-1"></i>Cập nhật 2FA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script>
+    let userModal = null;
+    let editUserModal = null;
+    let user2faModal = null;
+    let rolesList = [];
+    let isAdminUser = false;
+    let allUsersCache = [];
+    let userSearchTimer = null;
+
+    function debouncedSearchUsers() {
+        clearTimeout(userSearchTimer);
+        userSearchTimer = setTimeout(() => loadUsers(1), 300);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        userModal = new bootstrap.Modal(document.getElementById('userModal'));
+        editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+        user2faModal = new bootstrap.Modal(document.getElementById('user2faModal'));
+        const user = Auth.getUser() || {};
+        isAdminUser = ((user.role || '').toUpperCase() === 'ADMIN');
+        await Promise.all([
+            loadRoles(),
+            loadPermissions(),
+            loadUsers(1)
+        ]);
+    });
+
+    async function loadRoles() {
+        try {
+            const res = await apiFetch('/roles');
+            rolesList = unwrapList(res);
+            const rolesBadgeEl = document.getElementById('countRolesBadge');
+            if (rolesBadgeEl) rolesBadgeEl.textContent = rolesList.length;
+
+            const select = document.getElementById('newRoleId');
+            const editSelect = document.getElementById('editRoleId');
+            const filterRoleSelect = document.getElementById('userFilterRole');
+
+            // Populate role options in create & edit modal
+            const adminAssignableRoles = rolesList.filter(r => {
+                const code = (r.roleCode || '').toUpperCase();
+                return code === 'ADMIN' || code === 'MANAGER';
+            });
+            const createRoleOptions = (adminAssignableRoles.length > 0 ? adminAssignableRoles : rolesList)
+                .map(r => `<option value="${r.roleId}">${r.roleName} (${r.roleCode})</option>`).join('');
+            select.innerHTML = createRoleOptions;
+            editSelect.innerHTML = rolesList.map(r => `<option value="${r.roleId}">${r.roleName} (${r.roleCode})</option>`).join('');
+
+            // Populate filter select
+            filterRoleSelect.innerHTML = '<option value="">-- Tất cả vai trò --</option>' +
+                rolesList.map(r => `<option value="${r.roleId}">${r.roleName} (${r.roleCode})</option>`).join('');
+
+            const container = document.getElementById('rolesCardContainer');
+            container.innerHTML = rolesList.map(r => {
+                const perms = r.permissions || [];
+                return `
+                    <div class="p-3 rounded-3 bg-light border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark">${r.roleName} <span class="badge bg-white text-primary border ms-1">${r.roleCode}</span></span>
+                            <span class="badge bg-primary-subtle text-primary">${perms.length} quyền</span>
+                        </div>
+                        <div class="small text-muted mb-0">${r.description || '-'}</div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Lỗi tải roles:', e);
+        }
+    }
+
+    async function loadPermissions() {
+        const tbody = document.getElementById('permissionsTableBody');
+        try {
+            const res = await apiFetch('/permissions');
+            const list = unwrapList(res);
+            const permBadgeEl = document.getElementById('countPermissionsBadge');
+            if (permBadgeEl) permBadgeEl.textContent = `${list.length} quyền`;
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Chưa có quyền hạn.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(p => `
+                <tr>
+                    <td class="text-nowrap"><span class="fw-bold text-primary">${p.permissionCode}</span></td>
+                    <td class="text-nowrap"><span class="badge bg-info-subtle text-info border border-info-subtle">${p.module || 'SYSTEM'}</span></td>
+                    <td class="small text-secondary" style="white-space: normal;">${p.description || '-'}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadUsers(page = 1) {
+        const tbody = document.getElementById('userTableBody');
+        const keyword = document.getElementById('userSearchKeyword') ? document.getElementById('userSearchKeyword').value.trim() : '';
+        const roleId = document.getElementById('userFilterRole') ? document.getElementById('userFilterRole').value : '';
+        const status = document.getElementById('userFilterStatus') ? document.getElementById('userFilterStatus').value : '';
+        const size = document.getElementById('userPageSizeSelect') ? (parseInt(document.getElementById('userPageSizeSelect').value, 10) || 10) : 10;
+
+        try {
+            let res;
+            if (keyword || roleId || status) {
+                const params = new URLSearchParams({ page: page, size: size });
+                if (keyword) params.append('keyword', keyword);
+                if (roleId) params.append('roleId', roleId);
+                if (status) params.append('status', status);
+                res = await apiFetch(`/users/search?${params.toString()}`);
+            } else {
+                res = await apiFetch(`/users/search?page=${page}&size=${size}`).catch(() => apiFetch('/users'));
+            }
+
+            const list = unwrapList(res);
+            allUsersCache = list;
+            const usersBadgeEl = document.getElementById('countUsersBadge');
+            if (usersBadgeEl) {
+                usersBadgeEl.textContent = (res && res.pageInfo && res.pageInfo.totalElements !== undefined) ? res.pageInfo.totalElements : list.length;
+            }
+            renderPaginationBar('userPaginationBar', res.pageInfo, 'loadUsers');
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Không tìm thấy tài khoản nào phù hợp.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(u => {
+                const roleCode = (u.role && u.role.roleCode) ? u.role.roleCode : (u.roleCode || 'USER');
+                let roleBadge = `<span class="badge bg-secondary-subtle text-secondary border">${roleCode}</span>`;
+                if (roleCode === 'ADMIN') roleBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">ADMIN (Quản trị)</span>';
+                if (roleCode === 'MANAGER') roleBadge = '<span class="badge bg-info-subtle text-info border border-info-subtle">MANAGER (Quản lý)</span>';
+                if (roleCode === 'STAFF') roleBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">STAFF (Nhân viên)</span>';
+                if (roleCode === 'STUDENT') roleBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">STUDENT (Sinh viên)</span>';
+
+                const isBanned = u.status === 'BANNED' || u.status === 'INACTIVE' || u.status === 'LOCKED';
+                const statusBadge = isBanned 
+                    ? '<span class="badge bg-danger-subtle text-danger">Bị khóa</span>'
+                    : '<span class="badge bg-success-subtle text-success">Hoạt động</span>';
+
+                const isTargetAdmin = roleCode === 'ADMIN' || (u.username && u.username.toLowerCase() === 'admin');
+                const telegramIndicator = (isTargetAdmin && u.telegramChatId)
+                    ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" title="Telegram Chat ID: ${u.telegramChatId}"><i class="bi bi-telegram"></i> 2FA</span>`
+                    : '';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center flex-wrap gap-1">
+                                <span class="fw-bold text-primary"><i class="bi bi-person-fill me-1"></i>${u.username}</span>
+                                ${telegramIndicator}
+                            </div>
+                        </td>
+                        <td><div class="text-truncate" style="max-width: 240px;" title="${u.email || ''}">${u.email || '-'}</div></td>
+                        <td class="text-nowrap">${u.phone || '-'}</td>
+                        <td class="text-nowrap">${roleBadge}</td>
+                        <td class="text-nowrap">${statusBadge}</td>
+                        <td class="small text-muted text-nowrap">${u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Chưa đăng nhập'}</td>
+                        <td class="text-end pe-3">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light text-primary" style="width: 30px; padding: 0.25rem 0;" onclick="openEditUserModal('${u.userId}')" title="Sửa thông tin tài khoản">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                ${isTargetAdmin ? `
+                                    <button class="btn btn-sm btn-light text-info" style="width: 30px; padding: 0.25rem 0;" onclick="openUser2faModal('${u.userId}', '${u.username}', '${u.telegramChatId || ''}')" title="Cấu hình Telegram 2FA (Dành riêng cho Admin)">
+                                        <i class="bi bi-telegram"></i>
+                                    </button>
+                                ` : ''}
+                                ${u.username !== 'admin' ? `
+                                    <button class="btn btn-sm btn-light ${isBanned ? 'text-success' : 'text-warning'}" style="width: 30px; padding: 0.25rem 0;" 
+                                        onclick="toggleUserStatus('${u.userId}', '${isBanned ? 'ACTIVE' : 'BANNED'}')" 
+                                        title="${isBanned ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}">
+                                        <i class="bi ${isBanned ? 'bi-unlock-fill' : 'bi-lock-fill'}"></i>
+                                    </button>
+                                    ${isAdminUser ? `
+                                        <button class="btn btn-sm btn-light text-danger" style="width: 30px; padding: 0.25rem 0;" onclick="deleteUser('${u.userId}', '${u.username}')" title="Xóa tài khoản">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    ` : ''}
+                                ` : '<span class="badge bg-light text-muted border" style="font-size: 0.7rem;">Cố định</span>'}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    function resetUserFilter() {
+        if (document.getElementById('userSearchKeyword')) document.getElementById('userSearchKeyword').value = '';
+        if (document.getElementById('userFilterRole')) document.getElementById('userFilterRole').value = '';
+        if (document.getElementById('userFilterStatus')) document.getElementById('userFilterStatus').value = '';
+        if (document.getElementById('userPageSizeSelect')) document.getElementById('userPageSizeSelect').value = '10';
+        loadUsers(1);
+    }
+
+    function openCreateUserModal() {
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newEmail').value = '';
+        document.getElementById('newPhone').value = '';
+        userModal.show();
+    }
+
+    async function submitCreateUser() {
+        const payload = {
+            username: document.getElementById('newUsername').value.trim(),
+            password: document.getElementById('newPassword').value,
+            email: document.getElementById('newEmail').value.trim(),
+            phone: document.getElementById('newPhone').value.trim(),
+            roleId: document.getElementById('newRoleId').value,
+            status: 'ACTIVE'
+        };
+
+        if (!payload.username || !payload.password || !payload.email) {
+            showToastError('Vui lòng điền đủ Username, Password và Email!');
+            return;
+        }
+
+        try {
+            await apiFetch('/users', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            showToastSuccess('Tạo tài khoản thành công!');
+            userModal.hide();
+            loadUsers(1);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    function openEditUserModal(userId) {
+        const user = allUsersCache.find(u => u.userId === userId);
+        if (!user) return;
+
+        document.getElementById('editUserId').value = user.userId;
+        document.getElementById('editUsername').value = user.username;
+        document.getElementById('editEmail').value = user.email || '';
+        document.getElementById('editPhone').value = user.phone || '';
+        document.getElementById('editPassword').value = '';
+
+        const roleId = (user.role && user.role.roleId) ? user.role.roleId : (user.roleId || '');
+        if (roleId) document.getElementById('editRoleId').value = roleId;
+
+        editUserModal.show();
+    }
+
+    async function submitEditUser() {
+        const userId = document.getElementById('editUserId').value;
+        const payload = {
+            username: document.getElementById('editUsername').value,
+            email: document.getElementById('editEmail').value.trim(),
+            phone: document.getElementById('editPhone').value.trim(),
+            roleId: document.getElementById('editRoleId').value
+        };
+        const pass = document.getElementById('editPassword').value;
+        if (pass && pass.trim().length > 0) {
+            if (pass.trim().length < 6) {
+                showToastError('Mật khẩu mới tối thiểu 6 ký tự!');
+                return;
+            }
+            payload.password = pass.trim();
+        }
+
+        try {
+            await apiFetch(`/users/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            showToastSuccess('Cập nhật thông tin tài khoản thành công!');
+            editUserModal.hide();
+            loadUsers(1);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    function openUser2faModal(userId, username, currentChatId) {
+        document.getElementById('user2faTargetUserId').value = userId;
+        document.getElementById('user2faTargetUsername').value = username;
+        document.getElementById('user2faChatIdInput').value = currentChatId || '';
+        user2faModal.show();
+    }
+
+    async function submitUser2fa() {
+        const userId = document.getElementById('user2faTargetUserId').value;
+        const chatId = document.getElementById('user2faChatIdInput').value.trim();
+
+        try {
+            await apiFetch(`/users/${userId}/2fa`, {
+                method: 'PATCH',
+                body: JSON.stringify({ telegramChatId: chatId })
+            });
+            showToastSuccess(chatId ? 'Đã cập nhật Telegram Chat ID cho người dùng!' : 'Đã xóa Telegram 2FA cho người dùng!');
+            user2faModal.hide();
+            loadUsers(1);
+        } catch (e) {
+            showToastError(e.message || 'Lỗi cập nhật 2FA');
+        }
+    }
+
+    async function toggleUserStatus(userId, newStatus) {
+        const actionText = newStatus === 'ACTIVE' ? 'Mở khóa' : 'Khóa';
+        const confirmed = await showConfirm(`Xác nhận ${actionText}?`, `Bạn có chắc muốn ${actionText.toLowerCase()} tài khoản này?`);
+        if (!confirmed) return;
+
+        try {
+            await apiFetch(`/users/${userId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: newStatus })
+            });
+            showToastSuccess(`Đã ${actionText.toLowerCase()} tài khoản thành công!`);
+            loadUsers(1);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteUser(userId, username) {
+        const confirmed = await showConfirm('XÓA TÀI KHOẢN!', `Bạn có chắc chắn muốn xóa tài khoản [${username}] không?`);
+        if (!confirmed) return;
+
+        try {
+            await apiFetch(`/users/${userId}`, { method: 'DELETE' });
+            showToastSuccess(`Đã xóa tài khoản [${username}]!`);
+            loadUsers(1);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+</script>
+</body>
+</html>

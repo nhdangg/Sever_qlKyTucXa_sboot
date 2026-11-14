@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Kỷ luật & An ninh KTX')}"></head>
+<body>
+
+<aside th:replace="~{fragments/layout :: sidebar('admin-security')}"></aside>
+
+<div class="main-wrapper">
+    <nav th:replace="~{fragments/layout :: topbar('Quản lý Kỷ luật, An ninh, Gửi xe & Phản ánh KTX')}"></nav>
+
+    <div class="content-body">
+        <!-- 4 Thẻ KPI Thống kê nhanh đồng bộ -->
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-muted fw-medium">Biên bản vi phạm</div>
+                            <h4 class="fw-bold text-danger mb-0 mt-1" id="statTotalViolations">0</h4>
+                        </div>
+                        <div class="rounded-3 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-muted fw-medium">Khung loại kỷ luật</div>
+                            <h4 class="fw-bold text-dark mb-0 mt-1" id="statTotalTypes">0</h4>
+                        </div>
+                        <div class="rounded-3 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                            <i class="bi bi-journal-bookmark-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-muted fw-medium">Khách đang trong KTX</div>
+                            <h4 class="fw-bold text-primary mb-0 mt-1" id="statActiveVisitors">0</h4>
+                        </div>
+                        <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                            <i class="bi bi-person-badge-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-muted fw-medium">Phản ánh chờ trả lời</div>
+                            <h4 class="fw-bold text-warning mb-0 mt-1" id="statPendingFeedbacks">0</h4>
+                        </div>
+                        <div class="rounded-3 bg-warning-subtle text-warning d-flex align-items-center justify-content-center" style="width:42px;height:42px;">
+                            <i class="bi bi-chat-dots-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thanh Tab ngang (nav-pills) + Cụm nút thao tác trên 1 hàng đồng bộ -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" id="securityTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#tabViolations" type="button">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Biên bản Vi phạm Nội quy
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#tabViolationTypes" type="button">
+                        <i class="bi bi-journal-text me-1"></i>Khung Kỷ luật & Loại Vi phạm
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#tabVisitors" type="button">
+                        <i class="bi bi-person-lines-fill me-1"></i>Khách Ra Vào KTX
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#tabVehicles" type="button">
+                        <i class="bi bi-bicycle me-1"></i>Quản lý Gửi Xe
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill" data-bs-target="#tabFeedbacks" type="button">
+                        <i class="bi bi-chat-heart-fill me-1"></i>Góp ý & Phản ánh Sinh viên
+                    </button>
+                </li>
+            </ul>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary bg-white fw-semibold d-flex align-items-center gap-1 px-3 shadow-sm" onclick="openCreateViolationTypeModal()">
+                    <i class="bi bi-journal-plus"></i> Thêm Loại vi phạm
+                </button>
+                <button class="btn btn-sm btn-outline-primary bg-white fw-semibold d-flex align-items-center gap-1 px-3 shadow-sm" onclick="openCreateVisitorModal()">
+                    <i class="bi bi-person-plus-fill"></i> Ghi nhận Khách thăm
+                </button>
+                <button class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1 px-3 shadow-sm" onclick="openCreateViolationModal()">
+                    <i class="bi bi-clipboard-x-fill"></i> Lập Biên bản Vi phạm
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="securityTabContent">
+            <!-- TAB 1: BIÊN BẢN VI PHẠM -->
+            <div class="tab-pane fade show active" id="tabViolations">
+                <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
+                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                        <div class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+                            <div class="input-group input-group-sm" style="width: 280px;">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="filterViolationKeyword" class="form-control border-start-0" placeholder="Tìm MSSV, tên SV, mô tả..." oninput="debounceFilterViolations()">
+                            </div>
+                            <select id="filterViolationStatus" class="form-select form-select-sm" style="width: 210px;" onchange="loadViolations(1)">
+                                <option value="">-- Tất cả trạng thái --</option>
+                                <option value="RECORDED">Chờ xử lý (RECORDED)</option>
+                                <option value="WARNING">Đã nhắc nhở (WARNING)</option>
+                                <option value="PAID">Đã nộp phạt (PAID)</option>
+                                <option value="RESOLVED">Đã giải quyết (RESOLVED)</option>
+                                <option value="CANCELLED">Đã hủy (CANCELLED)</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary px-2" onclick="resetViolationFilters()" title="Làm mới bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                        <div class="text-muted small">
+                            <span id="violationCountBadge" class="badge bg-primary-subtle text-primary border px-2 py-1">0 biên bản</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Mã BB</th>
+                                    <th style="width: 140px;">Sinh viên vi phạm</th>
+                                    <th style="width: 155px;">Loại vi phạm</th>
+                                    <th style="width: 95px;">Ngày vi phạm</th>
+                                    <th>Mô tả chi tiết</th>
+                                    <th style="width: 110px;">Điểm trừ / Phạt</th>
+                                    <th style="width: 125px;">Người lập</th>
+                                    <th style="width: 100px;">Trạng thái</th>
+                                    <th class="text-end pe-3" style="width: 90px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="violationTableBody">
+                                <tr><td colspan="9" class="text-center text-muted py-5">Đang tải danh sách vi phạm...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="violationPaginationBar"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: KHUNG KỶ LUẬT & LOẠI VI PHẠM -->
+            <div class="tab-pane fade" id="tabViolationTypes">
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 220px;">Tên lỗi / hành vi vi phạm</th>
+                                    <th style="width: 145px;">Mức độ nghiêm trọng</th>
+                                    <th style="width: 130px;">Điểm rèn luyện trừ</th>
+                                    <th style="width: 140px;">Mức phạt tiền quy định</th>
+                                    <th>Mô tả quy định</th>
+                                    <th class="text-end pe-3" style="width: 100px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="violationTypeTableBody">
+                                <tr><td colspan="6" class="text-center text-muted py-5">Đang tải khung kỷ luật...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: KHÁCH THĂM -->
+            <div class="tab-pane fade" id="tabVisitors">
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 165px;">Họ tên khách</th>
+                                    <th style="width: 135px;">Số CCCD / SĐT</th>
+                                    <th style="width: 165px;">Sinh viên đón / Phòng</th>
+                                    <th>Mục đích</th>
+                                    <th style="width: 115px;">Thời gian vào</th>
+                                    <th style="width: 130px;">Trạng thái</th>
+                                    <th class="text-end pe-3" style="width: 135px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="visitorTableBody">
+                                <tr><td colspan="7" class="text-center text-muted py-5">Đang tải nhật ký khách ra vào...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="visitorPaginationBar"></div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PHƯƠNG TIỆN -->
+            <div class="tab-pane fade" id="tabVehicles">
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 115px;">Biển số xe</th>
+                                    <th style="width: 170px;">Sinh viên</th>
+                                    <th style="width: 130px;">Loại phương tiện</th>
+                                    <th style="width: 140px;">Nhãn hiệu</th>
+                                    <th style="width: 115px;">Phí tháng</th>
+                                    <th style="width: 110px;">Ngày đăng ký</th>
+                                    <th style="width: 130px;">Trạng thái</th>
+                                    <th class="text-end pe-3" style="width: 155px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicleTableBody">
+                                <tr><td colspan="8" class="text-center text-muted py-5">Đang tải danh sách xe...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="vehiclePaginationBar"></div>
+                </div>
+            </div>
+
+            <!-- TAB 5: PHẢN ÁNH SINH VIÊN -->
+            <div class="tab-pane fade" id="tabFeedbacks">
+                <div class="table-custom shadow-sm bg-white">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 165px;">Sinh viên</th>
+                                    <th style="width: 135px;">Danh mục góp ý</th>
+                                    <th>Nội dung phản ánh & Phản hồi BQL</th>
+                                    <th style="width: 125px;">Đánh giá</th>
+                                    <th style="width: 105px;">Ngày gửi</th>
+                                    <th style="width: 120px;">Trạng thái</th>
+                                    <th class="text-end pe-3" style="width: 135px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedbackTableBody">
+                                <tr><td colspan="7" class="text-center text-muted py-5">Đang tải danh sách góp ý...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="feedbackPaginationBar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lập / Cập nhật Biên Bản Vi Phạm -->
+<div class="modal fade" id="violationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0" id="violationModalTitle">
+                    <i class="bi bi-shield-exclamation me-2"></i>LẬP BIÊN BẢN VI PHẠM KỶ LUẬT KTX
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="violationForm">
+                    <input type="hidden" id="violationId">
+                    <div class="form-section-title"><i class="bi bi-person-x me-1"></i> I. ĐỐI TƯỢNG & HÀNH VI VI PHẠM</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Sinh viên vi phạm <span class="text-danger">*</span></label>
+                            <input type="text" id="violationStudentSearch" class="form-control form-control-sm mb-1" placeholder="Gõ MSSV hoặc tên để tìm nhanh sinh viên..." oninput="filterStudentOptions('violationStudentSearch', 'violationStudentSelect')">
+                            <select id="violationStudentSelect" class="form-select form-select-sm" required></select>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Loại vi phạm nội quy <span class="text-danger">*</span></label>
+                            <select id="violationTypeSelect" class="form-select form-select-sm" onchange="onViolationTypeChange()" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-journal-text me-1"></i> II. THỜI ĐIỂM, CHẾ TÀI & HÌNH THỨC XỬ LÝ</div>
+                    <div class="form-section-box">
+                        <div class="row g-2 mb-2">
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold">Ngày vi phạm <span class="text-danger">*</span></label>
+                                <input type="date" id="violationDate" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold">Điểm rèn luyện trừ</label>
+                                <input type="number" id="violationPenaltyPoints" class="form-control form-control-sm" min="0" max="100" value="5">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold">Tiền phạt (VNĐ)</label>
+                                <input type="number" id="violationFineAmount" class="form-control form-control-sm" min="0" step="10000" value="0">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Mô tả chi tiết hành vi vi phạm <span class="text-danger">*</span></label>
+                            <textarea id="violationDesc" class="form-control form-control-sm" rows="3" placeholder="VD: Sinh viên đi về muộn sau 23h30 không có lý do chính đáng..." required></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Trạng thái xử lý kỷ luật</label>
+                            <select id="violationStatus" class="form-select form-select-sm">
+                                <option value="RECORDED">Đã lập biên bản - Chờ xử lý (RECORDED)</option>
+                                <option value="WARNING">Đã nhắc nhở / Cảnh cáo (WARNING)</option>
+                                <option value="RESOLVED">Đã chấp hành kỷ luật / Hoàn tất (RESOLVED)</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-sm btn-danger px-3 fw-semibold" onclick="submitSaveViolation()">
+                    <i class="bi bi-shield-fill-check me-1"></i>Lưu biên bản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Khung Loại Vi Phạm -->
+<div class="modal fade" id="violationTypeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0" id="violationTypeModalTitle">
+                    <i class="bi bi-card-checklist me-2"></i>QUY ĐỊNH HÀNH VI VI PHẠM NỘI QUY
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="violationTypeForm">
+                    <input type="hidden" id="vtId">
+                    <div class="form-section-title"><i class="bi bi-bookmark-x me-1"></i> I. TÊN HÀNH VI & MỨC ĐỘ XỬ LÝ</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Tên hành vi vi phạm <span class="text-danger">*</span></label>
+                            <input type="text" id="vtName" class="form-control form-control-sm" placeholder="VD: Đun nấu trái phép trong phòng ở" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Mức độ nghiêm trọng</label>
+                            <select id="vtSeverity" class="form-select form-select-sm">
+                                <option value="MINOR">Nhẹ (MINOR)</option>
+                                <option value="MAJOR">Nặng (MAJOR)</option>
+                                <option value="CRITICAL">Đặc biệt nghiêm trọng (CRITICAL)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-calculator me-1"></i> II. ĐỊNH MỨC CHẾ TÀI ÁP DỤNG</div>
+                    <div class="form-section-box">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Điểm trừ mặc định</label>
+                                <input type="number" id="vtPoints" class="form-control form-control-sm" min="0" max="100" value="5">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Tiền phạt (VNĐ)</label>
+                                <input type="number" id="vtFine" class="form-control form-control-sm" min="0" step="10000" value="0">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Mô tả quy định xử lý</label>
+                            <textarea id="vtDesc" class="form-control form-control-sm" rows="2" placeholder="Mô tả hình thức xử lý tương ứng..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitSaveViolationType()">
+                    <i class="bi bi-save me-1"></i>Lưu quy định
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ghi Nhận Khách Thăm -->
+<div class="modal fade" id="visitorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-person-check-fill me-2"></i>GHI NHẬN KHÁCH VÀO THĂM KTX (CHECK-IN)
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="visitorForm">
+                    <div class="form-section-title"><i class="bi bi-person-lines-fill me-1"></i> I. THÔNG TIN KHÁCH ĐẾN THĂM</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Họ tên khách thăm <span class="text-danger">*</span></label>
+                            <input type="text" id="visName" class="form-control form-control-sm" placeholder="VD: Nguyễn Văn Phụ Huynh" required>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Số CCCD/CMND <span class="text-danger">*</span></label>
+                                <input type="text" id="visNationalId" class="form-control form-control-sm" placeholder="00120400xxxx" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Số điện thoại</label>
+                                <input type="text" id="visPhone" class="form-control form-control-sm" placeholder="0912345678">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-geo-alt me-1"></i> II. THÔNG TIN SINH VIÊN ĐƯỢC THĂM & MỤC ĐÍCH</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Thăm sinh viên</label>
+                            <input type="text" id="visStudentSearch" class="form-control form-control-sm mb-1" placeholder="Gõ MSSV hoặc tên để tìm nhanh sinh viên..." oninput="filterStudentOptions('visStudentSearch', 'visStudentSelect')">
+                            <select id="visStudentSelect" class="form-select form-select-sm"></select>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Mục đích thăm</label>
+                            <input type="text" id="visPurpose" class="form-control form-control-sm" value="Phụ huynh / Người thân thăm sinh viên">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Đóng
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitCreateVisitor()">
+                    <i class="bi bi-check2-circle me-1"></i>Xác nhận Check-in
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<script>
+    let violationModal = null;
+    let violationTypeModal = null;
+    let visitorModal = null;
+    let allViolations = [];
+    let allViolationTypes = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        violationModal = new bootstrap.Modal(document.getElementById('violationModal'));
+        violationTypeModal = new bootstrap.Modal(document.getElementById('violationTypeModal'));
+        visitorModal = new bootstrap.Modal(document.getElementById('visitorModal'));
+        document.getElementById('violationDate').value = new Date().toISOString().split('T')[0];
+
+        await Promise.all([
+            loadStudentSelect(),
+            loadViolationTypes()
+        ]);
+        loadViolations();
+        loadVisitors();
+        loadVehicles();
+        loadFeedbacks();
+    });
+
+    async function loadStudentSelect() {
+        try {
+            const res = await apiFetch('/students?page=1&size=30');
+            const students = unwrapList(res);
+            const html = students.map(s => `<option value="${s.studentId}">${s.studentCode} - ${s.fullName}</option>`).join('');
+            document.getElementById('violationStudentSelect').innerHTML = html;
+            document.getElementById('visStudentSelect').innerHTML = html;
+        } catch (e) {}
+    }
+
+    let secStudentTimer = null;
+    function filterStudentOptions(inputId, selectId) {
+        clearTimeout(secStudentTimer);
+        secStudentTimer = setTimeout(async () => {
+            const kw = document.getElementById(inputId).value.trim();
+            try {
+                const res = await apiFetch(`/students?page=1&size=30${kw ? '&keyword=' + encodeURIComponent(kw) : ''}`);
+                const students = unwrapList(res);
+                document.getElementById(selectId).innerHTML = students.map(s =>
+                    `<option value="${s.studentId}">${s.studentCode} - ${s.fullName}</option>`
+                ).join('');
+            } catch (e) {}
+        }, 250);
+    }
+
+    async function loadViolationTypes() {
+        const tbody = document.getElementById('violationTypeTableBody');
+        try {
+            const res = await apiFetch('/violation-types');
+            allViolationTypes = unwrapList(res);
+            document.getElementById('statTotalTypes').textContent = allViolationTypes.length;
+
+            const sel = document.getElementById('violationTypeSelect');
+            if (allViolationTypes.length > 0) {
+                sel.innerHTML = allViolationTypes.map(vt => `
+                    <option value="${vt.violationTypeId}" data-points="${vt.penaltyPoints || 5}" data-fine="${vt.fineAmount || 0}">
+                        ${vt.violationName} (-${vt.penaltyPoints || 0} điểm${vt.fineAmount > 0 ? ' • Phạt ' + formatCurrency(vt.fineAmount) : ''})
+                    </option>
+                `).join('');
+                onViolationTypeChange();
+            }
+
+            if (allViolationTypes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>Chưa có khung kỷ luật nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allViolationTypes.map(vt => {
+                let sevBadge = '<span class="badge bg-info-subtle text-info">Nhẹ (MINOR)</span>';
+                if (vt.severityLevel === 'MAJOR' || vt.severityLevel === 'NGHIEM_TRONG') {
+                    sevBadge = '<span class="badge bg-warning-subtle text-warning">Nặng (MAJOR)</span>';
+                } else if (vt.severityLevel === 'CRITICAL' || vt.severityLevel === 'DAC_BIET') {
+                    sevBadge = '<span class="badge bg-danger-subtle text-danger">Đặc biệt nghiêm trọng</span>';
+                }
+                return `
+                    <tr>
+                        <td class="fw-bold text-dark text-truncate" style="max-width: 215px;" title="${escapeHtml(vt.violationName)}">${escapeHtml(vt.violationName)}</td>
+                        <td>${sevBadge}</td>
+                        <td class="text-nowrap"><span class="badge bg-danger-subtle text-danger">-${vt.penaltyPoints || 0} điểm</span></td>
+                        <td class="fw-semibold text-dark text-nowrap">${formatCurrency(vt.fineAmount || 0)}</td>
+                        <td class="small text-muted text-truncate" style="max-width: 300px;" title="${escapeHtml(vt.description || '-')}">${escapeHtml(vt.description || '-')}</td>
+                        <td class="text-end pe-3 text-nowrap">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick="openEditViolationTypeModal('${vt.violationTypeId}')" title="Sửa">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteViolationType('${vt.violationTypeId}')" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    function onViolationTypeChange() {
+        const sel = document.getElementById('violationTypeSelect');
+        const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+        if (opt) {
+            document.getElementById('violationPenaltyPoints').value = opt.dataset.points || 5;
+            document.getElementById('violationFineAmount').value = opt.dataset.fine || 0;
+        }
+    }
+
+    let violationSearchTimer = null;
+    function debounceFilterViolations() {
+        clearTimeout(violationSearchTimer);
+        violationSearchTimer = setTimeout(() => {
+            loadViolations(1);
+        }, 300);
+    }
+
+    function resetViolationFilters() {
+        const kwInput = document.getElementById('filterViolationKeyword');
+        const stSelect = document.getElementById('filterViolationStatus');
+        if (kwInput) kwInput.value = '';
+        if (stSelect) stSelect.value = '';
+        loadViolations(1);
+    }
+
+    async function loadViolations(page = 1) {
+        const tbody = document.getElementById('violationTableBody');
+        const kw = document.getElementById('filterViolationKeyword') ? document.getElementById('filterViolationKeyword').value.trim() : '';
+        const st = document.getElementById('filterViolationStatus') ? document.getElementById('filterViolationStatus').value : '';
+
+        let query = `/violations?page=${page}&size=20`;
+        if (kw) query += `&keyword=${encodeURIComponent(kw)}`;
+        if (st) query += `&status=${encodeURIComponent(st)}`;
+
+        try {
+            const res = await apiFetch(query);
+            allViolations = unwrapList(res);
+            const total = (res.pageInfo && res.pageInfo.totalElements != null) ? res.pageInfo.totalElements : allViolations.length;
+            document.getElementById('statTotalViolations').textContent = total;
+            const badge = document.getElementById('violationCountBadge');
+            if (badge) badge.textContent = `${total} biên bản`;
+
+            renderPaginationBar('violationPaginationBar', res.pageInfo, 'loadViolations');
+
+            if (allViolations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>Không tìm thấy biên bản vi phạm nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = allViolations.map(v => {
+                let statusBadge = '<span class="badge bg-danger-subtle text-danger">Chờ xử lý</span>';
+                if (v.status === 'RESOLVED' || v.status === 'DA_XU_LY') {
+                    statusBadge = '<span class="badge bg-success-subtle text-success">Đã giải quyết</span>';
+                } else if (v.status === 'PAID') {
+                    statusBadge = '<span class="badge bg-success-subtle text-success"><i class="bi bi-check-all me-1"></i>Đã nộp phạt</span>';
+                } else if (v.status === 'WARNING' || v.status === 'DA_NHAC_NHO') {
+                    statusBadge = '<span class="badge bg-warning-subtle text-warning">Đã nhắc nhở</span>';
+                } else if (v.status === 'CANCELLED') {
+                    statusBadge = '<span class="badge bg-secondary-subtle text-secondary">Đã hủy</span>';
+                }
+                const fine = Number(v.fineAmount || 0);
+
+                return `
+                    <tr>
+                        <td class="fw-bold text-primary text-nowrap">${v.violationId ? v.violationId.slice(0, 8).toUpperCase() : 'BB-001'}</td>
+                        <td>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 135px;" title="${escapeHtml(v.studentFullName || 'Sinh viên')}">${escapeHtml(v.studentFullName || 'Sinh viên')}</div>
+                            <div class="small text-muted text-nowrap">${escapeHtml(v.studentCode || '')}</div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border text-truncate d-inline-block align-middle" style="max-width: 150px;" title="${escapeHtml(v.violationName || 'Vi phạm nội quy')}">
+                                ${escapeHtml(v.violationName || 'Vi phạm nội quy')}
+                            </span>
+                        </td>
+                        <td class="text-nowrap small">${formatDate(v.violationDate)}</td>
+                        <td class="small text-truncate" style="max-width: 215px;" title="${escapeHtml(v.description || '-')}">${escapeHtml(v.description || '-')}</td>
+                        <td class="text-nowrap">
+                            <span class="badge bg-danger-subtle text-danger">-${v.penaltyPointsApplied || 5} điểm</span>
+                            ${fine > 0 ? `<div class="small fw-semibold text-danger mt-1">${formatCurrency(fine)}</div>` : ''}
+                        </td>
+                        <td class="small text-secondary text-truncate" style="max-width: 120px;" title="${escapeHtml(v.handledByStaffName || 'Ban Quản lý')}"><i class="bi bi-person-fill text-muted me-1"></i>${escapeHtml(v.handledByStaffName || 'Ban Quản lý')}</td>
+                        <td class="text-nowrap">${statusBadge}</td>
+                        <td class="text-end pe-3 text-nowrap">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick="openEditViolationModal('${v.violationId}')" title="Cập nhật biên bản">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteViolation('${v.violationId}')" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadVisitors(page = 1) {
+        const tbody = document.getElementById('visitorTableBody');
+        try {
+            const res = await apiFetch(`/visitors?page=${page}&size=20`);
+            const list = unwrapList(res);
+            document.getElementById('statActiveVisitors').textContent = list.filter(v => !v.checkOutTime).length;
+            renderPaginationBar('visitorPaginationBar', res.pageInfo, 'loadVisitors');
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Chưa có khách đăng ký thăm KTX.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(v => {
+                let statusBadge = '<span class="badge bg-warning-subtle text-warning">Chờ duyệt</span>';
+                if (v.checkOutTime) {
+                    statusBadge = `<span class="badge bg-secondary-subtle text-secondary">Đã ra (${formatDate(v.checkOutTime)})</span>`;
+                } else if (v.status === 'IN_DORM' || v.approvedByStaffId) {
+                    statusBadge = '<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Đang thăm</span>';
+                }
+                const isPending = v.status === 'PENDING' || (!v.approvedByStaffId && !v.checkOutTime);
+
+                return `
+                <tr>
+                    <td class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${escapeHtml(v.visitorName || '-')}">${escapeHtml(v.visitorName || '-')}</td>
+                    <td class="text-nowrap">
+                        <div class="fw-semibold text-dark small">${escapeHtml(v.nationalId || '-')}</div>
+                        <div class="small text-muted">${escapeHtml(v.phone || '')}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold small text-dark text-truncate" style="max-width: 155px;">${escapeHtml(v.hostStudentFullName || v.hostStudentCode || 'Sinh viên')}</div>
+                        <span class="badge bg-light text-secondary border">${escapeHtml(v.roomNumber || 'P.101')}</span>
+                    </td>
+                    <td class="small text-truncate" style="max-width: 240px;" title="${escapeHtml(v.purpose || 'Thăm người thân')}">${escapeHtml(v.purpose || 'Thăm người thân')}</td>
+                    <td class="text-nowrap small">${v.checkInTime ? formatDate(v.checkInTime) : '-'}</td>
+                    <td class="text-nowrap">${statusBadge}</td>
+                    <td class="text-end pe-3 text-nowrap">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            ${isPending ? `
+                                <button class="btn btn-sm btn-outline-success py-1 px-2 text-nowrap" onclick="approveVisitor('${v.visitorId}')" title="Phê duyệt cho khách vào thăm">
+                                    <i class="bi bi-check-lg me-1"></i>Duyệt
+                                </button>
+                            ` : ''}
+                            ${!v.checkOutTime && !isPending ? `
+                                <button class="btn btn-sm btn-outline-primary py-1 px-2 text-nowrap" onclick="checkOutVisitor('${v.visitorId}')" title="Check-out khách ra">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Ra về
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteVisitor('${v.visitorId}')" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadVehicles(page = 1) {
+        const tbody = document.getElementById('vehicleTableBody');
+        try {
+            const res = await apiFetch(`/vehicle-registrations?page=${page}&size=20`);
+            const list = unwrapList(res);
+            renderPaginationBar('vehiclePaginationBar', res.pageInfo, 'loadVehicles');
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>Chưa có phương tiện đăng ký gửi xe.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(vh => {
+                let stBadge = '<span class="badge bg-secondary-subtle text-secondary">' + (vh.status || 'ACTIVE') + '</span>';
+                if (vh.status === 'PENDING') {
+                    stBadge = '<span class="badge bg-warning-subtle text-warning"><i class="bi bi-hourglass-split me-1"></i>Chờ duyệt</span>';
+                } else if (vh.status === 'ACTIVE') {
+                    stBadge = '<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Đang hoạt động</span>';
+                } else if (vh.status === 'REJECTED') {
+                    stBadge = '<span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Từ chối</span>';
+                } else if (vh.status === 'CANCELLED') {
+                    stBadge = '<span class="badge bg-secondary-subtle text-secondary">Đã hủy</span>';
+                } else if (vh.status === 'EXPIRED') {
+                    stBadge = '<span class="badge bg-dark-subtle text-dark">Hết hạn</span>';
+                }
+                const isPending = vh.status === 'PENDING';
+
+                return `
+                <tr>
+                    <td class="fw-bold text-primary text-nowrap">${escapeHtml(vh.licensePlate || 'Xe đạp')}</td>
+                    <td>
+                        <div class="fw-semibold text-dark text-truncate" style="max-width: 165px;">${escapeHtml(vh.studentFullName || 'Sinh viên')}</div>
+                        <div class="small text-muted">${escapeHtml(vh.studentCode || '')}</div>
+                    </td>
+                    <td class="text-nowrap">${vh.vehicleType === 'MOTORBIKE' || vh.vehicleType === 'XE_MAY' ? 'Xe máy' : (vh.vehicleType === 'ELECTRIC_BIKE' || vh.vehicleType === 'XE_DAP_DIEN' ? 'Xe đạp điện' : (vh.vehicleType === 'BICYCLE' ? 'Xe đạp' : escapeHtml(vh.vehicleType || 'Xe máy')))}</td>
+                    <td class="text-truncate" style="max-width: 135px;">${escapeHtml(vh.brandModel || 'Cá nhân')}</td>
+                    <td class="fw-semibold text-success text-nowrap">${formatCurrency(vh.monthlyFee || 0)}</td>
+                    <td class="text-nowrap small">${formatDate(vh.registrationDate)}</td>
+                    <td class="text-nowrap">${stBadge}</td>
+                    <td class="text-end pe-3 text-nowrap">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            ${isPending ? `
+                                <button class="btn btn-sm btn-outline-success py-1 px-2" onclick="approveVehicle('${vh.vehicleId}', true)" title="Duyệt đăng ký xe">
+                                    <i class="bi bi-check-lg me-1"></i>Duyệt
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="approveVehicle('${vh.vehicleId}', false)" title="Từ chối đăng ký xe">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteVehicle('${vh.vehicleId}')" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    async function loadFeedbacks(page = 1) {
+        const tbody = document.getElementById('feedbackTableBody');
+        try {
+            const res = await apiFetch(`/feedbacks?page=${page}&size=20`);
+            const list = unwrapList(res);
+            document.getElementById('statPendingFeedbacks').textContent = list.filter(f => f.status !== 'RESOLVED' && f.status !== 'DA_PHAN_HOI').length;
+            renderPaginationBar('feedbackPaginationBar', res.pageInfo, 'loadFeedbacks');
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>Chưa có góp ý hoặc phản ánh nào từ sinh viên.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(fb => {
+                const stars = '★'.repeat(fb.rating || 5);
+                const isResolved = fb.status === 'RESOLVED' || fb.status === 'DA_PHAN_HOI' || !!fb.response;
+                return `
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark text-truncate" style="max-width: 160px;">${escapeHtml(fb.studentFullName || 'Sinh viên')}</div>
+                            <div class="small text-muted">${escapeHtml(fb.studentCode || '')}</div>
+                        </td>
+                        <td class="text-nowrap"><span class="badge bg-info-subtle text-info">${escapeHtml(fb.category || 'Góp ý chung')}</span></td>
+                        <td style="white-space: normal; max-width: 340px;">
+                            <div class="fw-medium text-dark text-truncate" style="max-width: 330px;" title="${escapeHtml(fb.content || '-')}">${escapeHtml(fb.content || '-')}</div>
+                            ${fb.response ? `<div class="small text-success mt-1 text-truncate" style="max-width: 330px;" title="${escapeHtml(fb.response)}"><i class="bi bi-reply-fill me-1"></i><b>BQL:</b> ${escapeHtml(fb.response)}</div>` : ''}
+                        </td>
+                        <td class="text-warning fw-bold text-nowrap small">${stars} (${fb.rating || 5}/5)</td>
+                        <td class="text-nowrap small">${formatDate(fb.createdAt || new Date())}</td>
+                        <td class="text-nowrap"><span class="badge ${isResolved ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${isResolved ? 'Đã phản hồi' : 'Chờ phản hồi'}</span></td>
+                        <td class="text-end pe-3 text-nowrap">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <button class="btn btn-sm btn-outline-primary py-1 px-2 text-nowrap" onclick="respondFeedback('${fb.feedbackId}')" title="Phản hồi sinh viên">
+                                    <i class="bi bi-reply-fill me-1"></i>Trả lời
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteFeedback('${fb.feedbackId}')" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    function openCreateViolationModal() {
+        document.getElementById('violationModalTitle').innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>Lập Biên bản Vi phạm Kỷ luật';
+        document.getElementById('violationId').value = '';
+        const searchInput = document.getElementById('violationStudentSearch');
+        if (searchInput) searchInput.value = '';
+        loadStudentSelect();
+        document.getElementById('violationDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('violationDesc').value = '';
+        document.getElementById('violationStatus').value = 'RECORDED';
+        onViolationTypeChange();
+        violationModal.show();
+    }
+
+    function openEditViolationModal(id) {
+        const v = allViolations.find(item => item.violationId === id);
+        if (!v) return;
+        document.getElementById('violationModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Cập nhật Biên bản Vi phạm';
+        document.getElementById('violationId').value = v.violationId;
+        
+        // Đảm bảo sinh viên được nạp đúng vào select
+        const selStudent = document.getElementById('violationStudentSelect');
+        if (v.studentId && selStudent) {
+            let opt = Array.from(selStudent.options).find(o => o.value === v.studentId);
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = v.studentId;
+                opt.textContent = `${v.studentCode || ''} - ${v.studentFullName || 'Sinh viên'}`;
+                selStudent.appendChild(opt);
+            }
+            selStudent.value = v.studentId;
+        }
+
+        if (v.violationTypeId) document.getElementById('violationTypeSelect').value = v.violationTypeId;
+        document.getElementById('violationDate').value = v.violationDate || new Date().toISOString().split('T')[0];
+        document.getElementById('violationPenaltyPoints').value = v.penaltyPointsApplied != null ? v.penaltyPointsApplied : 5;
+        document.getElementById('violationFineAmount').value = v.fineAmount != null ? v.fineAmount : 0;
+        document.getElementById('violationDesc').value = v.description || '';
+        document.getElementById('violationStatus').value = v.status || 'RECORDED';
+        violationModal.show();
+    }
+
+    async function submitSaveViolation() {
+        const id = document.getElementById('violationId').value;
+        const payload = {
+            studentId: document.getElementById('violationStudentSelect').value,
+            violationTypeId: document.getElementById('violationTypeSelect').value,
+            violationDate: document.getElementById('violationDate').value,
+            penaltyPointsApplied: parseInt(document.getElementById('violationPenaltyPoints').value, 10) || 0,
+            fineAmount: parseFloat(document.getElementById('violationFineAmount').value) || 0,
+            description: document.getElementById('violationDesc').value.trim(),
+            status: document.getElementById('violationStatus').value
+        };
+
+        if (!payload.description) {
+            showToastError('Vui lòng mô tả hành vi vi phạm!');
+            return;
+        }
+
+        try {
+            if (id) {
+                await apiFetch(`/violations/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showToastSuccess('Đã cập nhật biên bản vi phạm!');
+            } else {
+                await apiFetch('/violations', { method: 'POST', body: JSON.stringify(payload) });
+                showToastSuccess('Lập biên bản vi phạm thành công!');
+            }
+            violationModal.hide();
+            loadViolations();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    function openCreateViolationTypeModal() {
+        document.getElementById('violationTypeModalTitle').textContent = 'Thêm Loại Vi phạm Nội quy';
+        document.getElementById('vtId').value = '';
+        document.getElementById('vtName').value = '';
+        document.getElementById('vtSeverity').value = 'MINOR';
+        document.getElementById('vtPoints').value = 5;
+        document.getElementById('vtFine').value = 0;
+        document.getElementById('vtDesc').value = '';
+        violationTypeModal.show();
+    }
+
+    function openEditViolationTypeModal(id) {
+        const vt = allViolationTypes.find(x => x.violationTypeId === id);
+        if (!vt) return;
+        document.getElementById('violationTypeModalTitle').textContent = 'Cập nhật Khung Kỷ luật';
+        document.getElementById('vtId').value = vt.violationTypeId;
+        document.getElementById('vtName').value = vt.violationName || '';
+        document.getElementById('vtSeverity').value = vt.severityLevel || 'MINOR';
+        document.getElementById('vtPoints').value = vt.penaltyPoints || 0;
+        document.getElementById('vtFine').value = vt.fineAmount || 0;
+        document.getElementById('vtDesc').value = vt.description || '';
+        violationTypeModal.show();
+    }
+
+    async function submitSaveViolationType() {
+        const id = document.getElementById('vtId').value;
+        const payload = {
+            violationName: document.getElementById('vtName').value.trim(),
+            severityLevel: document.getElementById('vtSeverity').value,
+            penaltyPoints: parseInt(document.getElementById('vtPoints').value, 10) || 0,
+            fineAmount: parseFloat(document.getElementById('vtFine').value) || 0,
+            description: document.getElementById('vtDesc').value.trim()
+        };
+        if (!payload.violationName) {
+            showToastError('Vui lòng nhập tên hành vi vi phạm!');
+            return;
+        }
+        try {
+            if (id) {
+                await apiFetch(`/violation-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showToastSuccess('Đã cập nhật loại vi phạm!');
+            } else {
+                await apiFetch('/violation-types', { method: 'POST', body: JSON.stringify(payload) });
+                showToastSuccess('Đã thêm loại vi phạm mới!');
+            }
+            violationTypeModal.hide();
+            loadViolationTypes();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteViolationType(id) {
+        const confirmed = await showConfirm('Xóa loại vi phạm?', 'Bạn có chắc muốn xóa quy định vi phạm này?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/violation-types/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa loại vi phạm!');
+            loadViolationTypes();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    function openCreateVisitorModal() {
+        document.getElementById('visName').value = '';
+        document.getElementById('visNationalId').value = '';
+        document.getElementById('visPhone').value = '';
+        const kw = document.getElementById('visStudentSearch');
+        if (kw) kw.value = '';
+        document.getElementById('visPurpose').value = 'Phụ huynh / Người thân thăm sinh viên';
+        loadStudentSelect();
+        visitorModal.show();
+    }
+
+    async function submitCreateVisitor() {
+        const payload = {
+            visitorName: document.getElementById('visName').value.trim(),
+            nationalId: document.getElementById('visNationalId').value.trim(),
+            phone: document.getElementById('visPhone').value.trim(),
+            hostStudentId: document.getElementById('visStudentSelect').value,
+            purpose: document.getElementById('visPurpose').value.trim()
+        };
+        if (!payload.visitorName || !payload.nationalId) {
+            showToastError('Vui lòng nhập họ tên và số CCCD khách thăm!');
+            return;
+        }
+        try {
+            await apiFetch('/visitors/check-in', { method: 'POST', body: JSON.stringify(payload) });
+            showToastSuccess('Đã ghi nhận khách vào thăm!');
+            visitorModal.hide();
+            loadVisitors();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function respondFeedback(feedbackId) {
+        const { value: text } = await Swal.fire({
+            title: 'Phản hồi góp ý của Sinh viên',
+            input: 'textarea',
+            inputLabel: 'Nội dung trả lời từ Ban Quản lý Ký túc xá',
+            inputPlaceholder: 'Nhập nội dung phản hồi hoặc hướng giải quyết...',
+            showCancelButton: true,
+            confirmButtonText: 'Gửi phản hồi',
+            cancelButtonText: 'Hủy'
+        });
+        if (!text || !text.trim()) return;
+        try {
+            await apiFetch(`/feedbacks/${feedbackId}/respond?response=${encodeURIComponent(text.trim())}`, { method: 'PUT' });
+            showToastSuccess('Đã gửi phản hồi cho sinh viên!');
+            loadFeedbacks();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function markViolationPaid(id) {
+        const confirmed = await showConfirm('Xác nhận thu tiền phạt?', 'Xác nhận sinh viên đã nộp đủ số tiền phạt cho biên bản vi phạm này?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/violations/${id}/paid`, { method: 'PATCH' });
+            showToastSuccess('Đã ghi nhận nộp tiền phạt vi phạm thành công!');
+            loadViolations();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function approveVisitor(id) {
+        try {
+            await apiFetch(`/visitors/${id}/approve`, { method: 'PATCH' });
+            showToastSuccess('Đã phê duyệt cho khách vào thăm KTX!');
+            loadVisitors();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function approveVehicle(id, approved) {
+        const actionText = approved ? 'phê duyệt' : 'từ chối';
+        const confirmed = await showConfirm(`Xác nhận ${actionText}?`, `Bạn có chắc muốn ${actionText} yêu cầu gửi phương tiện này?`);
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/vehicle-registrations/${id}/approve?approved=${approved}`, { method: 'PATCH' });
+            showToastSuccess(`Đã ${actionText} đăng ký gửi xe!`);
+            loadVehicles();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function checkOutVisitor(id) {
+        try {
+            await apiFetch(`/visitors/${id}/check-out`, { method: 'PUT' });
+            showToastSuccess('Đã xác nhận khách ra về!');
+            loadVisitors();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteViolation(id) {
+        const confirmed = await showConfirm('Xác nhận xóa biên bản?', 'Bạn có chắc chắn muốn xóa biên bản vi phạm này?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/violations/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa biên bản!');
+            loadViolations();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteVisitor(id) {
+        const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc muốn xóa lịch sử khách thăm này?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/visitors/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa!');
+            loadVisitors();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteVehicle(id) {
+        const confirmed = await showConfirm('Xác nhận hủy đăng ký xe?', 'Bạn có chắc chắn muốn xóa xe này khỏi danh sách gửi?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/vehicle-registrations/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa xe!');
+            loadVehicles();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteFeedback(id) {
+        const confirmed = await showConfirm('Xác nhận xóa góp ý?', 'Bạn có chắc chắn muốn xóa phản ánh này?');
+        if (!confirmed) return;
+        try {
+            await apiFetch(`/feedbacks/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa góp ý!');
+            loadFeedbacks();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+</script>
+</body>
+</html>

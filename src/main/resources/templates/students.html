@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản lý Sinh viên')}"></head>
+<body>
+
+<aside th:replace="~{fragments/layout :: sidebar('students')}"></aside>
+
+<div class="main-wrapper">
+    <nav th:replace="~{fragments/layout :: topbar('Quản lý Hồ sơ Sinh viên')}"></nav>
+
+    <div class="content-body">
+        <!-- Thanh Công cụ & Tìm kiếm đồng bộ -->
+        <div class="card border-0 shadow-sm rounded-3 p-3 mb-3 bg-white border">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="fw-bold mb-0" style="color: var(--univ-navy);">
+                        <i class="bi bi-people-fill me-1"></i>Danh sách Hồ sơ Sinh viên Ký Túc Xá
+                    </h6>
+                    <span class="text-muted small d-none d-lg-inline">• Tra cứu & phân trang trực tiếp từ CSDL</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button class="btn btn-outline-primary btn-sm px-3" onclick="exportStudentsToExcel()">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm px-3 role-manager-up" onclick="openImportExcelModal()">
+                        <i class="bi bi-upload me-1"></i> Nhập từ Excel
+                    </button>
+                    <button class="btn btn-primary btn-sm px-3 role-manager-up" onclick="openCreateStudentModal()">
+                        <i class="bi bi-plus-lg me-1"></i> Thêm Sinh viên mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh Tìm kiếm & Bộ lọc Server-side (Giữ nguyên toàn bộ thuộc tính, nằm gọn trên 1 hàng) -->
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Tìm MSSV, Họ tên, SĐT, CCCD..." oninput="debouncedSearchStudents()">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <input type="text" id="filterFaculty" class="form-control form-control-sm" placeholder="Lọc theo Khoa/Lớp..." oninput="debouncedSearchStudents()">
+                </div>
+                <div class="col-6 col-md-4 col-lg-auto" style="min-width: 125px;">
+                    <select id="filterGender" class="form-select form-select-sm" onchange="loadStudents(1)">
+                        <option value="">-- Giới tính --</option>
+                        <option value="MALE">Nam</option>
+                        <option value="FEMALE">Nữ</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-4 col-lg-auto flex-grow-1" style="min-width: 150px;">
+                    <select id="filterResident" class="form-select form-select-sm" onchange="loadStudents(1)">
+                        <option value="">-- Chỗ ở KTX --</option>
+                        <option value="true">Đang ở KTX (Có hợp đồng)</option>
+                        <option value="false">Chưa có chỗ / Chưa xếp phòng</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-4 col-lg-auto flex-grow-1" style="min-width: 150px;">
+                    <select id="filterStatus" class="form-select form-select-sm" onchange="loadStudents(1)">
+                        <option value="">-- Trạng thái --</option>
+                        <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                        <option value="PENDING">Chờ nhận phòng (PENDING)</option>
+                        <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
+                        <option value="GRADUATED">Đã tốt nghiệp</option>
+                    </select>
+                </div>
+                <div class="col-8 col-md-4 col-lg-auto" style="min-width: 135px;">
+                    <select id="pageSizeSelect" class="form-select form-select-sm" onchange="loadStudents(1)">
+                        <option value="10">10 dòng / trang</option>
+                        <option value="20" selected>20 dòng / trang</option>
+                        <option value="50">50 dòng / trang</option>
+                    </select>
+                </div>
+                <div class="col-4 col-md-2 col-lg-auto">
+                    <button class="btn btn-light border btn-sm px-2 w-100" onclick="resetStudentFilters()" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng dữ liệu + Phân trang -->
+        <div class="table-custom shadow-sm bg-white rounded-3">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>MSSV</th>
+                            <th>Họ và tên</th>
+                            <th>Giới tính</th>
+                            <th>Số điện thoại</th>
+                            <th>Email</th>
+                            <th>Khoa / Lớp</th>
+                            <th>Quê quán</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center" style="width: 120px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        <tr><td colspan="9" class="text-center text-muted py-4">Đang tải danh sách sinh viên...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="studentPaginationBar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Sinh viên - Chuẩn hồ sơ Đại học Công Nghiệp Việt Trì -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header univ-modal-header">
+                <h5 class="modal-title" id="studentModalTitle">
+                    <i class="bi bi-person-vcard-fill me-2"></i>THÔNG TIN HỒ SƠ SINH VIÊN NỘI TRÚ
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="studentForm">
+                    <input type="hidden" id="studentId">
+                    <div class="alert alert-primary d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-shield-lock-fill fs-5 flex-shrink-0"></i>
+                        <div><b>Khởi tạo tài khoản tự động:</b> Hệ thống liên kết tài khoản cho sinh viên với <b>Tên đăng nhập</b> và <b>Mật khẩu ban đầu</b> là chính <b>Mã số sinh viên (MSSV)</b>.</div>
+                    </div>
+
+                    <!-- Khối I: Ảnh đại diện & Thông tin định danh -->
+                    <div class="form-section-title">
+                        <i class="bi bi-person-badge-fill"></i>I. ẢNH THẺ & THÔNG TIN ĐỊNH DANH SINH VIÊN
+                    </div>
+                    <div class="form-section-box">
+                        <div class="d-flex align-items-center gap-3 p-2 bg-white rounded border mb-3">
+                            <div class="position-relative flex-shrink-0">
+                                <img id="studentAvatarPreview" src="" alt="Avatar"
+                                     class="rounded-circle border shadow-sm"
+                                     style="width: 76px; height: 76px; object-fit: cover;"
+                                     onerror="this.onerror=null;this.src=DEFAULT_AVATAR_SVG">
+                                <label for="avatarFileInput" class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 p-0 shadow-sm"
+                                       title="Tải ảnh thẻ từ máy"
+                                       style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <i class="bi bi-camera-fill" style="font-size: 0.75rem;"></i>
+                                </label>
+                                <input type="file" id="avatarFileInput" class="d-none" accept="image/png, image/jpeg, image/jpg, image/webp" onchange="handleStudentAvatarSelect(this)">
+                            </div>
+                            <div class="flex-grow-1">
+                                <label class="form-label small fw-bold mb-1">Ảnh đại diện thẻ sinh viên</label>
+                                <div class="input-group input-group-sm mb-1">
+                                    <span class="input-group-text bg-white"><i class="bi bi-link-45deg"></i></span>
+                                    <input type="text" id="avatarUrl" class="form-control" placeholder="https://... hoặc /uploads/avatars/..." oninput="handleAvatarUrlInput(this.value)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('avatarFileInput').click()">
+                                        <i class="bi bi-upload me-1"></i>Chọn tệp
+                                    </button>
+                                    <button class="btn btn-outline-danger" type="button" onclick="clearStudentAvatar()" title="Xóa ảnh về mặc định">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                                <div class="small text-muted" id="uploadStatusText" style="font-size: 0.78rem;">
+                                    Hỗ trợ ảnh JPG, PNG, WEBP (tối đa 25MB) hoặc đường dẫn ảnh KTX.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Mã số sinh viên (MSSV) <span class="text-danger">*</span></label>
+                                <input type="text" id="studentCode" class="form-control" placeholder="VD: SV2026001" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Họ và tên khai sinh <span class="text-danger">*</span></label>
+                                <input type="text" id="fullName" class="form-control" placeholder="VD: Nguyễn Văn An" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Giới tính <span class="text-danger">*</span></label>
+                                <select id="gender" class="form-select" required>
+                                    <option value="MALE">Nam</option>
+                                    <option value="FEMALE">Nữ</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Trạng thái hồ sơ sinh viên</label>
+                                <select id="status" class="form-select">
+                                    <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+                                    <option value="PENDING">Chờ duyệt (PENDING)</option>
+                                    <option value="INACTIVE">Tạm khóa (INACTIVE)</option>
+                                    <option value="GRADUATED">Đã tốt nghiệp/Rời đi (GRADUATED)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Khối II: Thông tin học tập & Quản lý đào tạo -->
+                    <div class="form-section-title">
+                        <i class="bi bi-mortarboard-fill"></i>II. THÔNG TIN HỌC TẬP & KHOA ĐÀO TẠO
+                    </div>
+                    <div class="form-section-box">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Lớp sinh hoạt / Khoa chuyên ngành</label>
+                                <input type="text" id="className" class="form-control" placeholder="VD: K68-CNTT (Khoa CNTT)">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Số Thẻ Căn cước công dân (CCCD / CMND)</label>
+                                <input type="text" id="nationalId" class="form-control" placeholder="12 chữ số theo CCCD gắn chip" maxlength="12">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Khối III: Liên lạc & Quê quán -->
+                    <div class="form-section-title">
+                        <i class="bi bi-geo-alt-fill"></i>III. ĐỊA CHỈ THƯỜNG TRÚ & THÔNG TIN LIÊN HỆ
+                    </div>
+                    <div class="form-section-box mb-0">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Số điện thoại liên lạc <span class="text-danger">*</span></label>
+                                <input type="text" id="phone" class="form-control" placeholder="0912345678" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Email sinh viên / Nhà trường</label>
+                                <input type="email" id="email" class="form-control" placeholder="sinhvien@student.viettri.edu.vn">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Quê quán / Hộ khẩu thường trú</label>
+                                <input type="text" id="hometown" class="form-control" placeholder="VD: Xã Phú Lộc, Huyện Phù Ninh, Tỉnh Phú Thọ">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveStudent()">
+                    <i class="bi bi-floppy-fill me-1"></i>Lưu hồ sơ sinh viên
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi tiết Hồ sơ Sinh viên -->
+<div class="modal fade" id="studentDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header univ-modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-lines-fill me-2"></i>CHI TIẾT HỒ SƠ SINH VIÊN NỘI TRÚ
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Khối I: Thông tin định danh & Học tập -->
+                <div class="form-section-title mt-0">
+                    I. THÔNG TIN ĐỊNH DANH & HỌC TẬP
+                </div>
+                <div class="form-section-box">
+                    <div class="d-flex align-items-center gap-3 pb-3 mb-3 border-bottom">
+                        <img id="detailStudentAvatar" src="" alt="Avatar"
+                             class="rounded-circle border shadow-sm flex-shrink-0"
+                             style="width: 72px; height: 72px; object-fit: cover;"
+                             onerror="this.onerror=null;this.src=DEFAULT_AVATAR_SVG">
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h5 class="fw-bold mb-0 text-dark" id="detailFullName">-</h5>
+                                <span id="detailStatusBadge"></span>
+                            </div>
+                            <div class="small text-secondary mt-1">
+                                Mã số sinh viên: <b style="color: var(--univ-navy);" id="detailStudentCode">-</b>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 small">
+                        <div class="col-6 col-md-4">
+                            <div class="text-muted">Giới tính</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailGender">-</div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="text-muted">Số CCCD / CMND</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailNationalId">-</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted">Khoa / Lớp chuyên ngành</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailClassName">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khối II: Thông tin Liên hệ & Quê quán -->
+                <div class="form-section-title">
+                    II. THÔNG TIN LIÊN HỆ & ĐỊA CHỈ THƯỜNG TRÚ
+                </div>
+                <div class="form-section-box">
+                    <div class="row g-3 small">
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted">Số điện thoại</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailPhone">-</div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="text-muted">Địa chỉ Email</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailEmail">-</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted">Quê quán / Hộ khẩu thường trú</div>
+                            <div class="fw-semibold text-dark mt-1" id="detailHometown">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khối III: Thông tin Phòng ở & Hợp đồng KTX -->
+                <div class="form-section-title">
+                    III. THÔNG TIN PHÒNG Ở & HỢP ĐỒNG KÝ TÚC XÁ
+                </div>
+                <div class="form-section-box mb-0" id="detailContractBox">
+                    <div class="text-muted small py-2">Đang kiểm tra thông tin lưu trú...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="btnEditFromDetail">
+                    Chỉnh sửa hồ sơ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nhập sinh viên hàng loạt từ File Excel -->
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white py-3 px-4 rounded-top-4">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-file-earmark-excel-fill me-2"></i>Thêm hàng loạt Sinh viên từ file Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Hướng dẫn & Tải file mẫu -->
+                <div class="alert alert-info border-0 rounded-3 d-flex align-items-center justify-content-between p-3 mb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-info-circle-fill fs-3 text-primary flex-shrink-0"></i>
+                        <div>
+                            <div class="fw-bold text-dark">Hướng dẫn định dạng tệp Excel (.xlsx, .xls, .csv)</div>
+                            <div class="small text-muted">
+                                Cột bắt buộc: <b>Mã sinh viên (MSSV)</b>, <b>Họ và tên</b>, <b>Số điện thoại</b> (10 số). Giới tính: Nam/Nữ.<br>
+                                Hệ thống sẽ tự động tạo tài khoản đăng nhập (Tài khoản = MSSV, Mật khẩu mặc định = MSSV).
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-success fw-semibold px-3 py-2 flex-shrink-0" onclick="downloadStudentExcelTemplate()">
+                        <i class="bi bi-download me-1"></i> Tải file Excel mẫu (.xlsx)
+                    </button>
+                </div>
+
+                <!-- Vùng chọn/kéo thả tệp -->
+                <div class="border border-2 border-dashed rounded-3 p-4 text-center bg-light mb-3" id="excelDropZone"
+                     style="cursor: pointer; transition: all 0.2s;"
+                     onclick="document.getElementById('excelFileInput').click()">
+                    <i class="bi bi-cloud-arrow-up-fill text-primary" style="font-size: 2.8rem;"></i>
+                    <h6 class="fw-bold mt-2 mb-1" id="dropZoneTitle">Kéo thả tệp Excel vào đây hoặc bấm để chọn tệp</h6>
+                    <p class="text-muted small mb-0" id="dropZoneSubtitle">Hỗ trợ các định dạng: .xlsx, .xls, .csv (Dung lượng tối đa: 25MB)</p>
+                    <input type="file" id="excelFileInput" class="d-none" accept=".xlsx, .xls, .csv" onchange="handleExcelFileSelect(this)">
+                </div>
+
+                <!-- Khối thống kê & Xem trước dữ liệu (Preview) -->
+                <div id="excelPreviewSection" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <div class="fw-bold text-dark">
+                            <i class="bi bi-table me-1 text-primary"></i>Dữ liệu đọc được từ tệp:
+                            <span id="previewStatsBadge" class="badge bg-primary ms-1">0 dòng</span>
+                            <span id="previewValidBadge" class="badge bg-success ms-1">0 hợp lệ</span>
+                            <span id="previewErrorBadge" class="badge bg-danger ms-1">0 lỗi</span>
+                        </div>
+                        <div class="form-check form-switch small">
+                            <input class="form-check-input" type="checkbox" id="skipErrorsCheckbox" checked>
+                            <label class="form-check-label fw-semibold" for="skipErrorsCheckbox">Bỏ qua dòng lỗi và chỉ nhập các dòng hợp lệ</label>
+                        </div>
+                    </div>
+
+                    <!-- Bảng Preview cuộn -->
+                    <div class="table-responsive border rounded-3 bg-white" style="max-height: 320px; overflow-y: auto;">
+                        <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 45px;" class="text-center">STT</th>
+                                    <th style="width: 100px;">Kiểm tra</th>
+                                    <th>MSSV (*)</th>
+                                    <th>Họ và tên (*)</th>
+                                    <th>Giới tính</th>
+                                    <th>Ngày sinh</th>
+                                    <th>Số điện thoại (*)</th>
+                                    <th>Email</th>
+                                    <th>CCCD (12 số)</th>
+                                    <th>Lớp / Khoa</th>
+                                    <th>Quê quán</th>
+                                </tr>
+                            </thead>
+                            <tbody id="excelPreviewTableBody">
+                                <!-- Điền động qua JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Báo cáo kết quả sau khi thực hiện import -->
+                <div id="excelImportResultSection" class="d-none mt-3">
+                    <div id="excelImportResultAlert" class="alert alert-success border-0 rounded-3 mb-2"></div>
+                    <div id="excelImportErrorDetails" class="d-none alert alert-danger border-0 rounded-3 small" style="max-height: 180px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3 rounded-bottom-4">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary px-4 fw-semibold" id="btnConfirmImportExcel" onclick="executeImportExcel()" disabled>
+                    <i class="bi bi-check2-circle me-1"></i> Xác nhận nhập danh sách
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/xlsx.full.min.js}"></script>
+
+<script>
+    let studentModal = null;
+    let importExcelModal = null;
+    let currentStudents = [];
+    let currentStudentPage = 1;
+    let searchTimer = null;
+    let parsedExcelData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        studentModal = new bootstrap.Modal(document.getElementById('studentModal'));
+        const importModalEl = document.getElementById('importExcelModal');
+        if (importModalEl) {
+            importExcelModal = new bootstrap.Modal(importModalEl);
+        }
+        setupExcelDropZone();
+        loadStudents(1);
+    });
+
+    function setupExcelDropZone() {
+        const dropZone = document.getElementById('excelDropZone');
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('bg-primary-subtle', 'border-primary');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('bg-primary-subtle', 'border-primary');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                processExcelFile(files[0]);
+            }
+        }, false);
+    }
+
+    function debouncedSearchStudents() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => loadStudents(1), 300);
+    }
+
+    function resetStudentFilters() {
+        document.getElementById('searchInput').value = '';
+        if (document.getElementById('filterFaculty')) document.getElementById('filterFaculty').value = '';
+        if (document.getElementById('filterGender')) document.getElementById('filterGender').value = '';
+        if (document.getElementById('filterResident')) document.getElementById('filterResident').value = '';
+        document.getElementById('filterStatus').value = '';
+        loadStudents(1);
+    }
+
+    async function loadStudents(page = 1) {
+        currentStudentPage = page;
+        const tbody = document.getElementById('studentTableBody');
+        const keyword = (document.getElementById('searchInput')?.value || '').trim();
+        const faculty = (document.getElementById('filterFaculty')?.value || '').trim();
+        const gender = document.getElementById('filterGender')?.value || '';
+        const residentVal = document.getElementById('filterResident')?.value || '';
+        const status = document.getElementById('filterStatus')?.value || '';
+        const size = document.getElementById('pageSizeSelect')?.value || 20;
+
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                size: size,
+                sortBy: 'studentCode',
+                sortDir: 'asc'
+            });
+            if (keyword) params.append('keyword', keyword);
+            if (faculty) params.append('faculty', faculty);
+            if (gender) params.append('gender', gender);
+            if (residentVal !== '') params.append('isResident', residentVal);
+            if (status) params.append('status', status);
+
+            const res = await apiFetch(`/students?${params.toString()}`);
+            currentStudents = unwrapList(res);
+            renderStudents(currentStudents);
+            renderPaginationBar('studentPaginationBar', res.result, 'loadStudents');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        }
+    }
+
+    function renderAvatarThumb(avatarUrl, fullName) {
+        const resolved = resolveAvatarUrl(avatarUrl);
+        if (resolved) {
+            return `<img src="${escapeHtml(resolved)}" alt="Avatar" class="rounded-circle border me-2 flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null;this.src=DEFAULT_AVATAR_SVG">`;
+        }
+        const initial = (fullName || 'S').trim().charAt(0).toUpperCase();
+        return `<div class="rounded-circle text-white fw-bold d-inline-flex align-items-center justify-content-center me-2 flex-shrink-0" style="width: 32px; height: 32px; background: #003366; font-size: 0.8rem;">${initial}</div>`;
+    }
+
+    function renderStudents(students) {
+        const tbody = document.getElementById('studentTableBody');
+        if (students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Không tìm thấy sinh viên phù hợp.</td></tr>';
+            return;
+        }
+
+        const role = ((Auth.getUser() && Auth.getUser().role) || 'ADMIN').toUpperCase();
+        const canManage = role === 'ADMIN' || role === 'MANAGER';
+
+        tbody.innerHTML = students.map(s => `
+            <tr>
+                <td class="fw-bold" style="color: var(--univ-navy); cursor: pointer;" onclick="openStudentDetailById('${s.studentId}')" title="Nhấn để xem chi tiết">${escapeHtml(s.studentCode)}</td>
+                <td style="cursor: pointer;" onclick="openStudentDetailById('${s.studentId}')" title="Nhấn để xem chi tiết">
+                    <div class="d-flex align-items-center">
+                        ${renderAvatarThumb(s.avatarUrl, s.fullName)}
+                        <div class="min-w-0">
+                            <div class="fw-semibold text-dark text-truncate" style="max-width: 170px;" title="${escapeHtml(s.fullName)}">${escapeHtml(s.fullName)}</div>
+                            ${s.nationalId ? `<div class="text-muted" style="font-size: 0.72rem;">CCCD: ${escapeHtml(s.nationalId)}</div>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td>${s.gender === 'MALE' ? 'Nam' : 'Nữ'}</td>
+                <td>${escapeHtml(s.phone) || '-'}</td>
+                <td class="text-truncate" style="max-width: 150px;" title="${escapeHtml(s.email) || ''}">${escapeHtml(s.email) || '-'}</td>
+                <td class="text-truncate" style="max-width: 145px;" title="${escapeHtml(s.className || s.faculty) || ''}">${escapeHtml(s.className || s.faculty) || '-'}</td>
+                <td class="text-truncate" style="max-width: 120px;" title="${escapeHtml(s.hometown) || ''}">${escapeHtml(s.hometown) || '-'}</td>
+                <td>
+                    <div class="d-flex flex-column gap-1">
+                        <div>
+                            <span class="badge ${s.status === 'ACTIVE' ? 'bg-success-subtle text-success' : (s.status === 'PENDING' ? 'bg-warning-subtle text-warning' : (s.status === 'GRADUATED' ? 'bg-info-subtle text-info' : 'bg-secondary-subtle text-secondary'))}">
+                                <i class="bi ${s.status === 'ACTIVE' ? 'bi-check-circle' : 'bi-dash-circle'} me-1"></i>${s.status === 'ACTIVE' ? 'Hoạt động' : (s.status === 'PENDING' ? 'Chờ duyệt' : (s.status === 'INACTIVE' ? 'Đã khóa' : (s.status === 'GRADUATED' ? 'Đã tốt nghiệp' : escapeHtml(s.status))))}
+                            </span>
+                        </div>
+                        <div>
+                            ${s.isResident || s.roomNumber
+                                ? `<span class="badge bg-primary-subtle text-primary border" title="Đang có hợp đồng lưu trú hiệu lực"><i class="bi bi-door-closed me-1"></i>P.${escapeHtml(s.roomNumber || '')}${s.bedNumber ? ' • ' + escapeHtml(s.bedNumber) : ''}</span>`
+                                : `<span class="badge bg-light text-muted border" title="Chưa có hợp đồng nội trú KTX"><i class="bi bi-house-x me-1"></i>Chưa thuê phòng</span>`
+                            }
+                        </div>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-light text-primary me-1" onclick="openStudentDetailById('${s.studentId}')" title="Xem chi tiết hồ sơ">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    ${canManage ? `
+                        <button class="btn btn-sm btn-light text-primary me-1" onclick="openEditStudentById('${s.studentId}')" title="Sửa hồ sơ">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light text-danger" onclick="deleteStudent('${s.studentId}')" title="Xóa">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function openStudentDetailById(studentId) {
+        const s = currentStudents.find(item => item.studentId === studentId);
+        if (!s) return;
+
+        const role = ((Auth.getUser() && Auth.getUser().role) || 'ADMIN').toUpperCase();
+        const canManage = role === 'ADMIN' || role === 'MANAGER';
+
+        const avatarEl = document.getElementById('detailStudentAvatar');
+        const resolvedAvatar = resolveAvatarUrl(s.avatarUrl);
+        avatarEl.src = resolvedAvatar || DEFAULT_AVATAR_SVG;
+
+        document.getElementById('detailFullName').textContent = s.fullName || '-';
+        document.getElementById('detailStudentCode').textContent = s.studentCode || '-';
+        document.getElementById('detailGender').textContent = s.gender === 'MALE' ? 'Nam' : 'Nữ';
+        document.getElementById('detailNationalId').textContent = s.nationalId || 'Chưa cập nhật';
+        document.getElementById('detailClassName').textContent = s.className || s.faculty || 'Chưa cập nhật';
+        document.getElementById('detailPhone').textContent = s.phone || 'Chưa cập nhật';
+        document.getElementById('detailEmail').textContent = s.email || 'Chưa cập nhật';
+        document.getElementById('detailHometown').textContent = s.hometown || 'Chưa cập nhật';
+
+        const statusLabel = s.status === 'ACTIVE'
+            ? 'Hoạt động'
+            : (s.status === 'PENDING' ? 'Chờ duyệt' : (s.status === 'INACTIVE' ? 'Đã khóa' : (s.status === 'GRADUATED' ? 'Đã tốt nghiệp' : (s.status || '-'))));
+        const statusClass = s.status === 'ACTIVE'
+            ? 'bg-success-subtle text-success'
+            : (s.status === 'PENDING' ? 'bg-warning-subtle text-warning' : 'bg-secondary-subtle text-secondary');
+        document.getElementById('detailStatusBadge').innerHTML = `<span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span>`;
+
+        const editBtn = document.getElementById('btnEditFromDetail');
+        if (editBtn) {
+            editBtn.style.display = canManage ? 'inline-flex' : 'none';
+            editBtn.onclick = () => {
+                bootstrap.Modal.getInstance(document.getElementById('studentDetailModal'))?.hide();
+                openEditStudentById(s.studentId);
+            };
+        }
+
+        const contractBox = document.getElementById('detailContractBox');
+        contractBox.innerHTML = '<div class="text-muted small py-1">Đang tải thông tin phòng ở & hợp đồng...</div>';
+
+        const modalEl = document.getElementById('studentDetailModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+
+        try {
+            const cRes = await apiFetch(`/contracts?keyword=${encodeURIComponent(s.studentCode)}&size=10`).catch(() => ({ result: [] }));
+            const contracts = unwrapList(cRes).filter(c => c.studentId === s.studentId || c.studentCode === s.studentCode);
+            if (contracts.length === 0) {
+                contractBox.innerHTML = '<div class="text-muted small fst-italic">Sinh viên hiện chưa có hợp đồng lưu trú tại Ký túc xá.</div>';
+            } else {
+                const active = contracts.find(c => c.status === 'ACTIVE') || contracts[0];
+                const cBadge = active.status === 'ACTIVE'
+                    ? '<span class="badge bg-success-subtle text-success">Đang hiệu lực</span>'
+                    : (active.status === 'PENDING_APPROVAL' || active.status === 'PENDING'
+                        ? '<span class="badge bg-warning-subtle text-warning">Chờ duyệt</span>'
+                        : `<span class="badge bg-secondary-subtle text-secondary">${escapeHtml(active.status)}</span>`);
+                contractBox.innerHTML = `
+                    <div class="row g-3 small">
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted">Phòng / Giường</div>
+                            <div class="fw-bold mt-1" style="color: var(--univ-navy);">
+                                Phòng ${escapeHtml(active.roomNumber || '-')} ${active.bedCode ? '• Giường ' + escapeHtml(active.bedCode) : ''}
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted">Mã hợp đồng</div>
+                            <div class="fw-semibold text-dark mt-1">${escapeHtml(active.contractCode || '-')}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted">Thời hạn lưu trú</div>
+                            <div class="fw-semibold text-dark mt-1">${formatDate(active.startDate)} → ${formatDate(active.endDate)}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted">Trạng thái HĐ</div>
+                            <div class="mt-1">${cBadge}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            contractBox.innerHTML = '<div class="text-muted small">Không tải được thông tin hợp đồng.</div>';
+        }
+    }
+
+    function updateAvatarPreview(url) {
+        const previewEl = document.getElementById('studentAvatarPreview');
+        const resolved = resolveAvatarUrl(url);
+        if (resolved) {
+            previewEl.src = resolved;
+        } else {
+            previewEl.src = DEFAULT_AVATAR_SVG;
+        }
+    }
+
+    let pendingAdminStudentAvatarFile = null;
+    let isAdminAvatarRemoved = false;
+
+    function handleAvatarUrlInput(val) {
+        pendingAdminStudentAvatarFile = null;
+        document.getElementById('avatarFileInput').value = '';
+        if (val && val.trim()) {
+            isAdminAvatarRemoved = false;
+            document.getElementById('uploadStatusText').innerHTML = '<span class="text-primary fw-semibold"><i class="bi bi-link-45deg me-1"></i>Đã nhập liên kết ảnh.</span>';
+        } else {
+            document.getElementById('uploadStatusText').innerHTML = '<span class="text-muted">Chưa có ảnh đại diện. Bạn có thể chọn ảnh từ máy hoặc dán URL.</span>';
+        }
+        updateAvatarPreview(val);
+    }
+
+    function handleStudentAvatarSelect(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        if (file.size > 25 * 1024 * 1024) {
+            showToastError('Kích thước ảnh tối đa là 25MB!');
+            input.value = '';
+            return;
+        }
+
+        pendingAdminStudentAvatarFile = file;
+        isAdminAvatarRemoved = false;
+        const objectUrl = URL.createObjectURL(file);
+        document.getElementById('studentAvatarPreview').src = objectUrl;
+        document.getElementById('avatarUrl').value = '';
+        document.getElementById('uploadStatusText').innerHTML =
+            `<span class="text-primary fw-semibold"><i class="bi bi-file-earmark-image me-1"></i>Đã chọn tệp: <b>${escapeHtml(file.name)}</b></span> <span class="text-muted small">(Chưa lưu - bấm 'Lưu sinh viên' để áp dụng)</span>`;
+    }
+
+    function clearStudentAvatar() {
+        pendingAdminStudentAvatarFile = null;
+        isAdminAvatarRemoved = true;
+        document.getElementById('avatarUrl').value = '';
+        document.getElementById('studentAvatarPreview').src = DEFAULT_AVATAR_SVG;
+        document.getElementById('avatarFileInput').value = '';
+        document.getElementById('uploadStatusText').innerHTML = '<span class="text-secondary fw-semibold">Đã xóa ảnh. Bấm "Lưu sinh viên" để gỡ ảnh đại diện.</span>';
+    }
+
+    function openCreateStudentModal() {
+        pendingAdminStudentAvatarFile = null;
+        isAdminAvatarRemoved = false;
+        document.getElementById('studentModalTitle').innerHTML = '<i class="bi bi-person-plus-fill text-primary me-2"></i>Thêm Sinh viên mới';
+        document.getElementById('studentId').value = '';
+        document.getElementById('studentCode').value = '';
+        document.getElementById('fullName').value = '';
+        document.getElementById('gender').value = 'MALE';
+        document.getElementById('phone').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('nationalId').value = '';
+        document.getElementById('className').value = '';
+        document.getElementById('hometown').value = '';
+        document.getElementById('status').value = 'ACTIVE';
+        document.getElementById('avatarUrl').value = '';
+        document.getElementById('studentAvatarPreview').src = DEFAULT_AVATAR_SVG;
+        document.getElementById('avatarFileInput').value = '';
+        document.getElementById('uploadStatusText').innerHTML = '<span class="text-muted">Chưa có ảnh đại diện. Bạn có thể chọn ảnh từ máy hoặc dán URL.</span>';
+        studentModal.show();
+    }
+
+    function openEditStudentById(studentId) {
+        pendingAdminStudentAvatarFile = null;
+        isAdminAvatarRemoved = false;
+        const s = currentStudents.find(item => item.studentId === studentId);
+        if (!s) return;
+        document.getElementById('studentModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Sinh viên';
+        document.getElementById('studentId').value = s.studentId;
+        document.getElementById('studentCode').value = s.studentCode || '';
+        document.getElementById('fullName').value = s.fullName || '';
+        document.getElementById('gender').value = s.gender || 'MALE';
+        document.getElementById('phone').value = s.phone || '';
+        document.getElementById('email').value = s.email || '';
+        document.getElementById('nationalId').value = s.nationalId || '';
+        document.getElementById('className').value = s.className || '';
+        document.getElementById('hometown').value = s.hometown || '';
+        document.getElementById('status').value = s.status || 'ACTIVE';
+        document.getElementById('avatarUrl').value = s.avatarUrl || '';
+        document.getElementById('avatarFileInput').value = '';
+        updateAvatarPreview(s.avatarUrl || '');
+        document.getElementById('uploadStatusText').innerHTML = s.avatarUrl ? '<span class="text-muted">Đang sử dụng ảnh đã lưu. Chọn tệp mới hoặc dán URL khác nếu muốn đổi.</span>' : '<span class="text-muted">Chưa có ảnh đại diện. Bạn có thể chọn ảnh từ máy hoặc dán URL.</span>';
+        studentModal.show();
+    }
+
+    async function saveStudent() {
+        const id = document.getElementById('studentId').value;
+        const existing = currentStudents.find(item => item.studentId === id);
+        const emailVal = document.getElementById('email').value.trim();
+        const nationalIdVal = document.getElementById('nationalId').value.trim();
+        const phoneVal = document.getElementById('phone').value.trim();
+        const studentCodeVal = document.getElementById('studentCode').value.trim();
+        const fullNameVal = document.getElementById('fullName').value.trim();
+        const classNameVal = document.getElementById('className').value.trim();
+        const hometownVal = document.getElementById('hometown').value.trim();
+
+        const payload = {
+            userId: existing ? existing.userId : undefined,
+            studentCode: studentCodeVal,
+            fullName: fullNameVal,
+            gender: document.getElementById('gender').value,
+            phone: phoneVal,
+            email: emailVal || null,
+            nationalId: nationalIdVal || null,
+            className: classNameVal || null,
+            hometown: hometownVal || null,
+            status: document.getElementById('status').value
+        };
+
+        if (!payload.studentCode || !payload.fullName || !payload.phone) {
+            showToastError('Vui lòng điền đầy đủ MSSV, Họ tên và Số điện thoại!');
+            return;
+        }
+
+        try {
+            let finalAvatarUrl = document.getElementById('avatarUrl').value.trim();
+
+            // Nếu người dùng chọn tệp ảnh mới từ máy -> Thực hiện tải lên và lưu vào uploads/avatars/
+            if (pendingAdminStudentAvatarFile) {
+                const formData = new FormData();
+                formData.append('file', pendingAdminStudentAvatarFile);
+                const uploadRes = await apiFetch('/students/upload-avatar', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (uploadRes && uploadRes.result && uploadRes.result.url) {
+                    finalAvatarUrl = uploadRes.result.url;
+                }
+            } else if (isAdminAvatarRemoved) {
+                finalAvatarUrl = ""; // Gửi chuỗi rỗng "" để backend biết là gỡ ảnh và xóa file cũ trên ổ đĩa
+            }
+
+            payload.avatarUrl = finalAvatarUrl;
+
+            if (id) {
+                await apiFetch(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showToastSuccess('Cập nhật thông tin sinh viên thành công!');
+            } else {
+                await apiFetch('/students', { method: 'POST', body: JSON.stringify(payload) });
+                showToastSuccess(`Thêm sinh viên thành công! Đã tự động tạo tài khoản đăng nhập (Tài khoản: ${payload.studentCode}, Mật khẩu: ${payload.studentCode})`);
+            }
+            pendingAdminStudentAvatarFile = null;
+            isAdminAvatarRemoved = false;
+            studentModal.hide();
+            loadStudents(currentStudentPage);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteStudent(id) {
+        const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa hồ sơ sinh viên này?');
+        if (!confirmed) return;
+
+        try {
+            await apiFetch(`/students/${id}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa sinh viên!');
+            loadStudents(currentStudentPage);
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    // ==============================================================
+    // CHỨC NĂNG 1: XUẤT DANH SÁCH SINH VIÊN RA FILE EXCEL (.XLSX)
+    // ==============================================================
+    // Định nghĩa hàm thông báo an toàn (chống cache browser)
+    function showToastInfo(msg) {
+        if (typeof window.showToastInfo === 'function' && window.showToastInfo !== showToastInfo) {
+            window.showToastInfo(msg);
+        } else if (typeof Toast !== 'undefined') {
+            Toast.fire({ icon: 'info', title: msg });
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, icon: 'info', title: msg });
+        } else {
+            console.info(msg);
+        }
+    }
+    window.showToastInfo = showToastInfo;
+
+    function showToastWarning(msg) {
+        if (typeof window.showToastWarning === 'function' && window.showToastWarning !== showToastWarning) {
+            window.showToastWarning(msg);
+        } else if (typeof Toast !== 'undefined') {
+            Toast.fire({ icon: 'warning', title: msg });
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, icon: 'warning', title: msg });
+        } else {
+            console.warn(msg);
+        }
+    }
+    window.showToastWarning = showToastWarning;
+
+    async function exportStudentsToExcel() {
+        if (typeof XLSX === 'undefined') {
+            showToastError('Thư viện Excel chưa được tải xong, vui lòng thử lại sau giây lát!');
+            return;
+        }
+
+        try {
+            if (typeof showToastInfo === 'function') {
+                showToastInfo('Đang xuất danh sách sinh viên ra file Excel...');
+            }
+            const res = await apiFetch('/students/all');
+            const list = (res && res.result) ? res.result : currentStudents;
+
+            if (!list || list.length === 0) {
+                showToastError('Không có dữ liệu sinh viên để xuất!');
+                return;
+            }
+
+            const header = [
+                'STT', 'Mã số sinh viên (MSSV)', 'Họ và tên khai sinh', 'Giới tính',
+                'Ngày sinh', 'Số điện thoại', 'Email', 'Số CCCD/Định danh',
+                'Lớp / Khoa', 'Quê quán', 'Trạng thái', 'Ngày tạo hồ sơ'
+            ];
+
+            const rows = list.map((s, idx) => [
+                idx + 1,
+                s.studentCode || '',
+                s.fullName || '',
+                s.gender === 'MALE' ? 'Nam' : (s.gender === 'FEMALE' ? 'Nữ' : (s.gender || '')),
+                s.dob || '',
+                s.phone || '',
+                s.email || '',
+                s.nationalId || '',
+                s.className || s.faculty || '',
+                s.hometown || '',
+                s.status === 'ACTIVE' ? 'Hoạt động' : (s.status === 'PENDING' ? 'Chờ duyệt' : (s.status === 'INACTIVE' ? 'Đã khóa' : (s.status === 'GRADUATED' ? 'Đã tốt nghiệp' : (s.status || '')))),
+                s.createdAt ? s.createdAt.substring(0, 10) : ''
+            ]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+            // Thiết lập độ rộng cột cho đẹp mắt
+            ws['!cols'] = [
+                { wch: 6 },  // STT
+                { wch: 18 }, // MSSV
+                { wch: 25 }, // Họ tên
+                { wch: 10 }, // Giới tính
+                { wch: 14 }, // Ngày sinh
+                { wch: 15 }, // SĐT
+                { wch: 26 }, // Email
+                { wch: 18 }, // CCCD
+                { wch: 18 }, // Lớp/Khoa
+                { wch: 20 }, // Quê quán
+                { wch: 14 }, // Trạng thái
+                { wch: 16 }  // Ngày tạo
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Danh_Sach_Sinh_Vien');
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+            const fileName = `Danh_sach_sinh_vien_KTX_${dateStr}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+            showToastSuccess(`Xuất thành công ${list.length} sinh viên ra file: ${fileName}`);
+        } catch (e) {
+            showToastError('Lỗi khi xuất Excel: ' + e.message);
+        }
+    }
+
+    // ==============================================================
+    // CHỨC NĂNG 2: TẢI FILE MẪU EXCEL NHẬP SINH VIÊN (.XLSX)
+    // ==============================================================
+    function downloadStudentExcelTemplate() {
+        if (typeof XLSX === 'undefined') {
+            showToastError('Thư viện Excel chưa sẵn sàng!');
+            return;
+        }
+
+        const templateHeader = [
+            'Mã số sinh viên (MSSV) *',
+            'Họ và tên khai sinh *',
+            'Giới tính (Nam/Nữ) *',
+            'Ngày sinh (yyyy-mm-dd hoặc dd/mm/yyyy)',
+            'Số điện thoại *',
+            'Email',
+            'Số CCCD (12 số)',
+            'Lớp / Khoa',
+            'Quê quán'
+        ];
+
+        const sampleRows = [
+            ['SV2026001', 'Nguyễn Văn An', 'Nam', '2004-10-20', '0911223344', 'an.nv@student.edu.vn', '001204000123', 'K68-CNTT', 'Hà Nội'],
+            ['SV2026002', 'Trần Thị Bình', 'Nữ', '2004-05-15', '0933445566', 'binh.tt@student.edu.vn', '001204000456', 'K68-DTVT', 'Đà Nẵng'],
+            ['SV2026003', 'Lê Hoàng Cường', 'Nam', '2003-12-08', '0977889900', 'cuong.lh@student.edu.vn', '001203000789', 'K67-QTKD', 'Hải Phòng']
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([templateHeader, ...sampleRows]);
+
+        ws['!cols'] = [
+            { wch: 22 }, // MSSV
+            { wch: 25 }, // Họ tên
+            { wch: 18 }, // Giới tính
+            { wch: 22 }, // Ngày sinh
+            { wch: 18 }, // SĐT
+            { wch: 26 }, // Email
+            { wch: 18 }, // CCCD
+            { wch: 18 }, // Lớp/Khoa
+            { wch: 18 }  // Quê quán
+        ];
+
+        // Sheet 2: Hướng dẫn
+        const guideRows = [
+            ['QUY TẮC NHẬP DỮ LIỆU FILE EXCEL SINH VIÊN KÝ TÚC XÁ'],
+            [''],
+            ['1. Cột có dấu (*) là bắt buộc: Mã sinh viên, Họ và tên, Giới tính, Số điện thoại.'],
+            ['2. Mã số sinh viên (MSSV): Phải duy nhất, không trùng với sinh viên đã có trong hệ thống.'],
+            ['3. Tài khoản đăng nhập: Hệ thống sẽ tự động tạo tài khoản với Tên đăng nhập = MSSV và Mật khẩu mặc định = MSSV.'],
+            ['4. Giới tính: Ghi "Nam" hoặc "Nữ" (hoặc "MALE" / "FEMALE").'],
+            ['5. Số điện thoại: 10 chữ số hợp lệ (ví dụ: 0911223344).'],
+            ['6. Số CCCD: 12 chữ số nếu có.'],
+            ['7. Ngày sinh: Định dạng chuẩn YYYY-MM-DD (VD: 2004-10-20) hoặc DD/MM/YYYY (VD: 20/10/2004).']
+        ];
+        const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
+        wsGuide['!cols'] = [{ wch: 90 }];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Danh_Sach_Mau');
+        XLSX.utils.book_append_sheet(wb, wsGuide, 'Huong_Dan');
+
+        XLSX.writeFile(wb, 'Mau_Nhap_Sinh_Vien_KTX.xlsx');
+        showToastSuccess('Đã tải xuống file mẫu: Mau_Nhap_Sinh_Vien_KTX.xlsx');
+    }
+
+    // ==============================================================
+    // CHỨC NĂNG 3: NHẬP HÀNG LOẠT SINH VIÊN TỪ FILE EXCEL (.XLSX, .CSV)
+    // ==============================================================
+    function openImportExcelModal() {
+        parsedExcelData = [];
+        const fileInput = document.getElementById('excelFileInput');
+        if (fileInput) fileInput.value = '';
+
+        document.getElementById('dropZoneTitle').textContent = 'Kéo thả tệp Excel vào đây hoặc bấm để chọn tệp';
+        document.getElementById('dropZoneSubtitle').textContent = 'Hỗ trợ các định dạng: .xlsx, .xls, .csv (Dung lượng tối đa: 25MB)';
+        document.getElementById('excelPreviewSection').classList.add('d-none');
+        document.getElementById('excelImportResultSection').classList.add('d-none');
+        document.getElementById('btnConfirmImportExcel').disabled = true;
+
+        if (importExcelModal) {
+            importExcelModal.show();
+        }
+    }
+
+    function handleExcelFileSelect(input) {
+        if (input.files && input.files.length > 0) {
+            processExcelFile(input.files[0]);
+        }
+    }
+
+    function processExcelFile(file) {
+        if (!file) return;
+
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        if (!['.xlsx', '.xls', '.csv'].includes(ext)) {
+            showToastError('Chỉ hỗ trợ tệp định dạng .xlsx, .xls, .csv!');
+            return;
+        }
+
+        if (file.size > 25 * 1024 * 1024) {
+            showToastError('Kích thước tệp tối đa cho phép là 25MB!');
+            return;
+        }
+
+        document.getElementById('dropZoneTitle').innerHTML = `<i class="bi bi-file-earmark-spreadsheet-fill text-success me-1"></i>Đã chọn tệp: <b>${escapeHtml(file.name)}</b> (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('dropZoneSubtitle').textContent = 'Đang phân tích dữ liệu bảng tính...';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                if (!rawRows || rawRows.length < 2) {
+                    showToastError('Tệp không có dữ liệu hoặc chỉ có dòng tiêu đề!');
+                    return;
+                }
+
+                parseAndValidateExcelRows(rawRows);
+            } catch (err) {
+                console.error('Lỗi đọc Excel:', err);
+                showToastError('Không thể đọc nội dung tệp Excel: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseAndValidateExcelRows(rawRows) {
+        // Tìm dòng tiêu đề (header row)
+        let headerRowIndex = 0;
+        let colMap = {};
+
+        for (let r = 0; r < Math.min(rawRows.length, 5); r++) {
+            const row = rawRows[r];
+            const lowerRow = row.map(c => String(c).trim().toLowerCase());
+            let foundMSSV = lowerRow.findIndex(c => c.includes('mssv') || c.includes('mã sinh viên') || c.includes('mã số'));
+            let foundName = lowerRow.findIndex(c => c.includes('họ') || c.includes('tên') || c.includes('họ và tên'));
+            if (foundMSSV !== -1 && foundName !== -1) {
+                headerRowIndex = r;
+                lowerRow.forEach((c, idx) => {
+                    if (c.includes('mssv') || c.includes('mã sinh viên') || c.includes('mã số')) colMap.studentCode = idx;
+                    else if (c.includes('họ và tên') || c.includes('họ tên') || c.includes('tên')) colMap.fullName = idx;
+                    else if (c.includes('giới tính')) colMap.gender = idx;
+                    else if (c.includes('ngày sinh') || c.includes('năm sinh')) colMap.dob = idx;
+                    else if (c.includes('điện thoại') || c.includes('sđt') || c.includes('phone')) colMap.phone = idx;
+                    else if (c.includes('email')) colMap.email = idx;
+                    else if (c.includes('cccd') || c.includes('căn cước') || c.includes('định danh') || c.includes('cmnd')) colMap.nationalId = idx;
+                    else if (c.includes('lớp') || c.includes('khoa')) colMap.className = idx;
+                    else if (c.includes('quê') || c.includes('địa chỉ')) colMap.hometown = idx;
+                });
+                break;
+            }
+        }
+
+        // Nếu không khớp theo tên cột thì mặc định theo thứ tự file mẫu chuẩn:
+        // 0: MSSV, 1: Họ tên, 2: Giới tính, 3: Ngày sinh, 4: SĐT, 5: Email, 6: CCCD, 7: Lớp/Khoa, 8: Quê quán
+        if (colMap.studentCode === undefined || colMap.fullName === undefined) {
+            colMap = {
+                studentCode: 0,
+                fullName: 1,
+                gender: 2,
+                dob: 3,
+                phone: 4,
+                email: 5,
+                nationalId: 6,
+                className: 7,
+                hometown: 8
+            };
+        }
+
+        parsedExcelData = [];
+        let validCount = 0;
+        let errorCount = 0;
+        const seenCodes = new Set();
+
+        for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+            const r = rawRows[i];
+            if (!r || r.every(cell => String(cell).trim() === '')) {
+                continue; // Bỏ qua dòng trống
+            }
+
+            const studentCode = String(r[colMap.studentCode] || '').trim();
+            const fullName = String(r[colMap.fullName] || '').trim();
+            let genderRaw = String(r[colMap.gender] || '').trim().toUpperCase();
+            let dobRaw = r[colMap.dob];
+            let phone = String(r[colMap.phone] || '').trim().replace(/[^0-9+]/g, '');
+            let email = String(r[colMap.email] || '').trim();
+            let nationalId = String(r[colMap.nationalId] || '').trim().replace(/[^0-9]/g, '');
+            let className = String(r[colMap.className] || '').trim();
+            let hometown = String(r[colMap.hometown] || '').trim();
+
+            // Chuẩn hóa Giới tính
+            let gender = 'MALE';
+            if (genderRaw.includes('NỮ') || genderRaw.includes('NU') || genderRaw === 'FEMALE') {
+                gender = 'FEMALE';
+            }
+
+            // Chuẩn hóa Ngày sinh
+            let dob = null;
+            if (dobRaw) {
+                if (dobRaw instanceof Date) {
+                    const y = dobRaw.getFullYear();
+                    const m = String(dobRaw.getMonth() + 1).padStart(2, '0');
+                    const d = String(dobRaw.getDate()).padStart(2, '0');
+                    dob = `${y}-${m}-${d}`;
+                } else {
+                    const dobStr = String(dobRaw).trim();
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(dobStr)) {
+                        dob = dobStr;
+                    } else if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dobStr)) {
+                        const parts = dobStr.split(/[\/\-]/);
+                        dob = `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
+                    }
+                }
+            }
+
+            // Kiểm tra lỗi hợp lệ
+            const errors = [];
+            if (!studentCode) errors.push('Thiếu MSSV');
+            if (!fullName) errors.push('Thiếu Họ tên');
+            if (!phone) errors.push('Thiếu SĐT');
+            else if (!/^(0|\+84)[0-9]{9}$/.test(phone)) errors.push('SĐT không đúng định dạng (10 số)');
+
+            if (studentCode) {
+                if (seenCodes.has(studentCode.toUpperCase())) {
+                    errors.push('MSSV trùng trong tệp');
+                } else {
+                    seenCodes.add(studentCode.toUpperCase());
+                }
+            }
+
+            if (nationalId && !/^\d{12}$/.test(nationalId)) {
+                errors.push('CCCD phải đủ 12 chữ số');
+            }
+
+            const isValid = errors.length === 0;
+            if (isValid) validCount++; else errorCount++;
+
+            parsedExcelData.push({
+                rowNum: i + 1,
+                studentCode,
+                fullName,
+                gender,
+                dob,
+                phone,
+                email: email || null,
+                nationalId: nationalId || null,
+                className: className || null,
+                hometown: hometown || null,
+                isValid,
+                errorText: errors.join(', ')
+            });
+        }
+
+        renderExcelPreviewTable(parsedExcelData, validCount, errorCount);
+    }
+
+    function renderExcelPreviewTable(dataList, validCount, errorCount) {
+        const tbody = document.getElementById('excelPreviewTableBody');
+        document.getElementById('previewStatsBadge').textContent = `${dataList.length} dòng`;
+        document.getElementById('previewValidBadge').textContent = `${validCount} hợp lệ`;
+        document.getElementById('previewErrorBadge').textContent = `${errorCount} lỗi`;
+
+        document.getElementById('excelPreviewSection').classList.remove('d-none');
+        document.getElementById('btnConfirmImportExcel').disabled = (validCount === 0);
+
+        tbody.innerHTML = dataList.map((row, idx) => `
+            <tr class="${row.isValid ? '' : 'table-danger'}">
+                <td class="text-center text-muted">${idx + 1}</td>
+                <td>
+                    ${row.isValid 
+                        ? '<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Hợp lệ</span>'
+                        : `<span class="badge bg-danger-subtle text-danger" title="${escapeHtml(row.errorText)}"><i class="bi bi-exclamation-triangle me-1"></i>${escapeHtml(row.errorText)}</span>`
+                    }
+                </td>
+                <td class="fw-bold ${row.isValid ? 'text-primary' : 'text-danger'}">${escapeHtml(row.studentCode) || '-'}</td>
+                <td class="fw-semibold text-dark">${escapeHtml(row.fullName) || '-'}</td>
+                <td>${row.gender === 'MALE' ? 'Nam' : 'Nữ'}</td>
+                <td>${escapeHtml(row.dob) || '-'}</td>
+                <td>${escapeHtml(row.phone) || '-'}</td>
+                <td>${escapeHtml(row.email) || '-'}</td>
+                <td>${escapeHtml(row.nationalId) || '-'}</td>
+                <td>${escapeHtml(row.className) || '-'}</td>
+                <td>${escapeHtml(row.hometown) || '-'}</td>
+            </tr>
+        `).join('');
+    }
+
+    async function executeImportExcel() {
+        const skipErrors = document.getElementById('skipErrorsCheckbox').checked;
+        const validRows = parsedExcelData.filter(r => r.isValid);
+
+        if (validRows.length === 0) {
+            showToastError('Không có dòng dữ liệu hợp lệ nào để nhập!');
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmImportExcel');
+        const origBtnText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nạp dữ liệu vào hệ thống...';
+
+        const payload = validRows.map(r => ({
+            studentCode: r.studentCode,
+            fullName: r.fullName,
+            gender: r.gender,
+            dob: r.dob,
+            phone: r.phone,
+            email: r.email,
+            nationalId: r.nationalId,
+            className: r.className,
+            hometown: r.hometown,
+            status: 'ACTIVE'
+        }));
+
+        try {
+            const res = await apiFetch('/students/batch', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            btn.innerHTML = origBtnText;
+
+            if (res && res.result) {
+                const r = res.result;
+                const resultSection = document.getElementById('excelImportResultSection');
+                const resultAlert = document.getElementById('excelImportResultAlert');
+                const errorDetails = document.getElementById('excelImportErrorDetails');
+
+                resultSection.classList.remove('d-none');
+                resultAlert.className = r.successCount > 0 ? 'alert alert-success border-0 rounded-3 mb-2' : 'alert alert-danger border-0 rounded-3 mb-2';
+                resultAlert.innerHTML = `
+                    <div class="fw-bold fs-6">
+                        <i class="bi bi-check-circle-fill me-1"></i>Xử lý hoàn tất: Nhập thành công <b>${r.successCount}/${r.total}</b> sinh viên.
+                    </div>
+                    <div class="small mt-1 text-muted">
+                        Đã tự động khởi tạo tài khoản đăng nhập cho từng sinh viên (Tài khoản = MSSV, Mật khẩu = MSSV).
+                    </div>
+                `;
+
+                if (r.failedCount > 0 && r.errors && r.errors.length > 0) {
+                    errorDetails.classList.remove('d-none');
+                    errorDetails.innerHTML = `
+                        <div class="fw-bold mb-1 text-danger"><i class="bi bi-exclamation-octagon-fill me-1"></i>Danh sách dòng không thể thêm (${r.failedCount} dòng):</div>
+                        <ul class="mb-0 ps-3">
+                            ${r.errors.map(e => `<li>Dòng ${e.row} [${escapeHtml(e.studentCode || '-')}] : ${escapeHtml(e.reason)}</li>`).join('')}
+                        </ul>
+                    `;
+                } else {
+                    errorDetails.classList.add('d-none');
+                }
+
+                showToastSuccess(`Đã nhập thành công ${r.successCount} sinh viên từ file Excel!`);
+                loadStudents(1);
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerHTML = origBtnText;
+            showToastError('Lỗi khi nạp dữ liệu: ' + err.message);
+        }
+    }
+</script>
+</body>
+</html>

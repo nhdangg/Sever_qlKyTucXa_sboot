@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Quản lý Cơ sở vật chất & Tài sản Phòng')}"></head>
+
+<body>
+
+    <aside th:replace="~{fragments/layout :: sidebar('admin-assets')}"></aside>
+
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Quản lý Danh mục Tài sản & Thiết bị Phòng KTX')}"></nav>
+
+        <div class="content-body">
+            <!-- Thanh Tab ngang + Nút thao tác chính đồng bộ -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold py-1 px-3 small" data-bs-toggle="pill"
+                            data-bs-target="#paneAssetCatalog" type="button">
+                            <i class="bi bi-box-seam-fill me-1"></i> Danh mục Tài sản KTX
+                            <span class="badge bg-white text-dark ms-1" id="countAssetCatalogBadge">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold py-1 px-3 small" data-bs-toggle="pill"
+                            data-bs-target="#paneRoomAssets" type="button">
+                            <i class="bi bi-door-open-fill me-1"></i> Phân bổ Tài sản theo Phòng
+                            <span class="badge bg-light text-dark border ms-1" id="countRoomAssetsBadge">0</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="d-flex gap-2 role-manager-up">
+                    <button class="btn btn-primary btn-sm fw-semibold px-3 shadow-sm" onclick="openCreateAssetModal()">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Thêm Danh mục Tài sản
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm fw-semibold px-3 bg-white shadow-sm" onclick="openCreateRoomAssetModal()">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Bàn giao Tài sản vào Phòng
+                    </button>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <!-- TAB 1: DANH MỤC TÀI SẢN (tai_san) -->
+                <div class="tab-pane fade show active" id="paneAssetCatalog">
+                    <!-- Thanh Tìm kiếm & Lọc Danh mục Tài sản gọn trên 1 hàng -->
+                    <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                                <div class="input-group input-group-sm" style="width: 260px;">
+                                    <span class="input-group-text bg-light border-end-0"><i
+                                            class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="assetSearchInput"
+                                        class="form-control border-start-0"
+                                        placeholder="Tìm theo mã hoặc tên tài sản..." oninput="filterAssetTable()">
+                                </div>
+                                <select id="assetCategoryFilter" class="form-select form-select-sm" style="width: 190px;"
+                                    onchange="filterAssetTable()">
+                                    <option value="">-- Tất cả danh mục --</option>
+                                </select>
+                                <select id="assetStatusFilter" class="form-select form-select-sm" style="width: 200px;"
+                                    onchange="filterAssetTable()">
+                                    <option value="">-- Tất cả tình trạng --</option>
+                                    <option value="ACTIVE">Đang sử dụng (ACTIVE)</option>
+                                    <option value="IN_STOCK">Còn trong kho (IN_STOCK)</option>
+                                    <option value="MAINTENANCE">Bảo trì / Sửa chữa (MAINTENANCE)</option>
+                                    <option value="DISCONTINUED">Ngừng cấp phát (DISCONTINUED)</option>
+                                    <option value="LIQUIDATED">Đã thanh lý (LIQUIDATED)</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary px-2" onclick="resetAssetFilter()" title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-custom shadow-sm bg-white">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 110px;">Mã tài sản</th>
+                                        <th>Tên tài sản / Thiết bị</th>
+                                        <th style="width: 150px;">Danh mục</th>
+                                        <th style="width: 130px;">Đơn giá</th>
+                                        <th style="width: 110px;">Ngày mua</th>
+                                        <th style="width: 115px;">Hạn bảo hành</th>
+                                        <th style="width: 140px;">Tình trạng</th>
+                                        <th class="text-end pe-3" style="width: 115px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assetTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-5">Đang tải danh sách tài
+                                            sản...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PHÂN BỔ TÀI SẢN THEO PHÒNG (tai_san_phong) -->
+                <div class="tab-pane fade" id="paneRoomAssets">
+                    <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                                <select id="roomAssetFilterRoom" class="form-select form-select-sm" style="width: 250px;" onchange="filterRoomAssets()">
+                                    <option value="">-- Lọc theo Phòng ở (Tất cả các phòng) --</option>
+                                </select>
+                                <div class="input-group input-group-sm" style="width: 280px;">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="roomAssetSearchInput" class="form-control border-start-0"
+                                        placeholder="Tìm theo số phòng hoặc tên thiết bị..." oninput="filterRoomAssets()">
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary px-2" onclick="document.getElementById('roomAssetFilterRoom').value='';document.getElementById('roomAssetSearchInput').value='';filterRoomAssets();" title="Đặt lại bộ lọc">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-custom shadow-sm bg-white">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 175px;">Phòng ở</th>
+                                        <th style="width: 145px;">Tổng hợp thiết bị</th>
+                                        <th>Danh sách vật dụng / Tài sản trong phòng</th>
+                                        <th style="width: 135px;">Cập nhật gần nhất</th>
+                                        <th class="text-end pe-3" style="width: 175px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roomAssetTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">Đang tải danh sách tài sản
+                                            các phòng...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm / Sửa Danh mục Tài sản (tai_san) -->
+    <div class="modal fade" id="assetModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header univ-modal-header py-2 px-3">
+                    <h6 class="modal-title fw-bold text-white mb-0" id="assetModalTitle">
+                        <i class="bi bi-box-seam me-2"></i>THÔNG TIN TÀI SẢN / THIẾT BỊ
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <form id="assetForm">
+                        <input type="hidden" id="assetId">
+                        <div class="form-section-title"><i class="bi bi-tag me-1"></i> I. THÔNG TIN ĐỊNH DANH TÀI SẢN</div>
+                        <div class="form-section-box">
+                            <div class="row g-2 mb-2">
+                                <div class="col-5">
+                                    <label class="form-label small fw-semibold">Mã tài sản <span class="text-danger">*</span></label>
+                                    <input type="text" id="assetCode" class="form-control form-control-sm"
+                                        placeholder="VD: TS-DH-001" required>
+                                </div>
+                                <div class="col-7">
+                                    <label class="form-label small fw-semibold">Danh mục tài sản <span class="text-danger">*</span></label>
+                                    <input type="text" id="assetCategory" class="form-control form-control-sm"
+                                        list="categoryDatalist" placeholder="VD: Điện lạnh, Nội thất..." required>
+                                    <datalist id="categoryDatalist">
+                                        <option value="Điện lạnh">
+                                        <option value="Nội thất phòng ở">
+                                        <option value="Thiết bị điện">
+                                        <option value="Thiết bị vệ sinh">
+                                        <option value="Thiết bị mạng">
+                                    </datalist>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold">Tên tài sản / Thiết bị <span class="text-danger">*</span></label>
+                                <input type="text" id="assetName" class="form-control form-control-sm"
+                                    placeholder="VD: Điều hòa Inverter Casper 12000BTU" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title"><i class="bi bi-sliders me-1"></i> II. GIÁ TRỊ, THỜI HẠN & TÌNH TRẠNG</div>
+                        <div class="form-section-box">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Đơn giá ước tính (VNĐ)</label>
+                                    <input type="number" id="price" class="form-control form-control-sm"
+                                        placeholder="VD: 7500000" min="0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Tình trạng sử dụng</label>
+                                    <select id="assetStatus" class="form-select form-select-sm">
+                                        <option value="ACTIVE">Đang sử dụng (ACTIVE)</option>
+                                        <option value="IN_STOCK">Còn trong kho (IN_STOCK)</option>
+                                        <option value="MAINTENANCE">Bảo trì / Sửa chữa (MAINTENANCE)</option>
+                                        <option value="DISCONTINUED">Ngừng cấp phát (DISCONTINUED)</option>
+                                        <option value="LIQUIDATED">Đã thanh lý (LIQUIDATED)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Ngày mua / Nhập kho</label>
+                                    <input type="date" id="purchaseDate" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Hạn bảo hành</label>
+                                    <input type="date" id="warrantyUntil" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="submitSaveAsset()">
+                        <i class="bi bi-save me-1"></i>Lưu tài sản
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Bàn giao Tài sản vào Phòng (tai_san_phong) - Hỗ trợ Gán nhiều thiết bị cùng lúc & Cập nhật -->
+    <div class="modal fade" id="roomAssetModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header univ-modal-header py-2 px-3">
+                    <h6 class="modal-title fw-bold text-white mb-0" id="roomAssetModalTitle">
+                        <i class="bi bi-door-open me-2"></i>BÀN GIAO TÀI SẢN & THIẾT BỊ VÀO PHÒNG Ở
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <form id="roomAssetForm">
+                        <input type="hidden" id="roomAssetId">
+                        <div class="form-section-title"><i class="bi bi-building me-1"></i> I. PHÒNG Ở TIẾP NHẬN & NGÀY BÀN GIAO</div>
+                        <div class="form-section-box">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-7">
+                                    <label class="form-label small fw-semibold">Chọn phòng ở tiếp nhận <span
+                                            class="text-danger">*</span></label>
+                                    <select id="roomAssetRoomSelect" class="form-select form-select-sm" required
+                                        onchange="onAssignRoomSelectChange()"></select>
+                                </div>
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label small fw-semibold">Ngày bàn giao <span
+                                            class="text-danger">*</span></label>
+                                    <input type="date" id="roomAssetDateInput" class="form-control form-control-sm"
+                                        required>
+                                </div>
+                            </div>
+                            <div id="roomExistingAssetsSummary" class="mt-2 small"></div>
+                        </div>
+
+                        <!-- Chế độ 1: Gán nhiều vật dụng cùng lúc cho phòng (Khi tạo mới) -->
+                        <div id="multiAssignSection">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <div class="form-section-title mb-0"><i class="bi bi-check2-square me-1"></i> II. CHỌN CÁC VẬT DỤNG / THIẾT BỊ BÀN GIAO CHO PHÒNG</div>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1" style="font-size: 0.75rem;"
+                                        onclick="selectStandardRoomAssets()">
+                                        <i class="bi bi-stars me-1"></i>Chọn gói tiêu chuẩn
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1" style="font-size: 0.75rem;"
+                                        onclick="toggleAllMultiAssets(true)">
+                                        Chọn tất cả
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1" style="font-size: 0.75rem;"
+                                        onclick="toggleAllMultiAssets(false)">
+                                        Bỏ chọn
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="multiAssetSearchInput" class="form-control"
+                                        placeholder="Lọc nhanh tên hoặc mã thiết bị..." oninput="renderMultiAssetChecklist()">
+                                </div>
+                            </div>
+
+                            <div class="table-responsive border rounded-3 bg-white" style="max-height: 320px; overflow-y: auto;">
+                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.84rem;">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th style="width: 38px;" class="text-center">Chọn</th>
+                                            <th>Thiết bị / Vật dụng</th>
+                                            <th style="width: 110px;" class="text-center">Số lượng</th>
+                                            <th style="width: 220px;">Ghi chú hiện trạng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="multiAssetChecklistBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+                                <span><i class="bi bi-info-circle me-1"></i>Mẹo: Nếu thiết bị đã có trong phòng, hệ thống sẽ tự động cộng dồn số lượng.</span>
+                                <span class="fw-bold text-primary" id="multiAssetSelectedCountBadge">Đã chọn: 0 thiết bị</span>
+                            </div>
+                        </div>
+
+                        <!-- Chế độ 2: Cập nhật 1 thiết bị cụ thể trong phòng (Khi bấm Sửa) -->
+                        <div id="singleEditSection" style="display: none;">
+                            <div class="form-section-title"><i class="bi bi-clipboard-check me-1"></i> II. THÔNG TIN THIẾT BỊ & HIỆN TRẠNG CẬP NHẬT</div>
+                            <div class="form-section-box">
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Tài sản / Thiết bị <span
+                                            class="text-danger">*</span></label>
+                                    <select id="roomAssetItemSelect" class="form-select form-select-sm" required></select>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <label class="form-label small fw-semibold">Số lượng bàn giao <span
+                                                class="text-danger">*</span></label>
+                                        <input type="number" min="1" id="roomAssetQtyInput"
+                                            class="form-control form-control-sm" value="1" required>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label small fw-semibold">Ghi chú hiện trạng thực tế</label>
+                                        <input type="text" id="roomAssetConditionInput" class="form-control form-control-sm"
+                                            value="Mới 100%, hoạt động tốt">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" id="saveRoomAssetBtn" onclick="saveRoomAsset()">
+                        <i class="bi bi-check2-circle me-1"></i>Lưu bàn giao
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi Tiết Tài Sản Của 1 Phòng -->
+    <div class="modal fade" id="roomAssetsDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" style="max-width: 880px;">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header univ-modal-header py-2 px-3">
+                    <h6 class="modal-title fw-bold text-white mb-0" id="roomAssetsDetailTitle">
+                        <i class="bi bi-box-seam-fill me-2"></i>CHI TIẾT TÀI SẢN & THIẾT BỊ TRONG PHÒNG
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="row g-2 mb-3 align-items-stretch">
+                        <div class="col-4">
+                            <div class="p-2 px-3 rounded-3 bg-primary-subtle border border-primary-subtle text-center h-100 d-flex flex-column justify-content-center">
+                                <div class="small text-muted">Phòng ở</div>
+                                <div class="fw-bold text-primary text-truncate" id="detailModalRoomName">-</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 px-3 rounded-3 bg-success-subtle border border-success-subtle text-center h-100 d-flex flex-column justify-content-center">
+                                <div class="small text-muted">Số loại thiết bị</div>
+                                <div class="fw-bold text-success" id="detailModalTypeCount">0 loại</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 px-3 rounded-3 bg-info-subtle border border-info-subtle text-center h-100 d-flex flex-column justify-content-center">
+                                <div class="small text-muted">Tổng số lượng</div>
+                                <div class="fw-bold text-info" id="detailModalTotalQty">0 cái</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-custom border rounded-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 105px;">Mã thiết bị</th>
+                                        <th style="width: 225px;">Tên tài sản trang bị</th>
+                                        <th class="text-center" style="width: 80px;">Số lượng</th>
+                                        <th>Tình trạng thực tế</th>
+                                        <th style="width: 110px;">Ngày bàn giao</th>
+                                        <th class="text-end pe-3" style="width: 90px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roomAssetsDetailTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-primary fw-semibold px-3 role-manager-up" id="detailModalAddBtn">
+                        <i class="bi bi-plus-circle-fill me-1"></i>Bàn giao thêm vật dụng cho phòng này
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border px-3" data-bs-dismiss="modal">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        let assetModal = null;
+        let roomAssetModal = null;
+        let roomAssetsDetailModal = null;
+        let currentDetailRoomId = null;
+        let allAssets = [];
+        let allRooms = [];
+        let allRoomAssets = [];
+        let canManageAsset = false;
+        // Lưu trạng thái chọn nhiều thiết bị trong Modal
+        let multiSelectState = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            assetModal = new bootstrap.Modal(document.getElementById('assetModal'));
+            roomAssetModal = new bootstrap.Modal(document.getElementById('roomAssetModal'));
+            roomAssetsDetailModal = new bootstrap.Modal(document.getElementById('roomAssetsDetailModal'));
+            document.getElementById('roomAssetDateInput').value = new Date().toISOString().split('T')[0];
+
+            const user = Auth.getUser() || {};
+            const role = (user.role || 'ADMIN').toUpperCase();
+            canManageAsset = (role === 'ADMIN' || role === 'MANAGER');
+
+            await Promise.all([
+                loadAssets(),
+                loadRoomsAndRoomAssets()
+            ]);
+        });
+
+        function getAssetStatusLabel(status) {
+            switch (status) {
+                case 'ACTIVE':
+                case 'IN_USE':
+                case 'GOOD':
+                    return 'Đang sử dụng';
+                case 'IN_STOCK':
+                    return 'Còn trong kho';
+                case 'MAINTENANCE':
+                    return 'Bảo trì / Sửa chữa';
+                case 'DISCONTINUED':
+                    return 'Ngừng cấp phát';
+                case 'LIQUIDATED':
+                    return 'Đã thanh lý';
+                default:
+                    return status || 'Chưa rõ';
+            }
+        }
+
+        async function loadAssets() {
+            try {
+                const res = await apiFetch('/assets/all').catch(() => apiFetch('/assets'));
+                allAssets = unwrapList(res);
+
+                const itemSelect = document.getElementById('roomAssetItemSelect');
+                if (itemSelect) {
+                    itemSelect.innerHTML = allAssets.map(a => {
+                        const canAssign = (a.status === 'ACTIVE' || a.status === 'IN_STOCK' || a.status === 'IN_USE' || a.status === 'GOOD');
+                        const label = `${a.assetCode} — ${a.assetName} (${getAssetStatusLabel(a.status)})`;
+                        return `<option value="${a.assetId}" ${!canAssign ? 'disabled class="text-muted"' : ''}>${label}</option>`;
+                    }).join('');
+                }
+
+                // Cập nhật danh sách Category filter & datalist
+                const catSelect = document.getElementById('assetCategoryFilter');
+                const catDatalist = document.getElementById('categoryDatalist');
+                const categories = Array.from(new Set(allAssets.map(a => a.category).filter(Boolean)));
+                if (catSelect) {
+                    catSelect.innerHTML = '<option value="">-- Tất cả danh mục --</option>' +
+                        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                }
+                if (catDatalist) {
+                    catDatalist.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+                }
+
+                const countAssetBadge = document.getElementById('countAssetCatalogBadge');
+                if (countAssetBadge) countAssetBadge.textContent = allAssets.length;
+
+                renderAssetList(allAssets);
+            } catch (e) {
+                document.getElementById('assetTableBody').innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
+        function getAssetStatusBadge(status) {
+            switch (status) {
+                case 'ACTIVE':
+                case 'IN_USE':
+                case 'GOOD':
+                    return '<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Đang sử dụng</span>';
+                case 'IN_STOCK':
+                    return '<span class="badge bg-info-subtle text-info"><i class="bi bi-box-seam me-1"></i>Còn trong kho</span>';
+                case 'MAINTENANCE':
+                    return '<span class="badge bg-warning-subtle text-warning"><i class="bi bi-tools me-1"></i>Bảo trì / Sửa chữa</span>';
+                case 'DISCONTINUED':
+                    return '<span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-slash-circle me-1"></i>Ngừng cấp phát</span>';
+                case 'LIQUIDATED':
+                    return '<span class="badge bg-danger-subtle text-danger"><i class="bi bi-trash3 me-1"></i>Đã thanh lý</span>';
+                default:
+                    return `<span class="badge bg-light text-dark border">${status || 'Chưa rõ'}</span>`;
+            }
+        }
+
+        function renderAssetList(list) {
+            const tbody = document.getElementById('assetTableBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-5">Không có tài sản nào phù hợp.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(a => `
+            <tr>
+                <td class="fw-bold text-primary">${a.assetCode}</td>
+                <td class="fw-semibold text-dark text-truncate" style="max-width: 240px;" title="${a.assetName || ''}">${a.assetName}</td>
+                <td><span class="badge bg-light text-dark border">${a.category || 'Chưa phân loại'}</span></td>
+                <td class="fw-semibold text-dark">${formatCurrency(a.unitPrice !== undefined ? a.unitPrice : (a.unitValue !== undefined ? a.unitValue : (a.price || 0)))}</td>
+                <td class="small text-secondary">${formatDate(a.purchaseDate)}</td>
+                <td class="small text-secondary">${formatDate(a.warrantyUntil)}</td>
+                <td>${getAssetStatusBadge(a.status)}</td>
+                <td class="text-end pe-3">
+                    ${canManageAsset ? `
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick='openEditAssetModal(${JSON.stringify(a)})' title="Sửa">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteAsset('${a.assetId}')" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    ` : '<span class="badge bg-light text-secondary border">Chỉ xem</span>'}
+                </td>
+            </tr>
+        `).join('');
+        }
+
+        function filterAssetTable() {
+            const kw = document.getElementById('assetSearchInput') ? document.getElementById('assetSearchInput').value.trim().toLowerCase() : '';
+            const cat = document.getElementById('assetCategoryFilter') ? document.getElementById('assetCategoryFilter').value : '';
+            const st = document.getElementById('assetStatusFilter') ? document.getElementById('assetStatusFilter').value : '';
+
+            const filtered = allAssets.filter(a => {
+                const matchKw = !kw || (a.assetCode && a.assetCode.toLowerCase().includes(kw)) || (a.assetName && a.assetName.toLowerCase().includes(kw));
+                const matchCat = !cat || (a.category === cat);
+                let matchStatus = true;
+                if (st) {
+                    if (st === 'ACTIVE') {
+                        matchStatus = (a.status === 'ACTIVE' || a.status === 'IN_USE' || a.status === 'GOOD');
+                    } else {
+                        matchStatus = (a.status === st);
+                    }
+                }
+                return matchKw && matchCat && matchStatus;
+            });
+
+            renderAssetList(filtered);
+        }
+
+        function resetAssetFilter() {
+            if (document.getElementById('assetSearchInput')) document.getElementById('assetSearchInput').value = '';
+            if (document.getElementById('assetCategoryFilter')) document.getElementById('assetCategoryFilter').value = '';
+            if (document.getElementById('assetStatusFilter')) document.getElementById('assetStatusFilter').value = '';
+            renderAssetList(allAssets);
+        }
+
+        async function loadRoomsAndRoomAssets() {
+            try {
+                const [rRes, raRes] = await Promise.all([
+                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms')),
+                    apiFetch('/room-assets/all').catch(() => apiFetch('/room-assets').catch(() => ({ result: [] })))
+                ]);
+                allRooms = unwrapList(rRes);
+                allRoomAssets = unwrapList(raRes);
+
+                const rFilter = document.getElementById('roomAssetFilterRoom');
+                const rSelect = document.getElementById('roomAssetRoomSelect');
+                const prevFilterVal = rFilter ? rFilter.value : '';
+                const prevSelectVal = rSelect ? rSelect.value : '';
+
+                if (rFilter) {
+                    rFilter.innerHTML = '<option value="">-- Lọc theo Phòng ở (Tất cả các phòng) --</option>' +
+                        allRooms.map(r => `<option value="${r.roomId}">Phòng ${r.roomNumber} (${r.buildingName || 'KTX'})</option>`).join('');
+                    if (prevFilterVal) rFilter.value = prevFilterVal;
+                }
+                if (rSelect) {
+                    rSelect.innerHTML = allRooms.map(r => `<option value="${r.roomId}">Phòng ${r.roomNumber} (${r.buildingName || 'KTX'})</option>`).join('');
+                    if (prevSelectVal) rSelect.value = prevSelectVal;
+                }
+
+                filterRoomAssets();
+                if (currentDetailRoomId && document.getElementById('roomAssetsDetailModal').classList.contains('show')) {
+                    renderRoomAssetsDetailModal(currentDetailRoomId);
+                }
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // Gộp danh sách tài sản theo từng Phòng ở để không bị lặp dòng tên phòng
+        function filterRoomAssets() {
+            const roomIdFilter = document.getElementById('roomAssetFilterRoom') ? document.getElementById('roomAssetFilterRoom').value : '';
+            const kw = document.getElementById('roomAssetSearchInput') ? document.getElementById('roomAssetSearchInput').value.trim().toLowerCase() : '';
+            const tbody = document.getElementById('roomAssetTableBody');
+
+            // Nhóm các bản ghi tai_san_phong theo roomId
+            const groupedMap = new Map();
+            allRoomAssets.forEach(ra => {
+                const rId = ra.roomId || ra.roomNumber || 'UNKNOWN';
+                if (!groupedMap.has(rId)) {
+                    const roomObj = allRooms.find(r => r.roomId === rId) || {};
+                    groupedMap.set(rId, {
+                        roomId: rId,
+                        roomNumber: ra.roomNumber || roomObj.roomNumber || '-',
+                        buildingName: roomObj.buildingName || '',
+                        roomTypeName: roomObj.roomTypeName || '',
+                        items: []
+                    });
+                }
+                groupedMap.get(rId).items.push(ra);
+            });
+
+            const countRoomBadge = document.getElementById('countRoomAssetsBadge');
+            if (countRoomBadge) countRoomBadge.textContent = groupedMap.size;
+
+            // Nếu người dùng lọc đích danh 1 phòng mà phòng đó chưa có tài sản nào, vẫn hiển thị dòng phòng đó để dễ gán
+            if (roomIdFilter && !groupedMap.has(roomIdFilter)) {
+                const roomObj = allRooms.find(r => r.roomId === roomIdFilter);
+                if (roomObj) {
+                    groupedMap.set(roomIdFilter, {
+                        roomId: roomObj.roomId,
+                        roomNumber: roomObj.roomNumber || '-',
+                        buildingName: roomObj.buildingName || '',
+                        roomTypeName: roomObj.roomTypeName || '',
+                        items: []
+                    });
+                }
+            }
+
+            let groupedList = Array.from(groupedMap.values());
+
+            if (roomIdFilter) {
+                groupedList = groupedList.filter(g => g.roomId === roomIdFilter);
+            }
+
+            if (kw) {
+                groupedList = groupedList.filter(g => {
+                    const matchRoom = (g.roomNumber && g.roomNumber.toLowerCase().includes(kw)) ||
+                        (g.buildingName && g.buildingName.toLowerCase().includes(kw));
+                    const matchItem = g.items.some(it =>
+                        (it.assetName && it.assetName.toLowerCase().includes(kw)) ||
+                        (it.assetCode && it.assetCode.toLowerCase().includes(kw))
+                    );
+                    return matchRoom || matchItem;
+                });
+            }
+
+            // Sắp xếp theo tên phòng
+            groupedList.sort((a, b) => String(a.roomNumber).localeCompare(String(b.roomNumber), undefined, { numeric: true }));
+
+            if (groupedList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Chưa có thiết bị nào được phân bổ cho phòng phù hợp.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = groupedList.map(group => {
+                const items = group.items || [];
+                const totalTypes = items.length;
+                const totalQty = items.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0);
+
+                // Tìm ngày bàn giao gần nhất
+                let latestDate = '';
+                items.forEach(it => {
+                    if (it.assignedDate && (!latestDate || it.assignedDate > latestDate)) {
+                        latestDate = it.assignedDate;
+                    }
+                });
+
+                // Hiển thị các thẻ tóm tắt vật dụng trong phòng dàn hàng ngang gọn đẹp
+                const summaryChips = items.length > 0
+                    ? items.map(it => `
+                        <span class="badge bg-light text-dark border px-2 py-1 fw-normal d-inline-flex align-items-center" style="font-size: 0.78rem;">
+                            <i class="bi bi-check2-circle text-success me-1"></i>
+                            <span class="fw-semibold text-dark">${it.assetName || it.assetCode}</span>
+                            <span class="badge bg-primary-subtle text-primary ms-1">x${it.quantity || 1}</span>
+                        </span>
+                    `).join('')
+                    : '<span class="text-muted small fst-italic">Chưa có thiết bị nào được bàn giao</span>';
+
+                return `
+                <tr>
+                    <td>
+                        <div class="fw-bold text-primary">
+                            <a href="javascript:void(0)" class="text-decoration-none fw-bold text-primary" onclick="openRoomAssetsDetailModal('${group.roomId}')">
+                                <i class="bi bi-door-open me-1"></i>Phòng ${group.roomNumber}
+                            </a>
+                        </div>
+                        ${group.buildingName ? `<div class="small text-muted text-truncate" style="max-width: 165px;" title="${group.buildingName}">${group.buildingName}</div>` : ''}
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark">${totalTypes} hạng mục</div>
+                        <div class="small text-success fw-semibold">Tổng: ${totalQty} thiết bị</div>
+                    </td>
+                    <td style="white-space: normal; min-width: 300px;">
+                        <div class="d-flex flex-wrap align-items-center gap-1">
+                            ${summaryChips}
+                        </div>
+                    </td>
+                    <td class="small text-secondary">
+                        ${latestDate ? `<i class="bi bi-calendar3 me-1"></i>${formatDate(latestDate)}` : '-'}
+                    </td>
+                    <td class="text-end pe-3">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            <button class="btn btn-sm btn-light border text-primary py-1 px-2"
+                                onclick="openRoomAssetsDetailModal('${group.roomId}')" title="Xem chi tiết thiết bị trong phòng">
+                                <i class="bi bi-eye me-1"></i>Chi tiết
+                            </button>
+                            ${canManageAsset ? `
+                                <button class="btn btn-sm btn-outline-primary py-1 px-2"
+                                    onclick="openCreateRoomAssetModal('${group.roomId}')" title="Gán thêm vật dụng cho phòng này">
+                                    <i class="bi bi-plus-lg"></i> Gán thêm
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function openRoomAssetsDetailModal(roomId) {
+            currentDetailRoomId = roomId;
+            renderRoomAssetsDetailModal(roomId);
+            roomAssetsDetailModal.show();
+        }
+
+        function renderRoomAssetsDetailModal(roomId) {
+            const roomObj = allRooms.find(r => r.roomId === roomId) || {};
+            const items = allRoomAssets.filter(ra => ra.roomId === roomId);
+            const roomNum = roomObj.roomNumber || (items[0] && items[0].roomNumber) || '-';
+            const totalQty = items.reduce((sum, it) => sum + (Number(it.quantity) || 1), 0);
+
+            document.getElementById('roomAssetsDetailTitle').innerHTML =
+                `<i class="bi bi-box-seam-fill me-2"></i>CHI TIẾT TÀI SẢN & THIẾT BỊ — PHÒNG ${roomNum}`;
+            document.getElementById('detailModalRoomName').textContent =
+                `Phòng ${roomNum}` + (roomObj.buildingName ? ` (${roomObj.buildingName})` : '');
+            document.getElementById('detailModalTypeCount').textContent = `${items.length} hạng mục`;
+            document.getElementById('detailModalTotalQty').textContent = `${totalQty} thiết bị`;
+
+            const addBtn = document.getElementById('detailModalAddBtn');
+            if (addBtn) {
+                addBtn.onclick = () => {
+                    roomAssetsDetailModal.hide();
+                    openCreateRoomAssetModal(roomId);
+                };
+            }
+
+            const tbody = document.getElementById('roomAssetsDetailTableBody');
+            if (items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Phòng ${roomNum} hiện chưa có thiết bị nào được bàn giao.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = items.map(ra => `
+                <tr>
+                    <td class="fw-bold text-primary">${ra.assetCode || '-'}</td>
+                    <td class="fw-semibold text-dark text-truncate" style="max-width: 215px;" title="${ra.assetName || ''}">${ra.assetName || '-'}</td>
+                    <td class="text-center"><span class="badge bg-primary-subtle text-primary border px-2">x${ra.quantity || 1}</span></td>
+                    <td class="small text-secondary text-truncate" style="max-width: 220px;" title="${ra.conditionNote || 'Hoạt động tốt'}">${ra.conditionNote || 'Hoạt động tốt'}</td>
+                    <td class="small">${formatDate(ra.assignedDate)}</td>
+                    <td class="text-end pe-3">
+                        ${canManageAsset ? `
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick='openEditRoomAssetFromDetail(${JSON.stringify(ra)})' title="Sửa số lượng / hiện trạng">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteRoomAsset('${ra.roomAssetId}')" title="Thu hồi thiết bị khỏi phòng">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        ` : '<span class="badge bg-light text-secondary border">Chỉ xem</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openEditRoomAssetFromDetail(ra) {
+            roomAssetsDetailModal.hide();
+            openEditRoomAssetModal(ra);
+        }
+
+        function openCreateAssetModal() {
+            document.getElementById('assetModalTitle').textContent = 'Thêm Tài sản / Thiết bị mới';
+            document.getElementById('assetId').value = '';
+            document.getElementById('assetCode').value = 'TS-' + Date.now().toString().slice(-5);
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetCategory').value = '';
+            document.getElementById('price').value = 1000000;
+            document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 2);
+            document.getElementById('warrantyUntil').value = nextYear.toISOString().split('T')[0];
+            document.getElementById('assetStatus').value = 'ACTIVE';
+            assetModal.show();
+        }
+
+        function openEditAssetModal(a) {
+            document.getElementById('assetModalTitle').textContent = 'Cập nhật Tài sản / Thiết bị';
+            document.getElementById('assetId').value = a.assetId || '';
+            document.getElementById('assetCode').value = a.assetCode || '';
+            document.getElementById('assetName').value = a.assetName || '';
+            document.getElementById('assetCategory').value = a.category || '';
+            document.getElementById('price').value = a.unitPrice !== undefined ? a.unitPrice : (a.price || a.unitValue || 0);
+            document.getElementById('purchaseDate').value = a.purchaseDate || '';
+            document.getElementById('warrantyUntil').value = a.warrantyUntil || '';
+
+            let currentStatus = a.status || 'ACTIVE';
+            if (currentStatus === 'GOOD' || currentStatus === 'IN_USE') currentStatus = 'ACTIVE';
+            else if (currentStatus === 'BROKEN') currentStatus = 'MAINTENANCE';
+            document.getElementById('assetStatus').value = currentStatus;
+            assetModal.show();
+        }
+
+        async function submitSaveAsset() {
+            const id = document.getElementById('assetId').value;
+            const priceVal = parseFloat(document.getElementById('price').value || 0);
+            let statusVal = document.getElementById('assetStatus').value || 'ACTIVE';
+            if (statusVal === 'GOOD' || statusVal === 'IN_USE') statusVal = 'ACTIVE';
+            else if (statusVal === 'BROKEN') statusVal = 'MAINTENANCE';
+
+            const purchaseDateVal = document.getElementById('purchaseDate').value || null;
+            const warrantyUntilVal = document.getElementById('warrantyUntil').value || null;
+
+            if (purchaseDateVal && warrantyUntilVal && warrantyUntilVal < purchaseDateVal) {
+                showToastError('Hạn bảo hành không được trước ngày mua!');
+                return;
+            }
+
+            const payload = {
+                assetCode: document.getElementById('assetCode').value.trim(),
+                assetName: document.getElementById('assetName').value.trim(),
+                category: document.getElementById('assetCategory').value.trim(),
+                unitPrice: priceVal,
+                price: priceVal,
+                purchaseDate: purchaseDateVal,
+                warrantyUntil: warrantyUntilVal,
+                status: statusVal
+            };
+
+            if (!payload.assetCode || !payload.assetName) {
+                showToastError('Vui lòng điền đủ Mã tài sản và Tên tài sản!');
+                return;
+            }
+            if (!payload.category) {
+                showToastError('Vui lòng nhập hoặc chọn Danh mục tài sản!');
+                return;
+            }
+
+            try {
+                if (id) {
+                    await apiFetch(`/assets/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Cập nhật tài sản thành công!');
+                } else {
+                    await apiFetch('/assets', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Tạo tài sản mới thành công!');
+                }
+                assetModal.hide();
+                await loadAssets();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteAsset(id) {
+            if (!await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa tài sản này khỏi CSDL?')) return;
+            try {
+                await apiFetch(`/assets/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa tài sản!');
+                await loadAssets();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        // Gợi ý số lượng mặc định thông minh theo tên thiết bị và sức chứa phòng
+        function getSuggestedDefaultQuantity(asset, roomCapacity) {
+            const name = ((asset && asset.assetName) || '').toLowerCase();
+            const cap = Number(roomCapacity) || 4;
+            if (name.includes('giường tầng') || name.includes('2 tầng')) {
+                return Math.max(1, Math.ceil(cap / 2));
+            }
+            if (name.includes('bàn học') || name.includes('ghế') || name.includes('tủ cá nhân') || name.includes('đệm')) {
+                return cap;
+            }
+            return 1;
+        }
+
+        function initMultiSelectStateForRoom(roomId) {
+            const roomObj = allRooms.find(r => r.roomId === roomId) || {};
+            const cap = Number(roomObj.capacity) || 4;
+            multiSelectState = {};
+            allAssets.forEach(a => {
+                const canAssign = (a.status === 'ACTIVE' || a.status === 'IN_STOCK' || a.status === 'IN_USE' || a.status === 'GOOD');
+                if (canAssign) {
+                    multiSelectState[a.assetId] = {
+                        checked: false,
+                        quantity: getSuggestedDefaultQuantity(a, cap),
+                        conditionNote: 'Mới 100%, hoạt động tốt'
+                    };
+                }
+            });
+        }
+
+        function openCreateRoomAssetModal(preselectedRoomId) {
+            document.getElementById('roomAssetModalTitle').innerHTML =
+                '<i class="bi bi-door-open me-2"></i>BÀN GIAO TÀI SẢN VÀO PHÒNG (CHỌN NHIỀU THIẾT BỊ CÙNG LÚC)';
+            document.getElementById('roomAssetId').value = '';
+            document.getElementById('roomAssetRoomSelect').disabled = false;
+            document.getElementById('multiAssignSection').style.display = 'block';
+            document.getElementById('singleEditSection').style.display = 'none';
+
+            const filterRoomId = document.getElementById('roomAssetFilterRoom') ? document.getElementById('roomAssetFilterRoom').value : '';
+            const targetRoomId = preselectedRoomId || filterRoomId || (allRooms[0] && allRooms[0].roomId) || '';
+            if (targetRoomId) {
+                document.getElementById('roomAssetRoomSelect').value = targetRoomId;
+            }
+
+            if (document.getElementById('multiAssetSearchInput')) {
+                document.getElementById('multiAssetSearchInput').value = '';
+            }
+
+            initMultiSelectStateForRoom(document.getElementById('roomAssetRoomSelect').value);
+            onAssignRoomSelectChange();
+            roomAssetModal.show();
+        }
+
+        function onAssignRoomSelectChange() {
+            const roomId = document.getElementById('roomAssetRoomSelect').value;
+            const isEditMode = Boolean(document.getElementById('roomAssetId').value);
+            const summaryEl = document.getElementById('roomExistingAssetsSummary');
+            const existingInRoom = allRoomAssets.filter(ra => ra.roomId === roomId);
+
+            if (summaryEl) {
+                if (existingInRoom.length > 0) {
+                    const names = existingInRoom.map(e => `${e.assetName} (x${e.quantity || 1})`).join(', ');
+                    summaryEl.innerHTML = `<div class="p-2 rounded bg-info-subtle text-dark border border-info-subtle"><i class="bi bi-check2-all text-primary me-1"></i><b>Thiết bị đang có sẵn trong phòng này (${existingInRoom.length} loại):</b> ${names}</div>`;
+                } else {
+                    summaryEl.innerHTML = `<div class="p-2 rounded bg-light text-muted border"><i class="bi bi-info-circle me-1"></i>Phòng này hiện chưa được bàn giao thiết bị nào. Bạn có thể bấm <b>"Chọn gói tiêu chuẩn"</b> để gán nhanh!</div>`;
+                }
+            }
+
+            if (!isEditMode) {
+                renderMultiAssetChecklist();
+            }
+        }
+
+        function renderMultiAssetChecklist() {
+            const tbody = document.getElementById('multiAssetChecklistBody');
+            if (!tbody) return;
+
+            const roomId = document.getElementById('roomAssetRoomSelect').value;
+            const existingInRoom = allRoomAssets.filter(ra => ra.roomId === roomId);
+            const existingMap = {};
+            existingInRoom.forEach(ra => {
+                existingMap[ra.assetId] = ra.quantity || 1;
+            });
+
+            const kw = (document.getElementById('multiAssetSearchInput') ? document.getElementById('multiAssetSearchInput').value : '').trim().toLowerCase();
+
+            const assignableAssets = allAssets.filter(a => {
+                const canAssign = (a.status === 'ACTIVE' || a.status === 'IN_STOCK' || a.status === 'IN_USE' || a.status === 'GOOD');
+                if (!canAssign) return false;
+                if (!kw) return true;
+                return (a.assetCode && a.assetCode.toLowerCase().includes(kw)) ||
+                    (a.assetName && a.assetName.toLowerCase().includes(kw)) ||
+                    (a.category && a.category.toLowerCase().includes(kw));
+            });
+
+            if (assignableAssets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Không tìm thấy thiết bị khả dụng phù hợp.</td></tr>';
+                updateMultiSelectedCountBadge();
+                return;
+            }
+
+            tbody.innerHTML = assignableAssets.map(a => {
+                const st = multiSelectState[a.assetId] || { checked: false, quantity: 1, conditionNote: 'Mới 100%, hoạt động tốt' };
+                const existingQty = existingMap[a.assetId] || 0;
+
+                return `
+                <tr class="${st.checked ? 'table-primary' : ''}">
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input"
+                            ${st.checked ? 'checked' : ''}
+                            onchange="onMultiAssetCheckChange('${a.assetId}', this.checked)">
+                    </td>
+                    <td style="cursor: pointer;" onclick="onMultiAssetCheckChange('${a.assetId}', !multiSelectState['${a.assetId}']?.checked)">
+                        <div class="fw-bold text-dark">${a.assetName}</div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                            <span class="badge bg-light text-primary border">${a.assetCode}</span>
+                            <span class="badge bg-light text-secondary border">${a.category || 'Thiết bị'}</span>
+                            ${existingQty > 0 ? `<span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="bi bi-box-seam me-1"></i>Phòng đã có: x${existingQty}</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <input type="number" min="1" class="form-control form-control-sm text-center fw-bold"
+                            value="${st.quantity}"
+                            onchange="onMultiAssetQtyChange('${a.assetId}', this.value)"
+                            oninput="onMultiAssetQtyChange('${a.assetId}', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm"
+                            value="${st.conditionNote}"
+                            placeholder="Ghi chú tình trạng..."
+                            oninput="onMultiAssetNoteChange('${a.assetId}', this.value)">
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            updateMultiSelectedCountBadge();
+        }
+
+        function onMultiAssetCheckChange(assetId, checked) {
+            if (!multiSelectState[assetId]) {
+                multiSelectState[assetId] = { checked: false, quantity: 1, conditionNote: 'Mới 100%, hoạt động tốt' };
+            }
+            multiSelectState[assetId].checked = checked;
+            renderMultiAssetChecklist();
+        }
+
+        function onMultiAssetQtyChange(assetId, val) {
+            if (!multiSelectState[assetId]) return;
+            multiSelectState[assetId].quantity = Math.max(1, parseInt(val || 1));
+            if (!multiSelectState[assetId].checked) {
+                multiSelectState[assetId].checked = true;
+                renderMultiAssetChecklist();
+            }
+        }
+
+        function onMultiAssetNoteChange(assetId, val) {
+            if (!multiSelectState[assetId]) return;
+            multiSelectState[assetId].conditionNote = val;
+        }
+
+        function toggleAllMultiAssets(checked) {
+            Object.keys(multiSelectState).forEach(assetId => {
+                multiSelectState[assetId].checked = checked;
+            });
+            renderMultiAssetChecklist();
+        }
+
+        // Chọn nhanh các thiết bị phòng tiêu chuẩn mà phòng chưa có
+        function selectStandardRoomAssets() {
+            const roomId = document.getElementById('roomAssetRoomSelect').value;
+            const roomObj = allRooms.find(r => r.roomId === roomId) || {};
+            const cap = Number(roomObj.capacity) || 4;
+            const existingIds = new Set(allRoomAssets.filter(ra => ra.roomId === roomId).map(ra => ra.assetId));
+
+            Object.keys(multiSelectState).forEach(assetId => {
+                const asset = allAssets.find(a => a.assetId === assetId);
+                if (!asset) return;
+                // Ưu tiên chọn các thiết bị phòng chưa có
+                multiSelectState[assetId].checked = !existingIds.has(assetId);
+                multiSelectState[assetId].quantity = getSuggestedDefaultQuantity(asset, cap);
+            });
+            renderMultiAssetChecklist();
+        }
+
+        function updateMultiSelectedCountBadge() {
+            const badge = document.getElementById('multiAssetSelectedCountBadge');
+            const saveBtn = document.getElementById('saveRoomAssetBtn');
+            const selectedCount = Object.values(multiSelectState).filter(s => s.checked).length;
+            if (badge) {
+                badge.textContent = `Đã chọn: ${selectedCount} hạng mục thiết bị`;
+            }
+            if (saveBtn && !document.getElementById('roomAssetId').value) {
+                saveBtn.innerHTML = `<i class="bi bi-check2-circle me-1"></i>Lưu bàn giao (${selectedCount} thiết bị)`;
+            }
+        }
+
+        function openEditRoomAssetModal(ra) {
+            document.getElementById('roomAssetModalTitle').innerHTML =
+                `<i class="bi bi-pencil-square me-2"></i>CẬP NHẬT THIẾT BỊ PHÒNG ${ra.roomNumber || ''}`;
+            document.getElementById('roomAssetId').value = ra.roomAssetId;
+            document.getElementById('roomAssetRoomSelect').value = ra.roomId;
+            document.getElementById('multiAssignSection').style.display = 'none';
+            document.getElementById('singleEditSection').style.display = 'block';
+            document.getElementById('roomAssetItemSelect').value = ra.assetId;
+            document.getElementById('roomAssetQtyInput').value = ra.quantity || 1;
+            document.getElementById('roomAssetDateInput').value = ra.assignedDate || new Date().toISOString().split('T')[0];
+            document.getElementById('roomAssetConditionInput').value = ra.conditionNote || '';
+            const saveBtn = document.getElementById('saveRoomAssetBtn');
+            if (saveBtn) saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lưu cập nhật';
+            onAssignRoomSelectChange();
+            roomAssetModal.show();
+        }
+
+        async function saveRoomAsset() {
+            const id = document.getElementById('roomAssetId').value;
+            const roomId = document.getElementById('roomAssetRoomSelect').value;
+            const assignedDate = document.getElementById('roomAssetDateInput').value;
+
+            if (!roomId || !assignedDate) {
+                showToastError('Vui lòng chọn Phòng tiếp nhận và Ngày bàn giao!');
+                return;
+            }
+
+            // Chế độ Cập nhật 1 thiết bị
+            if (id) {
+                const payload = {
+                    roomId: roomId,
+                    assetId: document.getElementById('roomAssetItemSelect').value,
+                    quantity: parseInt(document.getElementById('roomAssetQtyInput').value || 1),
+                    assignedDate: assignedDate,
+                    conditionNote: document.getElementById('roomAssetConditionInput').value.trim()
+                };
+                if (!payload.assetId) {
+                    showToastError('Vui lòng chọn Thiết bị!');
+                    return;
+                }
+                try {
+                    await apiFetch(`/room-assets/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã cập nhật thiết bị phòng!');
+                    roomAssetModal.hide();
+                    await loadRoomsAndRoomAssets();
+                } catch (e) {
+                    showToastError(e.message);
+                }
+                return;
+            }
+
+            // Chế độ Bàn giao nhiều thiết bị cùng lúc cho Phòng
+            const selectedEntries = Object.entries(multiSelectState).filter(([_, st]) => st.checked);
+            if (selectedEntries.length === 0) {
+                showToastError('Vui lòng tích chọn ít nhất 1 thiết bị để bàn giao cho phòng!');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveRoomAssetBtn');
+            if (saveBtn) saveBtn.disabled = true;
+
+            try {
+                let successCount = 0;
+                for (const [assetId, st] of selectedEntries) {
+                    const payload = {
+                        roomId: roomId,
+                        assetId: assetId,
+                        quantity: Math.max(1, parseInt(st.quantity || 1)),
+                        assignedDate: assignedDate,
+                        conditionNote: (st.conditionNote || 'Mới 100%, hoạt động tốt').trim()
+                    };
+                    await apiFetch('/room-assets', { method: 'POST', body: JSON.stringify(payload) });
+                    successCount++;
+                }
+                showToastSuccess(`Đã bàn giao thành công ${successCount} hạng mục thiết bị vào phòng!`);
+                roomAssetModal.hide();
+                await loadRoomsAndRoomAssets();
+            } catch (e) {
+                showToastError(e.message);
+                await loadRoomsAndRoomAssets();
+            } finally {
+                if (saveBtn) saveBtn.disabled = false;
+            }
+        }
+
+        async function deleteRoomAsset(id) {
+            if (!await showConfirm('Thu hồi thiết bị?', 'Bạn có chắc muốn gỡ thiết bị này khỏi phòng?')) return;
+            try {
+                await apiFetch(`/room-assets/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã thu hồi thiết bị khỏi phòng!');
+                await loadRoomsAndRoomAssets();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

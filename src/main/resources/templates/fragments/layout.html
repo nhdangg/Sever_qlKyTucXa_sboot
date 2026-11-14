@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- Head Fragment -->
+
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - Hệ Thống Quản Lý Ký Túc Xá'"></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css(v='20261112_v9')}">
+</head>
+
+<body>
+
+    <!-- Sidebar Fragment -->
+    <aside th:fragment="sidebar(activeTab)" class="sidebar" id="appSidebar">
+        <div class="sidebar-univ-brand justify-content-between">
+            <a th:href="@{/}" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1 overflow-hidden" title="Trường Đại Học Công Nghiệp Việt Trì">
+                <div class="sidebar-univ-logo">
+                    <i class="bi bi-buildings-fill"></i>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="sidebar-univ-name-vn text-truncate">ĐH CÔNG NGHIỆP VIỆT TRÌ</div>
+                    <div class="sidebar-univ-name-sub text-truncate">BQL KÝ TÚC XÁ</div>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                <span class="badge user-role-chip bg-primary-subtle text-primary border border-primary-subtle"
+                    style="font-size: 0.65rem;">ADMIN</span>
+                <button class="btn btn-link text-white d-lg-none p-0 ms-1" type="button" onclick="toggleSidebar()" title="Đóng menu">
+                    <i class="bi bi-x-lg fs-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <ul class="sidebar-menu">
+            <!-- Menu Cư dân dành riêng cho Sinh viên -->
+            <li class="menu-header role-student-only d-none">Cổng Cư Dân KTX</li>
+            <li class="nav-item role-student-only d-none">
+                <a th:href="@{/student-portal}" class="nav-link"
+                    th:classappend="${activeTab == 'student-portal'} ? 'active' : ''">
+                    <i class="bi bi-house-door-fill"></i>
+                    <span>Phòng ở của Tôi</span>
+                </a>
+            </li>
+
+            <!-- Menu Điều hành dành cho Admin, Quản lý (Manager) và Nhân viên (Staff) -->
+            <li class="menu-header role-admin-staff">Điều Hành & Lưu Trú</li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/dashboard}" class="nav-link"
+                    th:classappend="${activeTab == 'dashboard'} ? 'active' : ''">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Bảng điều khiển</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/buildings}" class="nav-link"
+                    th:classappend="${activeTab == 'buildings'} ? 'active' : ''">
+                    <i class="bi bi-building"></i>
+                    <span>Tòa nhà & Tầng</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/rooms}" class="nav-link" th:classappend="${activeTab == 'rooms'} ? 'active' : ''">
+                    <i class="bi bi-door-open-fill"></i>
+                    <span>Phòng & Giường</span>
+                </a>
+            </li>
+
+            <li class="menu-header role-admin-staff">Cư dân & Hợp đồng</li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/students}" class="nav-link" th:classappend="${activeTab == 'students'} ? 'active' : ''">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Hồ sơ Sinh viên</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/contracts}" class="nav-link"
+                    th:classappend="${activeTab == 'contracts'} ? 'active' : ''">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <span>Hợp đồng lưu trú</span>
+                </a>
+            </li>
+
+            <li class="menu-header role-admin-staff">Tài chính & Kỹ thuật</li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/invoices}" class="nav-link" th:classappend="${activeTab == 'invoices'} ? 'active' : ''">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    <span>Điện nước & Hóa đơn</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/maintenance}" class="nav-link"
+                    th:classappend="${activeTab == 'maintenance'} ? 'active' : ''">
+                    <i class="bi bi-tools"></i>
+                    <span>Báo hỏng & Sửa chữa</span>
+                </a>
+            </li>
+
+            <!-- Menu Quản lý Mở rộng (ADMIN + MANAGER + STAFF theo quyền DB) -->
+            <li class="menu-header role-admin-staff">Quản Trị & Cơ Sở Vật Chất</li>
+            <li class="nav-item role-manager-up">
+                <a th:href="@{/admin/staff}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-staff'} ? 'active' : ''">
+                    <i class="bi bi-person-badge-fill"></i>
+                    <span>Nhân sự Ký Túc Xá</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/admin/assets}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-assets'} ? 'active' : ''">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>Tài sản & CSVC</span>
+                </a>
+            </li>
+            <li class="nav-item role-admin-staff">
+                <a th:href="@{/admin/security}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-security'} ? 'active' : ''">
+                    <i class="bi bi-shield-exclamation"></i>
+                    <span>Kỷ luật, Gửi xe & Phản ánh</span>
+                </a>
+            </li>
+
+            <!-- Menu Hệ Thống & Bảo Mật (ADMIN + MANAGER theo quyền ROLE_VIEW / SETTING_VIEW / USER_LOCK) -->
+            <li class="menu-header role-manager-up">Hệ Thống & Bảo Mật</li>
+            <li class="nav-item role-admin-only">
+                <a th:href="@{/admin/database}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-database'} ? 'active' : ''">
+                    <i class="bi bi-database-fill-gear"></i>
+                    <span>CSDL 32 Bảng KTX</span>
+                </a>
+            </li>
+            <li class="nav-item role-manager-up">
+                <a th:href="@{/admin/users}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-users'} ? 'active' : ''">
+                    <i class="bi bi-person-fill-lock"></i>
+                    <span>Tài khoản & Phân quyền</span>
+                </a>
+            </li>
+            <li class="nav-item role-manager-up">
+                <a th:href="@{/settings}" class="nav-link" th:classappend="${activeTab == 'settings'} ? 'active' : ''">
+                    <i class="bi bi-sliders"></i>
+                    <span>Cấu hình Hệ thống & 2FA</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-profile-badge">
+                <div class="avatar user-avatar-text">A</div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="user-display-name text-truncate fw-bold small">Admin</div>
+                    <div class="user-display-role text-truncate" style="font-size: 0.75rem;">Quản trị
+                        viên</div>
+                </div>
+                <button class="btn btn-sm sidebar-logout-btn border-0" onclick="Auth.logout()" title="Đăng xuất">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Top Navbar Fragment -->
+    <nav th:fragment="topbar(pageTitle)" class="top-navbar">
+        <div class="d-flex align-items-center gap-2 gap-sm-3 flex-grow-1 min-w-0 me-3" style="overflow: hidden;">
+            <button class="btn btn-light btn-sm d-lg-none border flex-shrink-0" type="button"
+                onclick="toggleSidebar()" title="Mở danh mục menu">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+            <div class="min-w-0" style="overflow: hidden;">
+                <h5 class="mb-0 fw-bold text-dark text-nowrap text-truncate" style="font-size: 1.05rem; white-space: nowrap !important;" th:text="${pageTitle}"></h5>
+                <div class="text-muted d-none d-md-block text-nowrap text-truncate" style="font-size: 0.75rem; white-space: nowrap !important;">
+                    Hệ thống quản lý lưu trú nội trú • <span class="user-display-role fw-semibold" style="color: var(--univ-navy);">Quản trị viên</span>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+            <a th:href="@{/}"
+                class="btn btn-sm btn-light border text-nowrap flex-shrink-0 d-none d-xl-inline-flex align-items-center gap-1 text-secondary"
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                title="Xem trang cổng thông tin công khai">
+                <i class="bi bi-globe2 flex-shrink-0"></i>
+                <span>Trang công khai</span>
+            </a>
+            <a th:href="@{/settings}"
+                class="btn btn-sm btn-outline-primary text-nowrap flex-shrink-0 d-none d-lg-inline-flex align-items-center gap-1 role-admin-only"
+                style="white-space: nowrap !important;">
+                <i class="bi bi-shield-check"></i>
+                <span>Bảo mật 2FA</span>
+            </a>
+
+            <!-- Notification Dropdown -->
+            <div class="dropdown flex-shrink-0">
+                <button class="btn btn-light border rounded-circle position-relative p-2" type="button" data-bs-toggle="dropdown" title="Hộp thư Thông báo KTX" onclick="loadTopbarNotifications()" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-bell-fill text-secondary"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger topbar-unread-badge d-none" style="font-size: 0.65rem;">0</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg border border-secondary-subtle rounded-3 p-0 mt-2 overflow-hidden" style="width: 380px; max-width: 95vw; background-color: #ffffff; z-index: 1060;">
+                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                        <span class="fw-bold small text-dark"><i class="bi bi-inbox-fill text-primary me-1"></i>Hộp thư Thông báo</span>
+                        <button class="btn btn-link btn-sm p-0 text-decoration-none small text-primary fw-semibold" onclick="markAllNotificationsRead()">Đọc tất cả</button>
+                    </div>
+                    <div class="topbar-notification-list overflow-auto" style="max-height: 350px; background-color: #ffffff;">
+                        <div class="text-center text-muted py-4 small">Đang tải thông báo...</div>
+                    </div>
+                    <div class="p-2 border-top bg-light text-center small text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>Thông báo được lưu vĩnh viễn trong CSDL
+                    </div>
+                </div>
+            </div>
+
+            <div class="dropdown flex-shrink-0">
+                <button
+                    class="btn btn-light border rounded-pill dropdown-toggle text-nowrap flex-shrink-0 d-flex align-items-center gap-2 px-2 py-1"
+                    type="button" data-bs-toggle="dropdown">
+                    <span
+                        class="user-avatar-text badge rounded-circle d-inline-flex align-items-center justify-content-center"
+                        style="width: 26px; height: 26px; background: var(--univ-navy);">A</span>
+                    <span class="user-display-name fw-semibold small text-dark pe-1">Admin</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-2">
+                    <li class="px-3 py-2 border-bottom">
+                        <div class="fw-bold small user-display-name">Admin</div>
+                        <div class="text-muted" style="font-size: 0.75rem;" id="topbarUserCode">Vai trò: <span
+                                class="user-display-role">Quản trị viên</span></div>
+                    </li>
+                    <li><a class="dropdown-item small py-2" href="javascript:void(0)" onclick="openMyProfileModal()"><i
+                                class="bi bi-person-gear me-2 text-primary"></i>Hồ sơ cá nhân & Đổi MK</a></li>
+                    <li><a class="dropdown-item small py-2" th:href="@{/}"><i
+                                class="bi bi-house-door me-2 text-primary"></i>Cổng thông tin KTX</a></li>
+                    <li class="role-admin-only"><a class="dropdown-item small py-2" th:href="@{/settings}"><i
+                                class="bi bi-gear me-2 text-secondary"></i>Cài đặt hệ thống</a></li>
+                    <li>
+                        <hr class="dropdown-divider my-1">
+                    </li>
+                    <li><a class="dropdown-item small py-2 text-danger fw-semibold" href="javascript:void(0)"
+                            onclick="Auth.logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Scripts Fragment -->
+    <th:block th:fragment="scripts">
+        <!-- Modal Hồ sơ Cá nhân & Tự đổi Mật khẩu (/api/users/me) -->
+        <div class="modal fade" id="myProfileModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header univ-modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-person-vcard-fill me-2"></i>HỒ SƠ CÁ NHÂN & BẢO MẬT TÀI KHOẢN
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="myProfileForm">
+                            <!-- Khối I: Định danh -->
+                            <div class="form-section-title">
+                                <i class="bi bi-person-badge-fill"></i>I. THÔNG TIN ĐỊNH DANH HỆ THỐNG
+                            </div>
+                            <div class="form-section-box">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Tên đăng nhập</label>
+                                        <input type="text" id="profileUsername" class="form-control" readonly>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Mã định danh cán bộ</label>
+                                        <input type="text" id="profileUserCode" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Họ và tên</label>
+                                        <input type="text" id="profileFullName" class="form-control" readonly>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Vai trò chức năng</label>
+                                        <input type="text" id="profileRoleName" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Khối II: Liên hệ & 2FA -->
+                            <div class="form-section-title">
+                                <i class="bi bi-envelope-at-fill"></i>II. THÔNG TIN LIÊN HỆ & BẢO MẬT 2FA
+                            </div>
+                            <div class="form-section-box">
+                                <div class="mb-2">
+                                    <label class="form-label">Email công vụ / liên hệ <span class="text-danger">*</span></label>
+                                    <input type="email" id="profileEmail" class="form-control" required placeholder="canbo@viettri.edu.vn">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Số điện thoại liên lạc</label>
+                                    <input type="text" id="profilePhone" class="form-control" placeholder="0912345678">
+                                </div>
+                                <div id="profileTelegramGroup">
+                                    <label class="form-label">Telegram Chat ID (Duyệt đăng nhập 2FA - Admin)</label>
+                                    <input type="text" id="profileTelegramId" class="form-control" placeholder="VD: 6269527548">
+                                    <div class="form-text small text-muted" style="font-size: 0.74rem;">Nhập Chat ID từ bot Telegram KTX để nhận thông báo phê duyệt đăng nhập (nếu thay đổi cần nhập Mật khẩu hiện tại bên dưới).</div>
+                                </div>
+                            </div>
+
+                            <!-- Khối III: Đổi mật khẩu -->
+                            <div class="form-section-title">
+                                <i class="bi bi-shield-lock-fill"></i>III. THAY ĐỔI MẬT KHẨU ĐĂNG NHẬP
+                            </div>
+                            <div class="form-section-box mb-0">
+                                <div class="mb-2">
+                                    <label class="form-label">Mật khẩu hiện tại <span class="text-muted fw-normal small">(Bắt buộc nếu đổi mật khẩu hoặc đổi 2FA)</span></label>
+                                    <div class="input-group">
+                                        <input type="password" id="profileCurrentPassword" class="form-control border-end-0" placeholder="Nhập mật khẩu hiện tại để xác thực">
+                                        <button class="btn btn-outline-secondary border border-start-0 bg-white" type="button" onclick="toggleProfilePwd('profileCurrentPassword', 'iconPwd0')" title="Ẩn/Hiện mật khẩu">
+                                            <i class="bi bi-eye text-secondary" id="iconPwd0"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <input type="password" id="profilePassword" class="form-control border-end-0" placeholder="Để trống nếu không đổi (tối thiểu 6 ký tự)">
+                                        <button class="btn btn-outline-secondary border border-start-0 bg-white" type="button" onclick="toggleProfilePwd('profilePassword', 'iconPwd1')" title="Ẩn/Hiện mật khẩu">
+                                            <i class="bi bi-eye text-secondary" id="iconPwd1"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label">Xác nhận mật khẩu mới</label>
+                                    <div class="input-group">
+                                        <input type="password" id="profileConfirmPassword" class="form-control border-end-0" placeholder="Nhập lại mật khẩu mới">
+                                        <button class="btn btn-outline-secondary border border-start-0 bg-white" type="button" onclick="toggleProfilePwd('profileConfirmPassword', 'iconPwd2')" title="Ẩn/Hiện mật khẩu">
+                                            <i class="bi bi-eye text-secondary" id="iconPwd2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Đóng</button>
+                        <button type="button" class="btn btn-primary" onclick="submitUpdateMyProfile()">
+                            <i class="bi bi-floppy-fill me-1"></i>Lưu thay đổi hồ sơ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script th:src="@{/js/main.js(v='20261112_v3')}"></script>
+    </th:block>
+
+</body>
+
+</html>

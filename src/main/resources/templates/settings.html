@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Cài đặt hệ thống & Bảo mật 2FA')}"></head>
+<body>
+
+<aside th:replace="~{fragments/layout :: sidebar('settings')}"></aside>
+
+<div class="main-wrapper">
+    <nav th:replace="~{fragments/layout :: topbar('Cấu hình Tham số Hệ thống & Bảo mật 2FA')}"></nav>
+
+    <div class="content-body">
+        <div class="row g-3">
+            <!-- Bảng Cấu hình Tham số Hệ thống (cau_hinh_he_thong - /api/system-settings) -->
+            <div class="col-12 col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="fw-bold mb-0"><i class="bi bi-sliders text-primary me-2"></i>Tham số Cấu hình Hệ thống</h5>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="countSettingsBadge">0 tham số</span>
+                            </div>
+                            <span class="text-muted small">Quản lý giờ giới nghiêm, đơn giá mặc định, đường dây nóng KTX</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 role-admin-only" onclick="reloadSettingCache()" title="Nạp lại cấu hình từ DB vào bộ nhớ đệm">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Nạp lại Cache
+                            </button>
+                            <button class="btn btn-primary btn-sm rounded-pill px-3 role-admin-only" onclick="openSettingModal()">
+                                <i class="bi bi-plus-circle me-1"></i> Thêm / Cập nhật Tham số
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive border rounded-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 220px;">Khóa cấu hình (Key)</th>
+                                    <th style="width: 190px;">Giá trị</th>
+                                    <th>Mô tả</th>
+                                    <th class="text-end pe-3" style="width: 95px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="systemSettingTableBody">
+                                <tr><td colspan="4" class="text-center text-muted py-4">Đang tải cấu hình hệ thống...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cấu hình Telegram 2FA -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white role-admin-only">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="stat-icon blue" style="width: 44px; height: 44px; font-size: 1.3rem;">
+                            <i class="bi bi-telegram"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Xác thực 2 bước (2FA) qua Telegram</h5>
+                            <span class="text-muted small">Liên kết Telegram để nhận phê duyệt khi đăng nhập (Dành riêng cho Admin)</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border rounded-3 small mb-3">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        <span>Khi bạn chuyển giao tài khoản cho người khác, chỉ cần nhập <b>Telegram Chat ID của người tiếp nhận</b> vào ô dưới đây rồi bấm <b>Cập nhật</b>. Khi đăng nhập, mã xác thực sẽ được gửi trực tiếp đến Telegram của người đó. Nếu để trống, tài khoản sẽ đăng nhập bình thường bằng mật khẩu.</span>
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-semibold">Telegram Chat ID nhận phê duyệt đăng nhập:</label>
+                        <div class="input-group">
+                            <input type="text" id="telegramChatIdInput" class="form-control" placeholder="Nhập Telegram Chat ID (VD: 6269527548) hoặc để trống để tắt">
+                            <button class="btn btn-primary px-4 fw-semibold" onclick="updateTelegramChatId()">
+                                <i class="bi bi-check2-circle me-1"></i> Cập nhật Chat ID
+                            </button>
+                        </div>
+                        <div class="form-text small text-muted mt-2">
+                            <i class="bi bi-telegram text-primary me-1"></i> Cách lấy Chat ID: Mở ứng dụng Telegram, tìm và nhắn tin lệnh <span class="fw-bold text-primary">/start</span> cho Bot KTX hoặc chat với <span class="fw-bold text-primary">@userinfobot</span> để lấy <b>Id</b> của bạn.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông tin Tài khoản Quản trị -->
+            <div class="col-12 col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-person-badge text-primary me-2"></i>Thông tin Phiên Quản trị</h5>
+                    
+                    <div class="text-center py-3">
+                        <div class="avatar user-avatar-text mx-auto mb-2 text-white fw-bold fs-3" style="width: 68px; height: 68px; border-radius: 50%; background: #003366; display: flex; align-items: center; justify-content: center;">A</div>
+                        <h5 class="fw-bold user-display-name mb-0">admin</h5>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle user-display-role mt-1">Quản trị viên</span>
+                    </div>
+
+                    <ul class="list-group list-group-flush small mt-2">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                            <span class="text-muted">Tên hiển thị:</span>
+                            <span class="fw-semibold user-display-name">admin</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                            <span class="text-muted">Cổng máy chủ:</span>
+                            <span class="fw-semibold">8912 (/QLyKyTucXa)</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                            <span class="text-muted">Mã hóa mật khẩu:</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">BCrypt</span>
+                        </li>
+                    </ul>
+
+                    <div class="mt-4 d-flex flex-column gap-2">
+                        <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2" onclick="openMyProfileModal()">
+                            <i class="bi bi-person-gear"></i> Thông tin cá nhân & Đổi mật khẩu
+                        </button>
+                        <button class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" onclick="Auth.logout()">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất khỏi hệ thống
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm / Sửa Tham số Hệ thống -->
+<div class="modal fade" id="settingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-gear-fill me-2"></i>CẤU HÌNH THAM SỐ HỆ THỐNG
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <form id="settingForm">
+                    <div class="form-section-title"><i class="bi bi-key me-1"></i> I. KHÓA CẤU HÌNH & THIẾT LẬP</div>
+                    <div class="form-section-box">
+                        <div class="mb-2">
+                            <label class="form-label small fw-semibold">Mã khóa cấu hình (Setting Key) <span class="text-danger">*</span></label>
+                            <input type="text" id="settingKeyInput" class="form-control form-control-sm" placeholder="VD: CURFEW_TIME" required>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-semibold">Giá trị thiết lập (Value) <span class="text-danger">*</span></label>
+                            <input type="text" id="settingValueInput" class="form-control form-control-sm" placeholder="VD: 23:00" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title"><i class="bi bi-card-text me-1"></i> II. DIỄN GIẢI Ý NGHĨA THAM SỐ</div>
+                    <div class="form-section-box">
+                        <div>
+                            <label class="form-label small fw-semibold">Mô tả mục đích cấu hình</label>
+                            <input type="text" id="settingDescInput" class="form-control form-control-sm" placeholder="VD: Giờ đóng cổng ký túc xá hàng ngày">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                </button>
+                <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" onclick="saveSetting()">
+                    <i class="bi bi-save me-1"></i>Lưu cấu hình
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+    let settingModal = null;
+    let isAdmin = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        settingModal = new bootstrap.Modal(document.getElementById('settingModal'));
+        const user = Auth.getUser() || {};
+        isAdmin = ((user.role || '').toUpperCase() === 'ADMIN');
+        loadSystemSettings();
+        loadMyTelegramChatId();
+    });
+
+    async function loadMyTelegramChatId() {
+        const input = document.getElementById('telegramChatIdInput');
+        if (!input) return;
+        try {
+            const res = await apiFetch('/users/me');
+            const user = (res && res.result !== undefined) ? res.result : (res || {});
+            input.value = user.telegramChatId || '';
+        } catch (e) {
+            console.warn('Lỗi đọc Telegram Chat ID:', e);
+        }
+    }
+
+    async function updateTelegramChatId() {
+        const input = document.getElementById('telegramChatIdInput');
+        const chatId = input ? input.value.trim() : '';
+        try {
+            await apiFetch('/users/me/2fa', {
+                method: 'PATCH',
+                body: JSON.stringify({ telegramChatId: chatId })
+            });
+            if (chatId) {
+                showToastSuccess('Cập nhật Telegram Chat ID thành công! Các lần đăng nhập tiếp theo sẽ gửi phê duyệt về Telegram này.');
+            } else {
+                showToastSuccess('Đã xóa Telegram Chat ID! Tài khoản này sẽ đăng nhập bình thường bằng mật khẩu.');
+            }
+            await loadMyTelegramChatId();
+        } catch (e) {
+            showToastError(e.message || 'Lỗi cập nhật Chat ID');
+        }
+    }
+
+    async function reloadSettingCache() {
+        try {
+            const res = await apiFetch('/system-settings/reload-cache', { method: 'POST' });
+            showToastSuccess(res.result || 'Đã nạp lại bộ nhớ đệm cấu hình thành công!');
+            await loadSystemSettings();
+        } catch (e) {
+            showToastError(e.message || 'Lỗi nạp cache');
+        }
+    }
+
+    async function loadSystemSettings() {
+        const tbody = document.getElementById('systemSettingTableBody');
+        try {
+            const res = await apiFetch('/system-settings');
+            const list = unwrapList(res);
+            const badgeEl = document.getElementById('countSettingsBadge');
+            if (badgeEl) badgeEl.textContent = `${list.length} tham số`;
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Chưa có tham số cấu hình.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(s => `
+                <tr>
+                    <td class="text-nowrap"><span class="fw-bold text-primary" style="font-size: 0.82rem;">${s.settingKey}</span></td>
+                    <td class="fw-bold text-dark" style="white-space: normal;">${s.settingValue}</td>
+                    <td class="small text-muted" style="white-space: normal;">${s.description || '-'}</td>
+                    <td class="text-end pe-3">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            ${isAdmin ? `
+                                <button class="btn btn-sm btn-light text-primary" style="width: 30px; padding: 0.25rem 0;" onclick='openSettingModal(${JSON.stringify(s)})' title="Sửa tham số">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light text-danger" style="width: 30px; padding: 0.25rem 0;" onclick="deleteSetting('${s.settingKey}')" title="Xóa tham số">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : '<span class="badge bg-light text-secondary border">Chỉ xem</span>'}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">${e.message}</td></tr>`;
+        }
+    }
+
+    function openSettingModal(s) {
+        if (s) {
+            document.getElementById('settingKeyInput').value = s.settingKey;
+            document.getElementById('settingValueInput').value = s.settingValue;
+            document.getElementById('settingDescInput').value = s.description || '';
+        } else {
+            document.getElementById('settingKeyInput').value = '';
+            document.getElementById('settingValueInput').value = '';
+            document.getElementById('settingDescInput').value = '';
+        }
+        settingModal.show();
+    }
+
+    async function saveSetting() {
+        const payload = {
+            settingKey: document.getElementById('settingKeyInput').value.trim(),
+            settingValue: document.getElementById('settingValueInput').value.trim(),
+            description: document.getElementById('settingDescInput').value.trim()
+        };
+        if (!payload.settingKey || !payload.settingValue) {
+            showToastError('Vui lòng nhập Khóa cấu hình và Giá trị!');
+            return;
+        }
+        try {
+            await apiFetch('/system-settings', { method: 'POST', body: JSON.stringify(payload) });
+            showToastSuccess('Đã lưu tham số cấu hình vào CSDL!');
+            settingModal.hide();
+            await loadSystemSettings();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteSetting(key) {
+        if (!await showConfirm('Xóa tham số?', `Bạn có chắc muốn xóa tham số [${key}]?`)) return;
+        try {
+            await apiFetch(`/system-settings/${key}`, { method: 'DELETE' });
+            showToastSuccess('Đã xóa tham số!');
+            await loadSystemSettings();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Thông Tin & Quản Lý Ký Túc Xá Sinh Viên - Trường Đại Học Công Nghiệp Việt Trì</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <style>
+        :root {
+            --univ-navy: #003366;
+            --univ-navy-dark: #002244;
+            --univ-navy-light: #003366;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --bg-light: #f8fafc;
+        }
+
+        body {
+            font-family: 'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text-dark);
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* 1. TOP HEADER BRANDING */
+        .univ-header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 0;
+        }
+
+        .univ-logo-emblem {
+            width: 48px;
+            height: 48px;
+            background-color: var(--univ-navy);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: 0 2px 6px rgba(0, 51, 102, 0.18);
+            flex-shrink: 0;
+        }
+
+        .univ-title-vn {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--univ-navy);
+            letter-spacing: 0.3px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .univ-title-sub {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #475569;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .header-hotline-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-right: 18px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .header-hotline-box i {
+            font-size: 1.4rem;
+            color: var(--univ-navy);
+        }
+
+        /* 2. MAIN NAVIGATION BAR */
+        .univ-navbar {
+            background-color: var(--univ-navy);
+            border-top: 1px solid #002244;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0, 34, 68, 0.15);
+        }
+
+        .univ-navbar .navbar-nav {
+            margin: 0 auto !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .univ-navbar .nav-link {
+            color: #ffffff !important;
+            font-size: 0.84rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            padding: 13px 18px !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            white-space: nowrap !important;
+            display: inline-flex;
+            align-items: center;
+            transition: background-color 0.15s ease;
+        }
+
+        .univ-navbar .nav-item:first-child .nav-link {
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .univ-navbar .nav-link:hover,
+        .univ-navbar .nav-link:focus {
+            background-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .univ-navbar .navbar-toggler {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            padding: 4px 8px;
+            margin: 6px 0;
+        }
+
+        /* 3. HERO SECTION - BỐ CỤC 2 CỘT CHÍNH QUY, CÂN ĐỐI */
+        .univ-hero-section {
+            background-color: var(--univ-navy);
+            color: #ffffff;
+            padding: 44px 0 48px;
+            position: relative;
+        }
+
+        .banner-badge-top {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .banner-headline-1 {
+            font-size: 1.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+
+        .banner-headline-2 {
+            font-size: 0.98rem;
+            font-weight: 400;
+            color: #e2e8f0;
+            line-height: 1.65;
+            margin-bottom: 22px;
+        }
+
+        .banner-features-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .banner-feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .banner-feature-item i {
+            color: #93c5fd;
+        }
+
+        /* Hero Quick Action Box (Cột Phải) */
+        .hero-action-card {
+            background: #ffffff;
+            color: var(--text-dark);
+            border-radius: 12px;
+            padding: 22px 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .hero-action-card h6 {
+            font-weight: 800;
+            color: var(--univ-navy);
+            text-transform: uppercase;
+            font-size: 0.88rem;
+            letter-spacing: 0.3px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-shortcut-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            transition: all 0.15s ease;
+        }
+
+        .hero-shortcut-btn:hover {
+            background: #f1f5f9;
+            border-color: var(--univ-navy);
+            color: var(--univ-navy);
+            transform: translateX(3px);
+        }
+
+        .hero-shortcut-btn i.icon-lead {
+            font-size: 1.15rem;
+            color: var(--univ-navy);
+            margin-right: 10px;
+        }
+
+        /* Nút trong Banner: Đơn sắc, giữ nguyên màu khi hover */
+        .btn-univ-banner-solid {
+            background-color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+            color: var(--univ-navy) !important;
+            font-weight: 700 !important;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+        }
+
+        .btn-univ-banner-solid:hover,
+        .btn-univ-banner-solid:focus {
+            background-color: #ffffff !important;
+            border-color: #ffffff !important;
+            color: var(--univ-navy) !important;
+            opacity: 0.92 !important;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .btn-univ-banner-outline {
+            background-color: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.75) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, border-color 0.15s ease !important;
+        }
+
+        .btn-univ-banner-outline:hover,
+        .btn-univ-banner-outline:focus {
+            background-color: transparent !important;
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            opacity: 0.92 !important;
+        }
+
+        /* 4. SÁU TIỆN ÍCH TRUY CẬP NHANH */
+        .quick-action-strip {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+            padding: 24px 0 20px;
+        }
+
+        .quick-action-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-dark);
+            height: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-card:hover {
+            border-color: var(--univ-navy);
+            box-shadow: 0 4px 14px rgba(0, 51, 102, 0.08);
+            transform: translateY(-2px);
+            color: var(--univ-navy);
+        }
+
+        .quick-action-card .icon-circle {
+            width: 46px;
+            height: 46px;
+            border-radius: 10px;
+            background-color: var(--univ-navy);
+            border: 1px solid var(--univ-navy);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            margin-bottom: 10px;
+            transition: opacity 0.15s ease;
+        }
+
+        .quick-action-card:hover .icon-circle {
+            opacity: 0.92;
+        }
+
+        .quick-action-card .icon-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--univ-navy);
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+
+        .quick-action-card .icon-sub {
+            font-size: 0.72rem;
+            color: #64748b;
+            line-height: 1.3;
+        }
+
+        /* HỆ THỐNG NÚT BẤM (BUTTONS) - 1 MÀU CHỦ ĐẠO #003366 DUY NHẤT */
+        .btn-univ-primary,
+        .btn-primary {
+            background-color: var(--univ-navy) !important;
+            border-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+        }
+
+        .btn-univ-primary:hover,
+        .btn-univ-primary:focus,
+        .btn-univ-primary:active,
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: var(--univ-navy) !important;
+            border-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+            opacity: 0.92 !important;
+            box-shadow: 0 2px 8px rgba(0, 51, 102, 0.25) !important;
+        }
+
+        .btn-outline-univ,
+        .btn-outline-primary {
+            background-color: transparent !important;
+            border-color: var(--univ-navy) !important;
+            color: var(--univ-navy) !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, background-color 0.15s ease !important;
+        }
+
+        .btn-outline-univ:hover,
+        .btn-outline-univ:focus,
+        .btn-outline-univ:active,
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background-color: rgba(0, 51, 102, 0.06) !important;
+            border-color: var(--univ-navy) !important;
+            color: var(--univ-navy) !important;
+            opacity: 0.95 !important;
+        }
+
+        .badge.bg-primary {
+            background-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+        }
+
+        /* 5. TIÊU ĐỀ SECTION ĐỒNG BỘ */
+        .section-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--univ-navy);
+            padding-bottom: 8px;
+            margin-bottom: 18px;
+        }
+
+        .section-header-bar h5 {
+            font-weight: 800;
+            color: var(--univ-navy);
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-header-bar h5 i {
+            color: var(--univ-navy) !important;
+        }
+
+        .featured-news-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+            height: 100%;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .featured-news-img {
+            height: 140px;
+            background-color: var(--univ-navy);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            position: relative;
+        }
+
+        .featured-news-img i {
+            font-size: 2.75rem;
+            opacity: 0.85;
+        }
+
+        .featured-news-body {
+            padding: 16px;
+        }
+
+        .featured-news-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--univ-navy);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .featured-news-desc {
+            font-size: 0.82rem;
+            color: #475569;
+            line-height: 1.55;
+            margin-bottom: 0;
+        }
+
+        /* Notice Board List */
+        .notice-list {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .notice-list-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 8px;
+            border-bottom: 1px dashed #e2e8f0;
+            transition: background-color 0.15s;
+        }
+
+        .notice-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .notice-list-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .notice-date-badge {
+            width: 48px;
+            height: 48px;
+            background: #f0f7ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .notice-date-badge .day {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--univ-navy);
+            line-height: 1;
+        }
+
+        .notice-date-badge .month {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--univ-navy);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .notice-content {
+            flex-grow: 1;
+        }
+
+        .notice-title {
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.35;
+            margin-bottom: 3px;
+        }
+
+        .notice-meta {
+            font-size: 0.72rem;
+            color: #94a3b8;
+        }
+
+        /* 6. WORKFLOW STEP CARDS (QUY TRÌNH 4 BƯỚC) */
+        .workflow-step-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px 16px;
+            height: 100%;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .workflow-step-card:hover {
+            border-color: var(--univ-navy);
+            box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .step-number-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--univ-navy);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .workflow-step-card h6 {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--univ-navy);
+            margin-bottom: 6px;
+        }
+
+        .workflow-step-card p {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-bottom: 0;
+            line-height: 1.5;
+        }
+
+        /* 7. ROOMS & FACILITIES SECTION */
+        .pricing-section {
+            background-color: #ffffff;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 44px 0;
+        }
+
+        .room-card-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 22px 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .room-card-box:hover {
+            border-color: var(--univ-navy);
+            box-shadow: 0 6px 16px rgba(0, 51, 102, 0.08);
+        }
+
+        /* 8. RULES SECTION */
+        .rule-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--univ-navy);
+            border-radius: 8px;
+            padding: 18px 16px;
+            height: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .rule-card h6 {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--univ-navy);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .rule-card h6 i {
+            color: var(--univ-navy) !important;
+            margin-right: 8px;
+        }
+
+        /* 9. FACILITY CARDS */
+        .facility-item-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px 12px;
+            text-align: center;
+            height: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .facility-item-card:hover {
+            border-color: var(--univ-navy);
+            box-shadow: 0 4px 10px rgba(0, 51, 102, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .facility-item-card i {
+            font-size: 2rem;
+            color: var(--univ-navy) !important;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .facility-item-card h6 {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+
+        /* 10. FOOTER */
+        .univ-footer {
+            background: var(--univ-navy-dark);
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            padding: 40px 0 20px;
+            border-top: 3px solid #003366;
+        }
+
+        .univ-footer h6 {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding-bottom: 6px;
+        }
+
+        .univ-footer a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .univ-footer a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 24px;
+            padding-top: 16px;
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 991.98px) {
+            .univ-hero-section {
+                padding: 32px 0;
+            }
+
+            .banner-headline-1 {
+                font-size: 1.45rem;
+            }
+
+            .univ-navbar .nav-link {
+                padding: 10px 14px !important;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ========================================== -->
+    <!-- 1. TOP HEADER BRANDING -->
+    <!-- ========================================== -->
+    <header class="univ-header">
+        <div class="container-xl">
+            <div class="row align-items-center g-3">
+                <!-- Left: Logo & Agency Title -->
+                <div class="col-12 col-md-7 d-flex align-items-center gap-3">
+                    <a th:href="@{/}" class="text-decoration-none d-flex align-items-center gap-3">
+                        <div class="univ-logo-emblem">
+                            <i class="bi bi-buildings"></i>
+                        </div>
+                        <div>
+                            <div class="univ-title-vn">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP VIỆT TRÌ</div>
+                            <div class="univ-title-sub">BAN QUẢN LÝ KÝ TÚC XÁ SINH VIÊN</div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Right: Hotline & Auth Actions -->
+                <div
+                    class="col-12 col-md-5 d-flex align-items-center justify-content-start justify-content-md-end gap-2 gap-md-3">
+                    <div class="header-hotline-box d-none d-lg-flex">
+                        <i class="bi bi-telephone-inbound"></i>
+                        <div>
+                            <div class="text-muted" style="font-size: 0.7rem; font-weight: 500;">Trực ban KTX 24/7</div>
+                            <div class="fw-bold text-dark" style="font-size: 0.88rem;">024.3869.2222</div>
+                        </div>
+                    </div>
+
+                    <!-- <button type="button" class="btn btn-outline-univ btn-sm rounded-1 px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1"
+                        data-bs-toggle="modal" data-bs-target="#publicRegisterModal">
+                        <i class="bi bi-person-plus"></i> Đăng Ký
+                    </button> -->
+
+                    <a th:href="@{/login}"
+                        class="btn btn-univ-primary btn-sm rounded-1 px-3 py-1 fw-bold text-uppercase d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i class="bi bi-box-arrow-in-right"></i> Đăng Nhập
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 2. MAIN NAVIGATION BAR (STICKY) -->
+    <!-- ========================================== -->
+    <nav class="navbar navbar-expand-xl univ-navbar sticky-top">
+        <div class="container-xl">
+            <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse"
+                data-bs-target="#univNavMenu">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-center" id="univNavMenu">
+                <ul class="navbar-nav mx-auto mb-2 mb-xl-0 text-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home"><i class="bi bi-house-door-fill me-1"></i>TRANG CHỦ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#news"><i class="bi bi-bell-fill me-1"></i>THÔNG BÁO</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#workflow"><i class="bi bi-diagram-3 me-1"></i>QUY TRÌNH LƯU TRÚ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#rooms"><i class="bi bi-door-open-fill me-1"></i>CƠ SỞ VẬT CHẤT</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#rules"><i class="bi bi-file-earmark-ruled me-1"></i>NỘI QUY KTX</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#facilities"><i class="bi bi-grid-fill me-1"></i>TIỆN ÍCH NỘI KHU</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact"><i class="bi bi-telephone-fill me-1"></i>LIÊN HỆ BQL</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- 3. HERO SECTION (BỐ CỤC 2 CỘT HIỆN ĐẠI, GỌN GÀNG) -->
+    <!-- ========================================== -->
+    <section id="home" class="univ-hero-section">
+        <div class="container-xl">
+            <div class="row align-items-center g-4">
+                <!-- Cột trái: Thông điệp trung tâm & Hành động chính -->
+                <div class="col-12 col-lg-7">
+                    <span class="banner-badge-top">
+                        <i class="bi bi-shield-check me-1"></i> HỆ THỐNG QUẢN LÝ LƯU TRÚ CHÍNH QUY
+                    </span>
+                    <h1 class="banner-headline-1">
+                        CỔNG THÔNG TIN QUẢN LÝ KÝ TÚC XÁ SINH VIÊN
+                    </h1>
+                    <p class="banner-headline-2">
+                        Nền tảng số phục vụ sinh viên nội trú: đăng ký giữ chỗ trực tuyến, quản lý hợp đồng điện tử, đối
+                        chiếu chỉ số điện nước minh bạch và gạch nợ thanh toán VietQR tự động.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button type="button"
+                            class="btn btn-univ-banner-solid btn-sm px-4 py-2 fw-bold rounded-1 shadow-sm"
+                            data-bs-toggle="modal" data-bs-target="#publicRegisterModal">
+                            <i class="bi bi-pencil-square me-1"></i> Đăng ký lưu trú trực tuyến
+                        </button>
+                        <a th:href="@{/login}"
+                            class="btn btn-univ-banner-outline btn-sm px-4 py-2 fw-semibold rounded-1">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập Cổng Sinh Viên
+                        </a>
+                    </div>
+                    <div class="banner-features-strip">
+                        <div class="banner-feature-item">
+                            <i class="bi bi-check-circle-fill"></i> Xét duyệt đơn online
+                        </div>
+                        <div class="banner-feature-item">
+                            <i class="bi bi-check-circle-fill"></i> VietQR gạch nợ tức thì
+                        </div>
+                        <div class="banner-feature-item">
+                            <i class="bi bi-check-circle-fill"></i> Hỗ trợ kỹ thuật 24/7
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cột phải: Khối Tra Cứu & Lối Tắt Tiện Ích Nhanh -->
+                <div class="col-12 col-lg-5">
+                    <div class="hero-action-card">
+                        <h6>
+                            <i class="bi bi-lightning-charge-fill"></i> Lối tắt tra cứu & dịch vụ nhanh
+                        </h6>
+                        <a href="#workflow" class="hero-shortcut-btn">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-card-checklist icon-lead"></i>
+                                <span>Quy trình nộp đơn & nhận phòng</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted small"></i>
+                        </a>
+                        <a href="#rooms" class="hero-shortcut-btn">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-door-open icon-lead"></i>
+                                <span>Cơ sở vật chất & phòng ở</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted small"></i>
+                        </a>
+                        <a href="#news" class="hero-shortcut-btn">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-qr-code-scan icon-lead"></i>
+                                <span>Hướng dẫn thanh toán VietQR</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted small"></i>
+                        </a>
+                        <a href="#rules" class="hero-shortcut-btn">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-file-earmark-ruled icon-lead"></i>
+                                <span>Nội quy & quy định giờ mở cổng</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted small"></i>
+                        </a>
+                        <div class="p-2 mt-2 bg-light rounded text-center small text-muted border">
+                            <i class="bi bi-telephone-fill text-primary me-1"></i> Đường dây nóng an ninh KTX: <b
+                                class="text-dark">024.3869.2222</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4. SÁU TIỆN ÍCH TRUY CẬP NHANH (GRID 6 CỘT CÂN ĐỐI) -->
+    <!-- ========================================== -->
+    <section class="quick-action-strip">
+        <div class="container-xl">
+            <div class="row g-3 row-cols-2 row-cols-sm-3 row-cols-lg-6">
+                <!-- 1. Thông báo KTX -->
+                <div class="col">
+                    <a href="#news" class="quick-action-card">
+                        <div class="icon-circle">
+                            <i class="bi bi-megaphone"></i>
+                        </div>
+                        <div class="icon-title">Thông báo KTX</div>
+                        <div class="icon-sub">Lịch trình & quyết định</div>
+                    </a>
+                </div>
+
+                <!-- 2. Cơ sở vật chất -->
+                <div class="col">
+                    <a href="#rooms" class="quick-action-card">
+                        <div class="icon-circle">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="icon-title">Cơ sở vật chất</div>
+                        <div class="icon-sub">Trang thiết bị phòng</div>
+                    </a>
+                </div>
+
+                <!-- 3. Đăng ký tài khoản -->
+                <div class="col">
+                    <a href="javascript:void(0)" class="quick-action-card" data-bs-toggle="modal"
+                        data-bs-target="#publicRegisterModal">
+                        <div class="icon-circle">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <div class="icon-title">Đăng ký hồ sơ</div>
+                        <div class="icon-sub">Tạo tài khoản lưu trú</div>
+                    </a>
+                </div>
+
+                <!-- 4. Nội quy lưu trú -->
+                <div class="col">
+                    <a href="#rules" class="quick-action-card">
+                        <div class="icon-circle">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div class="icon-title">Nội quy lưu trú</div>
+                        <div class="icon-sub">Quy chế & an ninh</div>
+                    </a>
+                </div>
+
+                <!-- 5. Tiện ích nội khu -->
+                <div class="col">
+                    <a href="#facilities" class="quick-action-card">
+                        <div class="icon-circle">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div class="icon-title">Dịch vụ & Tiện ích</div>
+                        <div class="icon-sub">Căn tin, giặt sấy, gym</div>
+                    </a>
+                </div>
+
+                <!-- 6. Đường dây nóng -->
+                <div class="col">
+                    <a href="#contact" class="quick-action-card">
+                        <div class="icon-circle">
+                            <i class="bi bi-headset"></i>
+                        </div>
+                        <div class="icon-title">Trực ban 24/7</div>
+                        <div class="icon-sub">Hỗ trợ sự cố khẩn cấp</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 5. QUY TRÌNH 4 BƯỚC ĐĂNG KÝ LƯU TRÚ (MỚI - RÕ RÀNG, HỢP LÝ) -->
+    <!-- ========================================== -->
+    <section id="workflow" class="py-5 bg-white border-bottom">
+        <div class="container-xl">
+            <div class="text-center mb-4">
+                <span class="badge bg-primary px-3 py-1 mb-2 text-uppercase fw-semibold"
+                    style="letter-spacing: 0.5px;">QUY TRÌNH THỦ TỤC</span>
+                <h3 class="fw-bold text-dark mb-1">Quy Trình 4 Bước Đăng Ký Lưu Trú Tại Ký Túc Xá</h3>
+                <p class="text-muted small">Thủ tục đơn giản, hoàn toàn trực tuyến và xét duyệt minh bạch</p>
+            </div>
+
+            <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-lg-4">
+                <!-- Bước 1 -->
+                <div class="col">
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">1</div>
+                        <h6>Tạo tài khoản cá nhân</h6>
+                        <p>Sinh viên sử dụng MSSV, email và số điện thoại để đăng ký tài khoản đăng nhập Cổng Ký Túc Xá.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bước 2 -->
+                <div class="col">
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">2</div>
+                        <h6>Chọn đợt & Nộp đơn</h6>
+                        <p>Theo dõi các đợt tiếp nhận hồ sơ, tra cứu phòng còn giường trống và nộp đơn giữ chỗ online.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bước 3 -->
+                <div class="col">
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">3</div>
+                        <h6>Xét duyệt & Nộp phí VietQR</h6>
+                        <p>Ban Quản lý duyệt hồ sơ trực tuyến. Sinh viên thanh toán tiền phòng nhanh chóng qua mã QR tự
+                            động.</p>
+                    </div>
+                </div>
+
+                <!-- Bước 4 -->
+                <div class="col">
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">4</div>
+                        <h6>Nhận phòng & Bàn giao</h6>
+                        <p>Đến KTX làm thủ tục nhận phòng, ký biên bản bàn giao cơ sở vật chất và bắt đầu lưu trú.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 6. THÔNG BÁO BAN QUẢN LÝ & TIN TỨC NỘI TRÚ -->
+    <!-- ========================================== -->
+    <section id="news" class="py-5 bg-light">
+        <div class="container-xl">
+            <div class="row g-4">
+                <!-- Left Column: Featured News -->
+                <div class="col-12 col-lg-7">
+                    <div class="section-header-bar">
+                        <h5><i class="bi bi-newspaper"></i> Tin tức hoạt động nội trú</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-7">
+                            <div class="featured-news-card">
+                                <div class="featured-news-img">
+                                    <i class="bi bi-buildings"></i>
+                                </div>
+                                <div class="featured-news-body">
+                                    <h6 class="featured-news-title">
+                                        Tiếp nhận và xét duyệt đơn lưu trú Ký túc xá qua cổng điện tử
+                                    </h6>
+                                    <p class="featured-news-desc">
+                                        Hệ thống hỗ trợ sinh viên nộp đơn giữ chỗ, lựa chọn giường phòng theo nhu cầu và
+                                        tra cứu kết quả xét duyệt trực tuyến minh bạch, chính xác.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-5 d-flex flex-column gap-3">
+                            <div class="p-3 bg-white border rounded-2 h-100 shadow-sm">
+                                <div class="small text-muted mb-1"><i
+                                        class="bi bi-shield-check me-1 text-primary"></i>An toàn cơ sở</div>
+                                <h6 class="fw-bold small mb-2 text-dark">
+                                    Kiểm tra an toàn PCCC và bảo trì hệ thống định kỳ
+                                </h6>
+                                <p class="small text-secondary mb-0" style="font-size: 0.78rem;">Đội ngũ kỹ thuật định
+                                    kỳ rà soát thiết bị chữa cháy và bảo dưỡng quạt, máy lạnh tại các tòa nhà.</p>
+                            </div>
+
+                            <div class="p-3 bg-white border rounded-2 h-100 shadow-sm">
+                                <div class="small text-muted mb-1"><i class="bi bi-trophy me-1 text-primary"></i>Phong
+                                    trào sinh viên</div>
+                                <h6 class="fw-bold small mb-2 text-dark">
+                                    Hoạt động thể thao và nếp sống văn minh KTX
+                                </h6>
+                                <p class="small text-secondary mb-0" style="font-size: 0.78rem;">Duy trì giải đấu thể
+                                    thao phong trào và phong trào xây dựng phòng ở tự quản xanh - sạch - đẹp.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Announcements -->
+                <div class="col-12 col-lg-5">
+                    <div class="section-header-bar">
+                        <h5><i class="bi bi-bell-fill"></i> Thông báo Ban Quản Lý</h5>
+                    </div>
+
+                    <div class="notice-list">
+                        <div class="notice-list-item">
+                            <div class="notice-date-badge">
+                                <span class="day"><i class="bi bi-calendar-event"></i></span>
+                                <span class="month">ĐỢT MỚI</span>
+                            </div>
+                            <div class="notice-content">
+                                <div class="notice-title">
+                                    Thông báo mở tiếp nhận hồ sơ đăng ký lưu trú các học kỳ
+                                </div>
+                                <div class="notice-meta"><i class="bi bi-tag me-1"></i>Hồ sơ trực tuyến • Ưu tiên chính
+                                    sách</div>
+                            </div>
+                        </div>
+
+                        <div class="notice-list-item">
+                            <div class="notice-date-badge">
+                                <span class="day"><i class="bi bi-qr-code"></i></span>
+                                <span class="month">VIETQR</span>
+                            </div>
+                            <div class="notice-content">
+                                <div class="notice-title">
+                                    Hướng dẫn thanh toán tiền phòng & điện nước qua mã VietQR
+                                </div>
+                                <div class="notice-meta"><i class="bi bi-credit-card me-1"></i>Kế toán KTX • Gạch nợ tự
+                                    động</div>
+                            </div>
+                        </div>
+
+                        <div class="notice-list-item">
+                            <div class="notice-date-badge">
+                                <span class="day"><i class="bi bi-clock"></i></span>
+                                <span class="month">NỘI QUY</span>
+                            </div>
+                            <div class="notice-content">
+                                <div class="notice-title">
+                                    Quy định giờ đóng mở cổng và lịch trực ban an ninh trật tự
+                                </div>
+                                <div class="notice-meta"><i class="bi bi-shield-check me-1"></i>Giờ mở cổng: 05h00 -
+                                    23h00</div>
+                            </div>
+                        </div>
+
+                        <div class="notice-list-item">
+                            <div class="notice-date-badge">
+                                <span class="day"><i class="bi bi-tools"></i></span>
+                                <span class="month">BẢO TRÌ</span>
+                            </div>
+                            <div class="notice-content">
+                                <div class="notice-title">
+                                    Quy trình tiếp nhận và xử lý báo hỏng thiết bị phòng ở
+                                </div>
+                                <div class="notice-meta"><i class="bi bi-wrench me-1"></i>Gửi phiếu trực tiếp qua Cổng
+                                    Sinh Viên</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 7. CƠ SỞ VẬT CHẤT & QUẢN LÝ TÀI SẢN PHÒNG Ở -->
+    <!-- ========================================== -->
+    <section id="rooms" class="pricing-section">
+        <div class="container-xl">
+            <div class="text-center mb-4">
+                <span class="badge bg-primary px-3 py-1 mb-2 text-uppercase fw-semibold"
+                    style="letter-spacing: 0.5px;">TIÊU CHUẨN NỘI TRÚ</span>
+                <h3 class="fw-bold text-dark mb-1">Cơ Sở Vật Chất & Quản Lý Tài Sản Phòng Ở</h3>
+                <p class="text-muted small">Quy chuẩn quản lý trang thiết bị, bàn giao tài sản và hỗ trợ kỹ thuật tại Ký
+                    túc xá</p>
+            </div>
+
+            <div class="row g-3 justify-content-center mb-4">
+                <!-- Card 1: Bàn giao tài sản thực tế -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="room-card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary-subtle text-primary fw-bold">Kiểm kê thực tế</span>
+                            <span class="small text-secondary fw-semibold"><i
+                                    class="bi bi-clipboard-check text-primary me-1"></i>Hồ sơ phòng</span>
+                        </div>
+                        <h5 class="fw-bold mb-1 text-dark">Bàn Giao & Quản Lý Tài Sản</h5>
+                        <p class="text-muted small mb-3">Kiểm kê đồng bộ khi làm thủ tục nhận phòng</p>
+                        <div class="small text-secondary flex-grow-1" style="line-height: 1.8;">
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Danh mục thiết
+                                    bị:</b> Mỗi phòng được quản lý thiết bị theo hồ sơ cơ sở vật chất tòa nhà (giường
+                                tầng, tủ đồ cá nhân, bàn ghế học tập, thiết bị điện nước).</p>
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Biên bản giao
+                                    nhận:</b> Khi nhận phòng, sinh viên cùng Ban Quản lý kiểm tra tình trạng từng thiết
+                                bị và ký biên bản bàn giao.</p>
+                            <p class="mb-0"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Trách nhiệm bảo
+                                    quản:</b> Sinh viên cùng phòng có trách nhiệm giữ gìn tài sản chung và bồi hoàn nếu
+                                xảy ra hư hỏng, mất mát do lỗi cá nhân.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Biểu phí & Phân bổ theo đợt -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="room-card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary-subtle text-primary fw-bold">Theo từng đợt mở</span>
+                            <span class="small text-secondary fw-semibold"><i
+                                    class="bi bi-file-earmark-text text-primary me-1"></i>Quyết định chính thức</span>
+                        </div>
+                        <h5 class="fw-bold mb-1 text-dark">Biểu Phí Lưu Trú & Xếp Chỗ</h5>
+                        <p class="text-muted small mb-3">Minh bạch theo Quyết định của Nhà trường</p>
+                        <div class="small text-secondary flex-grow-1" style="line-height: 1.8;">
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Biểu phí theo
+                                    đợt:</b> Mức thu phí phòng ở, tiền đặt cọc và dịch vụ được Nhà trường ban hành cụ
+                                thể theo từng học kỳ / năm học, không áp đặt mức giá cố định.</p>
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Tra cứu giường
+                                    thực tế:</b> Danh sách phòng và số giường còn trống được hệ thống cập nhật tự động
+                                khi đợt đăng ký mở cổng.</p>
+                            <p class="mb-0"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Xét duyệt công
+                                    khai:</b> Ưu tiên sinh viên diện chính sách, con thương binh liệt sĩ, hộ nghèo và
+                                tân sinh viên theo đúng quy chế.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Bảo trì & Báo hỏng trực tuyến -->
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="room-card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary-subtle text-primary fw-bold">Hỗ trợ kỹ thuật</span>
+                            <span class="small text-secondary fw-semibold"><i
+                                    class="bi bi-wrench-adjustable text-primary me-1"></i>Xử lý nhanh chóng</span>
+                        </div>
+                        <h5 class="fw-bold mb-1 text-dark">Bảo Trì & Báo Hỏng Trực Tuyến</h5>
+                        <p class="text-muted small mb-3">Tiếp nhận và xử lý sự cố kỹ thuật kịp thời</p>
+                        <div class="small text-secondary flex-grow-1" style="line-height: 1.8;">
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Gửi yêu cầu
+                                    online:</b> Khi thiết bị phòng ở (điện nước, bóng đèn, quạt, khóa cửa) gặp sự cố,
+                                sinh viên gửi phiếu báo hỏng trực tiếp trên Cổng Sinh Viên.</p>
+                            <p class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Kỹ thuật hỗ trợ
+                                    24h:</b> Đội ngũ bảo trì KTX tiếp nhận phiếu và đến kiểm tra, sửa chữa trong vòng
+                                24h - 48h làm việc.</p>
+                            <p class="mb-0"><i class="bi bi-check-circle-fill text-primary me-2"></i><b>Bảo dưỡng định
+                                    kỳ:</b> Nhà trường định kỳ bảo trì hệ thống điều hòa, quạt trần và kiểm định phương
+                                tiện PCCC toàn khu nội trú.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối banner kêu gọi hành động tra cứu & Nộp đơn trực tuyến -->
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-10">
+                    <div
+                        class="p-3 bg-light border rounded-3 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-sm">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-2 bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 44px; height: 44px; flex-shrink: 0;">
+                                <i class="bi bi-door-open fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Nộp Đơn Đăng Ký Nội Trú Hoặc Tra Cứu Phòng Trống</h6>
+                                <p class="text-secondary small mb-0">Sinh viên đăng nhập vào hệ thống để theo dõi các
+                                    đợt tiếp nhận hồ sơ, biểu phí niêm yết và lựa chọn phòng còn giường trống.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <!-- <button type="button" class="btn btn-outline-univ btn-sm px-3 fw-semibold"
+                                data-bs-toggle="modal" data-bs-target="#publicRegisterModal">
+                                <i class="bi bi-person-plus me-1"></i>Đăng ký tài khoản
+                            </button>
+                            <a th:href="@{/login}" class="btn btn-univ-primary btn-sm px-3 fw-bold">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập nộp đơn
+                            </a> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 8. NỘI QUY KÝ TÚC XÁ & TRÁCH NHIỆM SINH VIÊN -->
+    <!-- ========================================== -->
+    <section id="rules" class="py-5 bg-white">
+        <div class="container-xl">
+            <div class="text-center mb-4">
+                <span class="badge bg-secondary px-3 py-1 mb-2 text-uppercase fw-semibold">QUY ĐỊNH NỘI TRÚ</span>
+                <h3 class="fw-bold text-dark mb-1">Nội Quy Ký Túc Xá & Trách Nhiệm Sinh Viên Lưu Trú</h3>
+                <p class="text-muted small">Đảm bảo trật tự, an toàn và xây dựng môi trường sống văn minh, kỷ cương</p>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="rule-card">
+                        <h6><i class="bi bi-clock-history"></i>1. Giờ Giấc Ra Vào</h6>
+                        <p class="small text-secondary mb-0">Cổng KTX mở cửa từ <b>05h00</b> và đóng lúc <b>23h00</b>
+                            hàng ngày. Sinh viên về muộn vì lý do học tập cần đăng ký trước với BQL tòa nhà.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="rule-card">
+                        <h6><i class="bi bi-shield-lock"></i>2. An Ninh & Trật Tự</h6>
+                        <p class="small text-secondary mb-0">Không tiếp khách trong phòng ở sau 22h00. Nghiêm cấm đưa
+                            người lạ vào lưu trú qua đêm và không gây ồn ào ảnh hưởng phòng xung quanh.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="rule-card">
+                        <h6><i class="bi bi-fire"></i>3. Phòng Cháy & Vệ Sinh</h6>
+                        <p class="small text-secondary mb-0">Tuyệt đối không đun nấu bằng bếp điện công suất lớn trái
+                            quy định trong phòng ở. Giữ gìn vệ sinh chung và đổ rác đúng nơi quy định.</p>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="rule-card">
+                        <h6><i class="bi bi-box-seam"></i>4. Bảo Vệ Tài Sản</h6>
+                        <p class="small text-secondary mb-0">Có trách nhiệm giữ gìn thiết bị bàn giao trong phòng. Khi
+                            có sự cố hư hỏng, sinh viên gửi phiếu báo hỏng để kỹ thuật hỗ trợ kịp thời.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 9. TIỆN ÍCH NỘI KHU -->
+    <!-- ========================================== -->
+    <section id="facilities" class="py-5 bg-light border-top">
+        <div class="container-xl">
+            <div class="text-center mb-4">
+                <span class="badge bg-primary px-3 py-1 mb-2 text-uppercase fw-semibold">KHUÔN VIÊN KÝ TÚC XÁ</span>
+                <h3 class="fw-bold text-dark mb-1">Cơ Sở Vật Chất & Dịch Vụ Tiện Ích Nội Khu</h3>
+                <p class="text-muted small">Hạ tầng đồng bộ phục vụ đầy đủ nhu cầu học tập, sinh hoạt và thể thao</p>
+            </div>
+
+            <div class="row g-3 row-cols-2 row-cols-md-3 row-cols-lg-6">
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-shield-check"></i>
+                        <h6>An ninh 24/7</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Camera & bảo vệ trực</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-book"></i>
+                        <h6>Phòng Tự học</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Máy lạnh & Wifi miễn phí</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-cup-hot"></i>
+                        <h6>Căn tin KTX</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Vệ sinh ATTP, giá SV</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-basket"></i>
+                        <h6>Giặt sấy tự động</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Thanh toán mã VietQR</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-heart-pulse"></i>
+                        <h6>Trạm Y tế</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Chăm sóc ban đầu</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="facility-item-card">
+                        <i class="bi bi-dribbble"></i>
+                        <h6>Sân Thể thao</h6>
+                        <span class="text-muted small" style="font-size: 0.72rem;">Bóng rổ, cầu lông</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 10. FOOTER CHÍNH QUY -->
+    <!-- ========================================== -->
+    <footer id="contact" class="univ-footer">
+        <div class="container-xl">
+            <div class="row g-4">
+                <div class="col-12 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-buildings text-white fs-4"></i>
+                        <span class="fw-bold text-white fs-6">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP VIỆT TRÌ</span>
+                    </div>
+                    <div class="fw-semibold text-uppercase small text-white-50 mb-3">BAN QUẢN LÝ KÝ TÚC XÁ SINH VIÊN
+                    </div>
+                    <p class="small text-secondary mb-3 pe-lg-4" style="line-height: 1.65;">
+                        Hệ thống thông tin quản lý nội trú Ký túc xá phục vụ sinh viên, số hóa quy trình xét duyệt hồ
+                        sơ, xếp giường và công khai minh bạch tài chính.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/login}" class="btn btn-univ-primary btn-sm rounded-1 px-4 py-2 fw-bold">Đăng nhập
+                            hệ thống</a>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <h6>Thông Tin Liên Hệ & Trực Ban</h6>
+                    <ul class="list-unstyled small text-secondary" style="line-height: 2;">
+                        <li><i class="bi bi-geo-alt me-2 text-light"></i>Khu Nội Trú Ký Túc Xá, Trường ĐH Công Nghiệp
+                            Việt Trì</li>
+                        <li><i class="bi bi-telephone-inbound me-2 text-light"></i>Bảo vệ & Trực ban 24/7:
+                            <b>024.3869.2222</b>
+                        </li>
+                        <li><i class="bi bi-envelope me-2 text-light"></i>Email liên hệ: banquanly@vtu.edu.vn</li>
+                        <li><i class="bi bi-clock me-2 text-light"></i>Giờ làm việc hành chính: 07h30 - 11h30 & 13h30 -
+                            17h00 (Thứ 2 - Thứ 7)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>© Ban Quản Lý Ký Túc Xá Sinh Viên - Trường Đại Học Công Nghiệp Việt Trì. Mọi quyền được bảo
+                    lưu.</span>
+                <span>Hệ thống quản lý nội trú chính quy</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Đăng Ký Tài Khoản -->
+    <div class="modal fade" id="publicRegisterModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-2">
+                <div class="modal-header border-bottom pb-2">
+                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-person-plus text-primary me-2"></i>Đăng Ký
+                        Tài Khoản Sinh Viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="publicRegisterForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Tên đăng nhập <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="regUsername" class="form-control form-control-sm"
+                                placeholder="Từ 3 đến 50 ký tự" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Mật khẩu <span
+                                    class="text-danger">*</span></label>
+                            <input type="password" id="regPassword" class="form-control form-control-sm"
+                                placeholder="Tối thiểu 6 ký tự" required>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-12 col-sm-7">
+                                <label class="form-label small fw-semibold text-secondary">Email sinh viên <span
+                                        class="text-danger">*</span></label>
+                                <input type="email" id="regEmail" class="form-control form-control-sm"
+                                    placeholder="sinhvien@vtu.edu.vn" required>
+                            </div>
+                            <div class="col-12 col-sm-5">
+                                <label class="form-label small fw-semibold text-secondary">Số điện thoại <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="regPhone" class="form-control form-control-sm"
+                                    placeholder="0912345678" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-top pt-2">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-univ-primary btn-sm px-4 fw-semibold"
+                        onclick="submitPublicRegistration()">Tạo tài khoản</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        async function submitPublicRegistration() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+
+            if (!username || !password || !email || !phone) {
+                showToastError('Vui lòng điền đầy đủ các mục thông tin có dấu *!');
+                return;
+            }
+
+            try {
+                await apiFetch('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        email: email,
+                        phone: phone,
+                        roleId: 'STUDENT'
+                    })
+                });
+
+                const modalEl = document.getElementById('publicRegisterModal');
+                if (modalEl) {
+                    const modalInst = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInst) modalInst.hide();
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Tạo tài khoản thành công!',
+                    text: `Tài khoản "${username}" đã sẵn sàng. Bạn có thể đăng nhập ngay.`,
+                    confirmButtonText: 'Đăng nhập ngay',
+                    confirmButtonColor: '#003366'
+                }).then(res => {
+                    if (res.isConfirmed) {
+                        window.location.href = CONTEXT_PATH + '/login';
+                    }
+                });
+            } catch (e) {
+                showToastError(e.message || 'Lỗi đăng ký tài khoản');
+            }
+        }
+    </script>
+</body>
+
+</html>

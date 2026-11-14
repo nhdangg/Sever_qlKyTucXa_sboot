@@ -1,0 +1,3445 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Thông Tin Cư Dân Sinh Viên - Ký Túc Xá</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" th:href="@{/css/style.css(v='20261110_v3')}">
+    <style>
+        :root {
+            --portal-primary: #003366;
+            --portal-primary-dark: #002244;
+            --portal-accent: #003366;
+            --univ-navy: #003366;
+            --univ-navy-dark: #002244;
+            --univ-blue: #003366;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        /* 1. HERO BANNER SINH VIÊN - MÀU CHỦ ĐẠO ĐƠN SẮC #003366, KHÔNG GRADIENT */
+        .portal-header {
+            background-color: var(--univ-navy) !important;
+            background-image: none !important;
+            color: #ffffff;
+            padding: 30px 0 52px;
+            margin-bottom: -30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 51, 102, 0.2);
+        }
+
+        /* Nút trong Banner Sinh Viên: Đồng nhất, không chuyển màu */
+        .btn-univ-banner-solid {
+            background-color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+            color: var(--univ-navy) !important;
+            font-weight: 700 !important;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+        }
+
+        .btn-univ-banner-solid:hover,
+        .btn-univ-banner-solid:focus {
+            background-color: #ffffff !important;
+            border-color: #ffffff !important;
+            color: var(--univ-navy) !important;
+            opacity: 0.92 !important;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .btn-univ-banner-outline {
+            background-color: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.75) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, border-color 0.15s ease !important;
+        }
+
+        .btn-univ-banner-outline:hover,
+        .btn-univ-banner-outline:focus {
+            background-color: transparent !important;
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            opacity: 0.92 !important;
+        }
+
+        .portal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 22px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .portal-kpi {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-kpi:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 51, 102, 0.1);
+        }
+
+        .portal-kpi .stat-icon {
+            background-color: #f0f7ff !important;
+            color: var(--univ-navy) !important;
+            border: 1px solid #cce0ff !important;
+        }
+
+        .roommate-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .roommate-card:hover {
+            background: #ffffff;
+            border-color: var(--univ-navy);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 51, 102, 0.08);
+        }
+
+        .roommate-card.is-me {
+            border-color: var(--univ-navy) !important;
+            background-color: #f0f7ff !important;
+        }
+
+        .roommate-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #f0f7ff;
+            color: var(--univ-navy);
+            border: 1px solid #cce0ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .roommate-card.is-me .roommate-avatar {
+            background: var(--univ-navy) !important;
+            color: #ffffff !important;
+            border-color: var(--univ-navy) !important;
+        }
+
+        /* 2. THANH TAB PILLS - 1 MÀU CHỦ ĐẠO #003366 DUY NHẤT, KHÔNG CHUYỂN MÀU */
+        .nav-pills-custom .nav-link {
+            color: #475569;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-pills-custom .nav-link:hover {
+            background-color: rgba(0, 51, 102, 0.08);
+            color: var(--univ-navy);
+        }
+
+        .nav-pills-custom .nav-link.active {
+            background-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(0, 51, 102, 0.25) !important;
+        }
+
+        /* 3. HỆ THỐNG NÚT BẤM (BUTTONS) - 1 MÀU CHỦ ĐẠO #003366, KHÔNG CHUYỂN MÀU */
+        .btn-univ-primary,
+        .btn-primary {
+            background-color: var(--univ-navy) !important;
+            border-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease !important;
+        }
+
+        .btn-univ-primary:hover,
+        .btn-univ-primary:focus,
+        .btn-univ-primary:active,
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: var(--univ-navy) !important;
+            border-color: var(--univ-navy) !important;
+            color: #ffffff !important;
+            opacity: 0.92 !important;
+            box-shadow: 0 2px 8px rgba(0, 51, 102, 0.25) !important;
+        }
+
+        .btn-outline-univ,
+        .btn-outline-primary {
+            background-color: transparent !important;
+            border-color: var(--univ-navy) !important;
+            color: var(--univ-navy) !important;
+            font-weight: 600 !important;
+            transition: opacity 0.15s ease, background-color 0.15s ease !important;
+        }
+
+        .btn-outline-univ:hover,
+        .btn-outline-univ:focus,
+        .btn-outline-univ:active,
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background-color: rgba(0, 51, 102, 0.06) !important;
+            border-color: var(--univ-navy) !important;
+            color: var(--univ-navy) !important;
+            opacity: 0.95 !important;
+        }
+
+        .star-rating i {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            transition: color 0.15s;
+        }
+
+        .star-rating i.active {
+            color: #f59e0b;
+        }
+
+        .table-responsive {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-responsive table {
+            min-width: 540px;
+        }
+
+        .table-compact-scroll table {
+            min-width: 420px;
+        }
+
+        /* ================= RESPONSIVE CHO TỪNG THIẾT BỊ ================= */
+
+        /* 1. ĐIỆN THOẠI DI ĐỘNG (Smartphones: <= 575.98px) */
+        @media (max-width: 575.98px) {
+            .portal-header {
+                padding: 20px 0 42px;
+                margin-bottom: -22px;
+            }
+
+            .portal-header h2 {
+                font-size: 1.35rem;
+            }
+
+            .portal-header p#studentSubInfo {
+                font-size: 0.78rem;
+                line-height: 1.4;
+            }
+
+            .header-action-btns {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .header-action-btns .btn {
+                font-size: 0.8rem;
+                padding: 7px 12px;
+                border-radius: 30px;
+                flex: 1 1 calc(50% - 4px);
+                text-align: center;
+                justify-content: center;
+            }
+
+            #headerRegisterContractBtn {
+                flex: 1 1 100%;
+            }
+
+            .portal-card {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            /* KPI Card trên điện thoại: 2 cột gọn gàng */
+            .portal-kpi {
+                padding: 12px 14px;
+            }
+
+            .portal-kpi .stat-icon {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 0.95rem !important;
+            }
+
+            .portal-kpi .text-secondary {
+                font-size: 0.65rem !important;
+                letter-spacing: 0.02em;
+            }
+
+            .portal-kpi h4 {
+                font-size: 1.1rem !important;
+                margin-bottom: 2px !important;
+            }
+
+            .portal-kpi .small {
+                font-size: 0.72rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Topbar */
+            .navbar-brand div div {
+                font-size: 0.92rem;
+            }
+
+            .navbar-brand span {
+                display: none;
+            }
+
+            .navbar-brand i {
+                font-size: 1.5rem !important;
+            }
+
+            /* Modal trên điện thoại */
+            .modal-dialog {
+                margin: 0.4rem;
+                max-width: calc(100% - 0.8rem);
+            }
+
+            .modal-content {
+                border-radius: 18px;
+            }
+
+            .modal-body {
+                padding: 14px;
+            }
+
+            .modal-footer {
+                padding: 10px 14px;
+            }
+
+            .modal-footer .btn {
+                flex: 1;
+            }
+
+            /* Ngăn Safari iOS tự động zoom in khi focus input */
+            .form-control,
+            .form-select {
+                font-size: 15px !important;
+            }
+        }
+
+        /* 2. THANH TAB CUỘN NGANG (Mobile & Tablet Portrait: < 992px) */
+        @media (max-width: 991.98px) {
+            .nav-pills-scrollable-container {
+                position: relative;
+                margin: -4px -6px;
+                padding: 4px 6px;
+            }
+
+            .nav-pills-custom {
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                gap: 6px !important;
+                padding-bottom: 2px;
+            }
+
+            .nav-pills-custom::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-pills-custom .nav-item {
+                flex-shrink: 0;
+            }
+
+            .nav-pills-custom .nav-link {
+                white-space: nowrap;
+                padding: 8px 13px;
+                font-size: 0.82rem;
+            }
+        }
+
+        /* 3. MÁY TÍNH BẢNG / IPAD (Tablets: 576px - 991.98px) */
+        @media (min-width: 576px) and (max-width: 991.98px) {
+            .portal-header {
+                padding: 26px 0 48px;
+            }
+
+            .portal-header h2 {
+                font-size: 1.6rem;
+            }
+
+            .header-action-btns .btn {
+                font-size: 0.85rem;
+                padding: 8px 14px;
+            }
+
+            .portal-card {
+                padding: 18px;
+            }
+
+            .portal-kpi h4 {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* 4. MÀN HÌNH MÁY TÍNH / IPAD PRO LANDSCAPE (>= 992px) */
+        @media (min-width: 992px) {
+            .portal-card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Navigation Bar for Student -->
+    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top py-2">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-dark fs-5 text-decoration-none"
+                th:href="@{/student-portal}">
+                <div
+                    style="width: 40px; height: 40px; font-size: 1.35rem; background-color: var(--univ-navy); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,51,102,0.2); flex-shrink: 0;">
+                    <i class="bi bi-buildings-fill"></i>
+                </div>
+                <div>
+                    <div class="lh-1"
+                        style="font-size: 0.95rem; font-weight: 800; color: #003366; text-transform: uppercase;">TRƯỜNG
+                        ĐH CÔNG NGHIỆP VIỆT TRÌ</div>
+                    <span class="fw-bold" style="font-size: 0.72rem; text-transform: uppercase; color: #475569;">CỔNG
+                        DỊCH VỤ SINH VIÊN NỘI TRÚ KTX</span>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-2 gap-sm-3">
+                <div class="topbar-hotline-box d-none d-lg-flex" title="Đường dây nóng Ban Quản lý Ký Túc Xá">
+                    <i class="bi bi-telephone-inbound-fill"></i>
+                    <span>Trực ban KTX 24/7:</span>
+                    <span class="topbar-hotline-number">024.3869.2222</span>
+                </div>
+                <a th:href="@{/}"
+                    class="btn btn-light btn-sm border px-3 d-none d-md-inline-flex align-items-center gap-1 text-secondary text-nowrap flex-shrink-0"
+                    style="white-space: nowrap !important; flex-shrink: 0 !important;">
+                    <i class="bi bi-globe2 flex-shrink-0"></i> <span
+                        style="white-space: nowrap !important; display: inline-block;">Trang chủ KTX</span>
+                </a>
+
+                <!-- Notification Dropdown -->
+                <div class="dropdown me-1">
+                    <button class="btn btn-light rounded-circle position-relative p-2" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false" title="Hộp thư thông báo"
+                        onclick="loadTopbarNotifications()" style="width: 38px; height: 38px;">
+                        <i class="bi bi-bell-fill text-secondary"></i>
+                        <span
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger topbar-unread-badge d-none"
+                            style="font-size: 0.65rem;">
+                            0
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border border-secondary-subtle rounded-3 p-0 overflow-hidden"
+                        style="width: 380px; max-width: 95vw; z-index: 1060; background-color: #ffffff;">
+                        <li class="p-2 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <span class="fw-bold small text-dark"><i class="bi bi-bell me-1"></i>Hộp thư thông
+                                báo</span>
+                            <button class="btn btn-link btn-sm text-decoration-none p-0 small text-primary fw-semibold"
+                                onclick="markAllNotificationsRead()" style="font-size: 0.78rem;">Đọc tất cả</button>
+                        </li>
+                        <li>
+                            <div class="topbar-notification-list overflow-auto"
+                                style="max-height: 280px; background-color: #ffffff;">
+                                <div class="p-3 text-center text-muted small">Đang tải thông báo...</div>
+                            </div>
+                        </li>
+                        <li class="p-2 border-top bg-light text-center small text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1 text-primary"></i>Thông báo được lưu vĩnh viễn trong CSDL
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 ps-2 border-start" style="cursor: pointer;"
+                    onclick="openStudentProfileModal()" title="Cập nhật hồ sơ & Đổi mật khẩu">
+                    <div class="avatar user-avatar-text text-white fw-bold"
+                        style="width: 38px; height: 38px; border-radius: 50%; background: var(--univ-navy); display: flex; align-items: center; justify-content: center;">
+                        S</div>
+                    <div class="d-none d-sm-block text-start">
+                        <div class="user-display-name fw-bold small text-dark lh-sm">Sinh viên</div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle"
+                            style="font-size: 0.68rem;" id="navStudentCodeBadge">SINH VIÊN NỘI TRÚ</span>
+                    </div>
+                </div>
+
+                <button
+                    class="btn btn-outline-secondary btn-sm rounded-pill px-2 px-sm-3 d-flex align-items-center gap-1"
+                    onclick="openStudentProfileModal()" title="Hồ sơ cá nhân & Đổi mật khẩu">
+                    <i class="bi bi-person-gear"></i> <span class="d-none d-md-inline">Hồ sơ</span>
+                </button>
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-1"
+                    onclick="Auth.logout()">
+                    <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Đăng xuất</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Portal Header Banner -->
+    <header class="portal-header">
+        <div class="container position-relative z-1">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="d-inline-flex align-items-center gap-2 text-white px-3 py-1 rounded-pill small mb-2"
+                        style="background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.28); backdrop-filter: blur(4px);">
+                        <i class="bi bi-mortarboard-fill text-warning"></i>
+                        <span>Không gian trực tuyến dành riêng cho Sinh viên nội trú</span>
+                    </div>
+                    <h2 class="fw-bold mb-1">Xin chào, <span class="user-display-name">Sinh viên</span>!</h2>
+                    <p class="text-white text-opacity-85 mb-0 small" id="studentSubInfo">
+                        Mã cư dân: <span class="fw-bold" id="headerStudentCode">-</span> • <span
+                            id="headerFacultyText">Chưa cập nhật khoa</span> | Trạng thái: <span
+                            class="badge bg-white text-primary fw-bold" id="headerStudentStatus">Đang tải...</span>
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 header-action-btns">
+                    <button class="btn btn-univ-banner-solid shadow-sm px-3 py-2 rounded-pill fw-bold"
+                        id="headerRegisterContractBtn" style="display: none;" onclick="openOnlineContractModal()">
+                        <i class="bi bi-pencil-square me-1"></i> Đăng ký ở KTX ngay
+                    </button>
+                    <button class="btn btn-univ-banner-solid shadow-sm px-3 py-2 rounded-pill fw-bold"
+                        onclick="openReportModal()">
+                        <i class="bi bi-tools me-1"></i> Báo hỏng thiết bị
+                    </button>
+                    <button class="btn btn-univ-banner-outline px-3 py-2 rounded-pill fw-semibold"
+                        onclick="openTransferModal()">
+                        <i class="bi bi-arrow-left-right me-1"></i> Xin chuyển phòng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container position-relative z-1 mb-5">
+        <!-- 4 Overview KPI Cards: Hiển thị 2x2 trên mobile và 4 cột trên desktop/tablet -->
+        <div class="row g-2 g-sm-3 mb-4">
+            <div class="col-6 col-lg-3">
+                <div class="portal-card portal-kpi">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-secondary small fw-bold">PHÒNG ĐANG Ở</span>
+                        <div class="stat-icon green" style="width: 42px; height: 42px; font-size: 1.2rem;"><i
+                                class="bi bi-door-open-fill"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-1" id="studentRoomLabel">Chưa xếp phòng</h4>
+                    <div class="small text-muted text-truncate" id="studentBedLabel">Chưa phân giường</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="portal-card portal-kpi">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-secondary small fw-bold">HỢP ĐỒNG NỘI TRÚ</span>
+                        <div class="stat-icon blue" style="width: 42px; height: 42px; font-size: 1.2rem;"><i
+                                class="bi bi-file-earmark-check-fill"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-primary mb-1" id="studentContractStatus">Đang hiệu lực</h4>
+                    <div class="small text-muted text-truncate" id="studentContractPeriod">Học kỳ I • Đến 31/01/2027
+                    </div>
+                    <div id="studentContractActionBox" class="mt-2" style="display: none;">
+                        <button class="btn btn-sm btn-primary rounded-pill w-100 fw-semibold"
+                            onclick="openOnlineContractModal()">
+                            <i class="bi bi-file-earmark-plus me-1"></i> Đăng ký ở KTX ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="portal-card portal-kpi">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-secondary small fw-bold">CÔNG NỢ HIỆN TẠI</span>
+                        <div class="stat-icon amber" style="width: 42px; height: 42px; font-size: 1.2rem;"><i
+                                class="bi bi-cash-stack"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-success mb-1" id="studentDebtAmount">0 đ</h4>
+                    <div class="small text-success fw-medium text-truncate" id="studentDebtSubtext"><i
+                            class="bi bi-check-circle-fill me-1"></i>Đã thanh toán</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+                <div class="portal-card portal-kpi">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-secondary small fw-bold">ĐIỂM RÈN LUYỆN</span>
+                        <div class="stat-icon purple" style="width: 42px; height: 42px; font-size: 1.2rem;"><i
+                                class="bi bi-shield-check"></i></div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-1" id="studentConductPoints">100 / 100</h4>
+                    <div class="small text-muted text-truncate" id="studentConductSubtext">Không vi phạm</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Pills Tabs: Hỗ trợ cuộn ngang êm ái trên mobile & tablet -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-white mb-4">
+            <div class="nav-pills-scrollable-container">
+                <ul class="nav nav-pills nav-pills-custom gap-2 flex-wrap" id="portalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabRoom" type="button">
+                            <i class="bi bi-people-fill me-1"></i> Phòng ở & Hợp đồng
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabExploreRooms" type="button">
+                            <i class="bi bi-grid-3x3-gap me-1"></i> Tra cứu Phòng & Giường trống
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabInvoice" type="button">
+                            <i class="bi bi-receipt-cutoff me-1"></i> Điện nước, Dịch vụ & Hóa đơn
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabMaintenance" type="button">
+                            <i class="bi bi-wrench-adjustable me-1"></i> Báo hỏng thiết bị
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabServices" type="button">
+                            <i class="bi bi-bicycle me-1"></i> Tiện ích, Gửi xe & Phản ánh
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabRules" type="button">
+                            <i class="bi bi-megaphone-fill me-1"></i> Thông báo, Kỷ luật & Nội quy
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="portalTabsContent">
+            <!-- TAB 1: PHÒNG Ở & BẠN CÙNG PHÒNG -->
+            <div class="tab-pane fade show active" id="tabRoom">
+                <div id="noContractBannerContainer"></div>
+                <div class="row g-4">
+                    <div class="col-12 col-lg-5">
+                        <div class="portal-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0"><i class="bi bi-info-circle-fill text-success me-2"></i>Thông
+                                    tin phòng ở hiện tại</h5>
+                                <span class="badge bg-success-subtle text-success">Đang ở</span>
+                            </div>
+                            <ul class="list-group list-group-flush small">
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Số phòng:</span>
+                                    <span class="fw-bold text-dark" id="detailRoomNumber">-</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Mã hợp đồng:</span>
+                                    <span class="fw-semibold text-primary" id="detailContractCode">-</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Vị trí giường:</span>
+                                    <span class="badge bg-success-subtle text-success" id="detailBedNumber">-</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Đợt lưu trú:</span>
+                                    <span class="fw-semibold" id="detailPeriodName">-</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Đơn giá thuê tháng:</span>
+                                    <span class="fw-bold text-primary" id="detailMonthlyFee">0 đ / tháng</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0 py-2">
+                                    <span class="text-muted">Trang thiết bị bàn giao:</span>
+                                    <span class="text-end fw-medium" id="detailRoomAssets">Điều hòa, bình nóng lạnh,
+                                        quạt trần, bàn học, tủ cá nhân</span>
+                                </li>
+                            </ul>
+                            <div class="mt-3 pt-3 border-top d-flex flex-wrap gap-2">
+                                <button class="btn btn-univ-primary btn-sm rounded-pill flex-grow-1"
+                                    onclick="openMyContractDetailModal()">
+                                    <i class="bi bi-file-earmark-text-fill me-1"></i> Xem chi tiết Hợp đồng
+                                </button>
+                                <button class="btn btn-outline-univ btn-sm rounded-pill flex-grow-1"
+                                    onclick="openReportModal()">
+                                    <i class="bi bi-tools me-1"></i> Báo hỏng thiết bị
+                                </button>
+                                <button class="btn btn-outline-univ btn-sm rounded-pill flex-grow-1"
+                                    onclick="openTransferModal()">
+                                    <i class="bi bi-arrow-left-right me-1"></i> Xin chuyển phòng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-7">
+                        <div class="portal-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0"><i class="bi bi-inbox-fill text-primary me-2"></i>Danh sách
+                                    Giường trong phòng & Đơn chuyển phòng</h5>
+                                <span class="badge bg-light text-secondary border" id="roomBedsSummaryBadge">Đang
+                                    tải...</span>
+                            </div>
+
+                            <div class="row g-3 mb-3" id="roomBedsContainer">
+                                <div class="col-12 text-center text-muted py-4">
+                                    <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                                    <span>Đang tải danh sách giường cùng phòng...</span>
+                                </div>
+                            </div>
+
+                            <div class="border-top pt-3 mt-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold text-secondary"><i
+                                            class="bi bi-arrow-left-right me-1"></i>Lịch sử Đơn xin chuyển phòng của
+                                        bạn</span>
+                                    <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                                        onclick="openTransferModal()">+ Tạo đơn mới</button>
+                                </div>
+                                <div id="studentTransferList" class="small text-muted">Chưa có yêu cầu chuyển phòng nào.
+                                </div>
+                            </div>
+
+                            <div class="border-top pt-3 mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold text-secondary"><i
+                                            class="bi bi-file-earmark-check-fill text-primary me-1"></i>Danh sách Hợp
+                                        đồng Lưu trú của bạn</span>
+                                    <button class="btn btn-link btn-sm p-0 text-decoration-none"
+                                        onclick="openMyContractDetailModal()">Xem bản đầy đủ</button>
+                                </div>
+                                <div class="table-responsive table-compact-scroll">
+                                    <table class="table table-sm align-middle mb-0 small">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Mã HĐ</th>
+                                                <th>Phòng / Giường</th>
+                                                <th>Thời hạn</th>
+                                                <th>Đơn giá / Cọc</th>
+                                                <th>Trạng thái</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="studentContractTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-2">Đang tải hợp đồng...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: TRA CỨU PHÒNG TRỐNG THỰC TẾ -->
+            <div class="tab-pane fade" id="tabExploreRooms">
+                <div class="portal-card">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1"><i class="bi bi-building-check text-success me-2"></i>Tra cứu Sơ đồ
+                                Phòng & Giường trống KTX</h5>
+                            <p class="text-muted small mb-0">Hệ thống hiển thị trực tiếp số giường còn trống theo từng
+                                phòng để sinh viên dễ dàng chọn giường hoặc xin chuyển phòng</p>
+                        </div>
+                        <div class="d-flex flex-column flex-sm-row gap-2 explore-rooms-filter-box mt-2 mt-md-0">
+                            <select id="studentBuildingFilter" class="form-select form-select-sm"
+                                onchange="filterStudentRooms()">
+                                <option value="">-- Tất cả Tòa nhà --</option>
+                            </select>
+                            <select id="studentStatusFilter" class="form-select form-select-sm"
+                                onchange="filterStudentRooms()">
+                                <option value="">Tất cả phòng</option>
+                                <option value="AVAILABLE_BEDS">Phòng còn giường trống</option>
+                                <option value="FULL_BEDS">Phòng đã hết giường</option>
+                                <option value="MAINTENANCE">Đang bảo trì</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3" id="studentRoomsGrid">
+                        <div class="col-12 text-center text-muted py-4">Đang tải danh sách phòng từ hệ thống...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ĐIỆN NƯỚC, MỨC GIÁ DỊCH VỤ & HÓA ĐƠN -->
+            <div class="tab-pane fade" id="tabInvoice">
+                <div class="portal-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1"><i class="bi bi-receipt text-success me-2"></i>Lịch sử Hóa đơn Tiền
+                                phòng, Điện nước & Dịch vụ KTX</h5>
+                            <p class="text-muted small mb-0">Theo dõi chi tiết các khoản thu, đơn giá tiền phòng, điện
+                                nước và dịch vụ hàng tháng • Hỗ trợ thanh toán trực tuyến VietQR</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Mã hóa đơn</th>
+                                    <th>Kỳ hóa đơn</th>
+                                    <th>Hạn thanh toán</th>
+                                    <th>Tổng cộng</th>
+                                    <th>Đã thanh toán</th>
+                                    <th>Còn nợ</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-center" style="width: 210px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentInvoiceTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">Đang tải hóa đơn của bạn...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Chỉ số Điện & Nước phòng đang ở -->
+                    <div class="col-12 col-lg-7">
+                        <div class="portal-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-primary me-2"></i>Chỉ số
+                                        Điện & Nước Phòng đang ở (Bảng <code>chi_so_dien_nuoc</code>)</h5>
+                                    <p class="text-muted small mb-0">Số liệu đồng hồ công tơ điện, nước hàng tháng do
+                                        nhân viên KTX ghi nhận</p>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Kỳ ghi sổ</th>
+                                            <th>Dịch vụ</th>
+                                            <th>Chỉ số cũ</th>
+                                            <th>Chỉ số mới</th>
+                                            <th>Tiêu thụ</th>
+                                            <th>Người ghi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentUtilityReadingBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-3">Đang tải chỉ số điện
+                                                nước phòng ở...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bảng giá Dịch vụ KTX niêm yết -->
+                    <div class="col-12 col-lg-5">
+                        <div class="portal-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1"><i class="bi bi-tags-fill text-warning me-2"></i>Mức giá
+                                        Dịch vụ KTX (Bảng <code>loai_dich_vu</code>)</h5>
+                                    <p class="text-muted small mb-0">Đơn giá điện, nước và dịch vụ niêm yết của Ban Quản
+                                        lý</p>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Dịch vụ</th>
+                                            <th>Đơn vị</th>
+                                            <th>Đơn giá</th>
+                                            <th>Hình thức</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentServicePriceBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-3">Đang tải bảng giá dịch
+                                                vụ...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: BÁO HỎNG THIẾT BỊ -->
+            <div class="tab-pane fade" id="tabMaintenance">
+                <div class="portal-card">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1"><i class="bi bi-wrench text-warning me-2"></i>Theo dõi Yêu cầu Sửa
+                                chữa Thiết bị (Đã lưu CSDL)</h5>
+                            <p class="text-muted small mb-0">Mọi yêu cầu báo hỏng tại đây được lưu trực tiếp vào CSDL và
+                                hiển thị ngay trên màn hình Admin / Quản lý / Nhân viên</p>
+                        </div>
+                        <button class="btn btn-univ-primary btn-sm rounded-pill px-3" onclick="openReportModal()">
+                            <i class="bi bi-plus-lg me-1"></i> Gửi báo hỏng mới
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Mã sự cố</th>
+                                    <th>Phòng</th>
+                                    <th>Hạng mục / Mô tả chi tiết</th>
+                                    <th>Thời gian gửi</th>
+                                    <th>Mức độ</th>
+                                    <th>Trạng thái xử lý</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentMaintTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">Đang tải danh sách yêu cầu bảo
+                                        trì...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: TIỆN ÍCH, GỬI XE & GÓP Ý PHẢN ÁNH -->
+            <div class="tab-pane fade" id="tabServices">
+                <div class="row g-4">
+                    <!-- Đăng ký xe -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="portal-card">
+                            <h5 class="fw-bold mb-2"><i class="bi bi-bicycle text-danger me-2"></i>Vé xe tháng KTX</h5>
+                            <p class="text-muted small mb-3">Đăng ký gửi xe lưu trực tiếp vào CSDL (hiển thị tại mục
+                                Quản lý Gửi Xe của Ban Quản Lý)</p>
+
+                            <div id="studentVehicleList" class="mb-3">
+                                <div class="text-muted small py-2">Đang tải danh sách xe đã đăng ký...</div>
+                            </div>
+
+                            <div class="border-top pt-3">
+                                <label class="form-label small fw-semibold">Đăng ký phương tiện mới</label>
+                                <select id="vehicleTypeSelect" class="form-select form-select-sm mb-2">
+                                    <option value="MOTORBIKE">Xe máy (80.000đ/tháng)</option>
+                                    <option value="ELECTRIC_BIKE">Xe đạp điện (50.000đ/tháng)</option>
+                                    <option value="BICYCLE">Xe đạp (30.000đ/tháng)</option>
+                                </select>
+                                <input type="text" id="vehicleBrandInput" class="form-control form-control-sm mb-2"
+                                    placeholder="Nhãn hiệu xe (VD: Honda Vision)">
+                                <input type="text" id="vehiclePlateInput" class="form-control form-control-sm"
+                                    placeholder="Nhập biển số xe (VD: 29A1-123.45)">
+                                <button class="btn btn-outline-univ btn-sm rounded-pill w-100 mt-2"
+                                    onclick="registerVehicle()">
+                                    <i class="bi bi-plus-circle me-1"></i> Gửi đăng ký vé xe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Đăng ký khách thăm -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="portal-card">
+                            <h5 class="fw-bold mb-2"><i class="bi bi-person-badge text-info me-2"></i>Đăng ký Khách thăm
+                            </h5>
+                            <p class="text-muted small mb-3">Ghi nhận khách vào thăm vào CSDL (hiển thị tại mục Khách Ra
+                                Vào của Ban Quản Lý)</p>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Họ tên khách đến thăm <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="visitorName" class="form-control form-control-sm"
+                                    placeholder="VD: Nguyễn Văn Phụ Huynh">
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Số CCCD khách</label>
+                                    <input type="text" id="visitorNationalId" class="form-control form-control-sm"
+                                        placeholder="00120400xxxx">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Số điện thoại</label>
+                                    <input type="text" id="visitorPhone" class="form-control form-control-sm"
+                                        placeholder="0912345678">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Mục đích thăm</label>
+                                <input type="text" id="visitorPurpose" class="form-control form-control-sm"
+                                    value="Gia đình / Người thân đến thăm">
+                            </div>
+
+                            <button class="btn btn-univ-primary btn-sm rounded-pill w-100 mb-3"
+                                onclick="submitVisitor()">
+                                <i class="bi bi-send me-1"></i> Đăng ký với Trực ban
+                            </button>
+
+                            <div class="border-top pt-2">
+                                <div class="small fw-semibold text-secondary mb-1">Khách đã đăng ký gần đây:</div>
+                                <div id="studentVisitorList" class="small text-muted">Chưa có lịch sử khách thăm.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gửi đánh giá / Phản ánh -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="portal-card">
+                            <h5 class="fw-bold mb-2"><i class="bi bi-chat-heart-fill text-primary me-2"></i>Góp ý & Đánh
+                                giá KTX</h5>
+                            <p class="text-muted small mb-2">Ý kiến đóng góp được lưu vào CSDL và chuyển tới Ban Quản lý
+                                KTX</p>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Mức độ hài lòng</label>
+                                <div class="star-rating d-flex gap-1" id="feedbackStars">
+                                    <i class="bi bi-star-fill active" onclick="setRating(1)"></i>
+                                    <i class="bi bi-star-fill active" onclick="setRating(2)"></i>
+                                    <i class="bi bi-star-fill active" onclick="setRating(3)"></i>
+                                    <i class="bi bi-star-fill active" onclick="setRating(4)"></i>
+                                    <i class="bi bi-star-fill active" onclick="setRating(5)"></i>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <select id="feedbackCategory" class="form-select form-select-sm mb-2">
+                                    <option value="Cơ sở vật chất & Vệ sinh">Cơ sở vật chất & Vệ sinh</option>
+                                    <option value="An ninh & Trực ban">An ninh & Trực ban</option>
+                                    <option value="Internet & Điện nước">Internet & Điện nước</option>
+                                    <option value="Căn tin & Dịch vụ">Căn tin & Dịch vụ</option>
+                                </select>
+                                <textarea id="feedbackContent" class="form-control form-control-sm" rows="2"
+                                    placeholder="Nhập nội dung góp ý của bạn..."></textarea>
+                            </div>
+                            <button class="btn btn-univ-primary btn-sm rounded-pill w-100 mb-3"
+                                onclick="submitStudentFeedback()">
+                                <i class="bi bi-send-check me-1"></i> Gửi phản ánh tới BQL
+                            </button>
+
+                            <div class="border-top pt-2">
+                                <div class="small fw-semibold text-secondary mb-1">Phản ánh đã gửi:</div>
+                                <div id="studentFeedbackList" class="small text-muted">Chưa có phản ánh nào.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: THÔNG BÁO, KỶ LUẬT & NỘI QUY KTX -->
+            <div class="tab-pane fade" id="tabRules">
+                <div class="portal-card mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-megaphone-fill text-primary me-2"></i>Thông báo từ Ban Quản
+                        lý Ký Túc Xá (Bảng <code>thong_bao</code>)</h5>
+                    <div id="studentNotificationList" class="row g-3">
+                        <div class="col-12 text-muted small">Đang tải thông báo từ Ban Quản lý...</div>
+                    </div>
+                </div>
+
+                <div class="portal-card">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-shield-check text-success me-2"></i>Nội quy & Quy định Lưu
+                        trú Ký Túc Xá</h5>
+                    <ol class="small text-secondary ps-3 mb-4" style="line-height: 1.9;">
+                        <li><b>Giờ giấc đóng/mở cổng:</b> Mở cửa từ <b>05h00</b> đến <b>23h00</b> hàng ngày. Sinh viên
+                            về muộn sau 23h00 phải có lý do chính đáng và xác nhận tại phòng trực bảo vệ.</li>
+                        <li><b>An ninh trật tự & Phòng cháy chữa cháy:</b> Nghiêm cấm đun nấu trong phòng ở, tàng trữ
+                            chất dễ cháy nổ, uống rượu bia hoặc gây mất trật tự sau 22h30.</li>
+                        <li><b>Sử dụng điện nước & Tài sản chung:</b> Tắt bình nóng lạnh, điều hòa, đèn và quạt khi ra
+                            khỏi phòng; bảo quản tài sản được bàn giao theo biên bản nhận phòng.</li>
+                        <li><b>Quy định tiếp khách:</b> Khách đến thăm phải đăng ký tại cổng bảo vệ, đeo thẻ khách và
+                            rời khỏi khu nội trú trước 21h30.</li>
+                        <li><b>Vệ sinh môi trường:</b> Phân loại rác và bỏ rác đúng giờ quy định; giữ gìn vệ sinh hành
+                            lang và khu sinh hoạt chung.</li>
+                    </ol>
+
+                    <div class="alert alert-success border-0 rounded-3 small mb-4 d-flex align-items-center gap-2">
+                        <i class="bi bi-telephone-inbound-fill fs-5"></i>
+                        <div>
+                            <b>Đường dây nóng hỗ trợ sinh viên 24/7:</b> Phòng Bảo vệ & Y tế: <b>024.3869.2222</b> • Văn
+                            phòng Ban Quản lý KTX: <b>0988.888.999</b>
+                        </div>
+                    </div>
+
+                    <div class="border-top pt-3">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-clipboard-check-fill text-danger me-2"></i>Lịch sử Kỷ
+                            luật & Điểm Rèn luyện Nội trú của bạn</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Ngày ghi nhận</th>
+                                        <th>Loại vi phạm</th>
+                                        <th>Nội dung biên bản</th>
+                                        <th>Điểm trừ</th>
+                                        <th>Tiền phạt</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentViolationTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3">Bạn chấp hành tốt nội quy,
+                                            chưa có biên bản vi phạm nào.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Báo Hỏng Thiết Bị Dành Cho Sinh Viên - Chuẩn ĐH Công Nghiệp Việt Trì -->
+    <div class="modal fade" id="studentReportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-tools me-2"></i>BÁO HỎNG & YÊU CẦU SỬA CHỮA THIẾT BỊ PHÒNG Ở
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="studentReportForm">
+                        <div class="form-section-title">
+                            <i class="bi bi-geo-alt-fill"></i>I. ĐỊA ĐIỂM & PHÒNG Ở XẢY RA SỰ CỐ
+                        </div>
+                        <div class="form-section-box">
+                            <label class="form-label">Chọn phòng ở của bạn <span class="text-danger">*</span></label>
+                            <select id="reportRoomSelect" class="form-select" required>
+                                <option value="">-- Tự động lấy theo hợp đồng phòng ở --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-wrench-adjustable"></i>II. THIẾT BỊ & CHI TIẾT SỰ CỐ HƯ HỎNG
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="mb-2">
+                                <label class="form-label">Hạng mục thiết bị gặp sự cố <span
+                                        class="text-danger">*</span></label>
+                                <select id="maintCategory" class="form-select">
+                                    <option value="Đường ống nước / Vòi nước">Đường ống nước / Vòi nước rò rỉ</option>
+                                    <option value="Bóng đèn / Hệ thống điện">Bóng đèn / Ổ cắm điện bị hỏng</option>
+                                    <option value="Máy lạnh / Điều hòa">Máy lạnh không mát / chảy nước</option>
+                                    <option value="Khóa cửa / Cửa sổ">Khóa cửa phòng / Cửa sổ bị kẹt</option>
+                                    <option value="Giường tầng / Bàn học">Giường tầng / Bàn học hư hỏng</option>
+                                    <option value="Internet / Wifi">Mạng Wifi trong phòng yếu / mất kết nối</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Mức độ khẩn cấp</label>
+                                <select id="maintPriority" class="form-select">
+                                    <option value="MEDIUM">Bình thường (Ban Quản lý xử lý trong ngày)</option>
+                                    <option value="HIGH">Khẩn cấp (Rò nước, chập điện nguy hiểm...)</option>
+                                    <option value="LOW">Thấp (Chưa ảnh hưởng sinh hoạt ngay)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Mô tả chi tiết tình trạng hư hỏng <span
+                                        class="text-danger">*</span></label>
+                                <textarea id="studentMaintDesc" class="form-control" rows="3"
+                                    placeholder="VD: Vòi nước bồn rửa mặt bị rò rỉ liên tục không khóa chặt được, cần thay thế ron cao su..."
+                                    required></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="submitStudentReport()">
+                        <i class="bi bi-send-check me-1"></i>Gửi yêu cầu sửa chữa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xin Chuyển Phòng Dành Cho Sinh Viên -->
+    <div class="modal fade" id="studentTransferModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-arrow-left-right me-2"></i>ĐƠN XIN ĐỔI PHÒNG LƯU TRÚ KTX TRỰC TUYẾN
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="studentTransferForm">
+                        <div class="form-section-title">
+                            <i class="bi bi-door-open-fill"></i>I. NGUYỆN VỌNG PHÒNG CHUYỂN ĐẾN
+                        </div>
+                        <div class="form-section-box">
+                            <div class="mb-2">
+                                <label class="form-label">Chọn phòng muốn chuyển đến <span
+                                        class="text-danger">*</span></label>
+                                <select id="transferTargetRoomSelect" class="form-select" required
+                                    onchange="onTransferRoomChange()">
+                                    <option value="">-- Chọn phòng còn giường trống --</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Chọn giường muốn chuyển đến <span
+                                        class="text-danger">*</span></label>
+                                <select id="transferTargetBedSelect" class="form-select" required>
+                                    <option value="">-- Vui lòng chọn phòng trước để xem danh sách giường --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Ngày dự kiến mong muốn chuyển</label>
+                                <input type="date" id="transferDateInput" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-chat-left-text-fill"></i>II. LÝ DO VÀ ĐỀ XUẤT NGUYỆN VỌNG
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <label class="form-label">Lý do xin chuyển phòng <span class="text-danger">*</span></label>
+                            <textarea id="transferReasonInput" class="form-control" rows="3"
+                                placeholder="VD: Xin chuyển sang phòng cùng lớp để thuận tiện học nhóm và trao đổi chuyên đề..."
+                                required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="submitRoomTransfer()">
+                        <i class="bi bi-send-check me-1"></i>Gửi đơn chuyển phòng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hồ Sơ Cá Nhân & Đổi Mật Khẩu Sinh Viên -->
+    <div class="modal fade" id="studentProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-vcard-fill me-2"></i>HỒ SƠ CƯ DÂN SINH VIÊN & BẢO MẬT TÀI KHOẢN
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="studentProfileForm">
+                        <!-- Khối I: Ảnh đại diện -->
+                        <div class="form-section-title">
+                            <i class="bi bi-person-badge-fill"></i>I. ẢNH THẺ ĐẠI DIỆN SINH VIÊN
+                        </div>
+                        <div class="form-section-box">
+                            <div class="d-flex align-items-center gap-3 p-2 bg-white rounded border">
+                                <div class="position-relative flex-shrink-0">
+                                    <img id="stuProfAvatarPreview" src="" alt="Avatar"
+                                        class="rounded-circle border shadow-sm"
+                                        style="width: 76px; height: 76px; object-fit: cover;"
+                                        onerror="this.onerror=null;this.src=DEFAULT_AVATAR_SVG">
+                                    <label for="stuProfAvatarFileInput"
+                                        class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0 p-0 shadow-sm"
+                                        title="Tải ảnh lên từ máy"
+                                        style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                        <i class="bi bi-camera-fill" style="font-size: 0.75rem;"></i>
+                                    </label>
+                                    <input type="file" id="stuProfAvatarFileInput" class="d-none"
+                                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                                        onchange="handleStudentPortalAvatarSelect(this)">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="form-label small fw-bold mb-1">Ảnh thẻ sinh viên</label>
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text bg-white"><i class="bi bi-link-45deg"></i></span>
+                                        <input type="text" id="stuProfAvatarUrl" class="form-control"
+                                            placeholder="https://... hoặc /uploads/avatars/..."
+                                            oninput="updateStudentPortalAvatarPreview(this.value)">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                            onclick="document.getElementById('stuProfAvatarFileInput').click()">
+                                            <i class="bi bi-upload me-1"></i>Chọn tệp
+                                        </button>
+                                        <button class="btn btn-outline-danger" type="button"
+                                            onclick="clearStudentPortalAvatar()" title="Xóa ảnh về mặc định">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                    <div class="small text-muted" id="stuProfUploadStatusText"
+                                        style="font-size: 0.78rem;">
+                                        Hỗ trợ định dạng PNG, JPG, WEBP (tối đa 25MB) hoặc đường dẫn ảnh KTX.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối II: Thông tin liên hệ & Căn cước -->
+                        <div class="form-section-title">
+                            <i class="bi bi-person-lines-fill"></i>II. THÔNG TIN LIÊN HỆ & CĂN CƯỚC CÔNG DÂN
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Email sinh viên <span class="text-danger">*</span></label>
+                                    <input type="email" id="stuProfEmail" class="form-control" required
+                                        placeholder="sinhvien@example.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Số điện thoại liên lạc <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" id="stuProfPhone" class="form-control" required
+                                        placeholder="0912345678">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Số CCCD / CMND</label>
+                                    <input type="text" id="stuProfNationalId" class="form-control"
+                                        placeholder="00120400xxxx" maxlength="12">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Ngày sinh</label>
+                                    <input type="date" id="stuProfDob" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Quê quán (Tỉnh / Thành phố)</label>
+                                    <input type="text" id="stuProfHometown" class="form-control"
+                                        placeholder="VD: Phú Thọ, Hà Nội...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Hộ khẩu thường trú</label>
+                                    <input type="text" id="stuProfPermanentAddress" class="form-control"
+                                        placeholder="Số nhà, đường, phường/xã...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối III: Người thân khẩn cấp -->
+                        <div class="form-section-title">
+                            <i class="bi bi-telephone-plus-fill"></i>III. THÂN NHÂN LIÊN HỆ KHẨN CẤP (GIA ĐÌNH)
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Họ tên người liên hệ</label>
+                                    <input type="text" id="stuProfEmerName" class="form-control"
+                                        placeholder="VD: Nguyễn Văn Phụ Huynh">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Số điện thoại</label>
+                                    <input type="tel" id="stuProfEmerPhone" class="form-control"
+                                        placeholder="0987654321">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Mối quan hệ</label>
+                                    <input type="text" id="stuProfEmerRelation" class="form-control"
+                                        placeholder="VD: Bố / Mẹ / Người bảo trợ">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khối IV: Đổi mật khẩu -->
+                        <div class="form-section-title">
+                            <i class="bi bi-shield-lock-fill"></i>IV. ĐỔI MẬT KHẨU ĐĂNG NHẬP
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Mật khẩu hiện tại</label>
+                                    <input type="password" id="stuProfCurrentPassword" class="form-control"
+                                        placeholder="Nhập mật khẩu cũ nếu đổi MK">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Mật khẩu mới</label>
+                                    <input type="password" id="stuProfPassword" class="form-control"
+                                        placeholder="Tối thiểu 6 ký tự">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Xác nhận mật khẩu mới</label>
+                                    <input type="password" id="stuProfConfirmPassword" class="form-control"
+                                        placeholder="Nhập lại mật khẩu mới">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="submitUpdateStudentProfile()">
+                        <i class="bi bi-floppy-fill me-1"></i>Lưu thông tin hồ sơ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Đăng Ký Thuê Phòng Ký Túc Xá Trực Tuyến -->
+    <div class="modal fade" id="onlineContractModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark-check-fill me-2"></i>ĐĂNG KÝ HỢP ĐỒNG THUÊ PHÒNG KTX TRỰC TUYẾN
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-primary d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                        <div>Đơn đăng ký của bạn sẽ được gửi tới Ban Quản lý KTX để xét duyệt. Giường được chọn sẽ được
+                            tạm giữ chỗ cho bạn sau khi gửi đơn thành công.</div>
+                    </div>
+
+                    <form id="onlineContractForm">
+                        <div class="form-section-title">
+                            <i class="bi bi-building"></i>I. THÔNG TIN ĐỢT ĐĂNG KÝ & BỐ TRÍ PHÒNG Ở
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">1. Đợt đăng ký nội trú <span
+                                            class="text-danger">*</span></label>
+                                    <select id="onlineApplyPeriodSelect" class="form-select" required
+                                        onchange="onPeriodChange()">
+                                        <option value="">-- Đang nạp đợt đăng ký --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">2. Tòa nhà lưu trú <span
+                                            class="text-danger">*</span></label>
+                                    <select id="onlineApplyBuildingSelect" class="form-select" required
+                                        onchange="onBuildingChange()">
+                                        <option value="">-- Chọn tòa nhà --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">3. Phòng còn giường trống <span
+                                            class="text-danger">*</span></label>
+                                    <select id="onlineApplyRoomSelect" class="form-select" required
+                                        onchange="onRoomChange()">
+                                        <option value="">-- Chọn phòng còn giường trống --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">4. Giường còn trống trong phòng <span
+                                            class="text-danger">*</span></label>
+                                    <select id="onlineApplyBedSelect" class="form-select" required
+                                        onchange="onBedChange()">
+                                        <option value="">-- Chọn phòng trước để xem giường trống --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thông tin dự tính chi phí -->
+                        <!-- Thông tin dự tính chi phí -->
+                        <div class="form-section-title">
+                            <i class="bi bi-cash-stack"></i>II. THÔNG TIN DỰ TÍNH CHI PHÍ & ĐƠN GIÁ THUÊ PHÒNG
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2 small">
+                                <div class="col-6 col-md-3">
+                                    <span class="text-muted d-block">Thời hạn học kỳ:</span>
+                                    <span class="fw-bold text-dark" id="onlineApplyPeriodDates">-</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <span class="text-muted d-block">Loại phòng:</span>
+                                    <span class="fw-bold text-dark" id="onlineApplyRoomType">-</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <span class="text-muted d-block">Đơn giá tháng:</span>
+                                    <span class="fw-bold text-success" id="onlineApplyMonthlyFee">0 đ</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <span class="text-muted d-block">Tiền cọc quy định:</span>
+                                    <span class="fw-bold text-primary" id="onlineApplyDeposit">0 đ</span>
+                                </div>
+                            </div>
+
+                            <!-- Khối chi tiết các loại dịch vụ theo phòng -->
+                            <div class="mt-3 pt-3 border-top" id="onlineApplyServicesBox">
+                                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                    <span class="fw-bold small text-dark">
+                                        <i class="bi bi-tags-fill text-primary me-1"></i>Các loại dịch vụ & Mức phí áp
+                                        dụng cho phòng này:
+                                    </span>
+                                    <span class="badge bg-primary-subtle text-primary border"
+                                        id="onlineApplyRoomBadge">Chưa chọn phòng</span>
+                                </div>
+                                <div class="table-responsive border rounded-3 bg-white mb-2">
+                                    <table class="table table-sm table-hover align-middle mb-0"
+                                        style="font-size: 0.82rem;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 125px;">Dịch vụ</th>
+                                                <th>Hình thức tính phí</th>
+                                                <th class="text-end" style="width: 110px;">Đơn giá</th>
+                                                <th class="text-end" style="width: 165px;">Phân bổ / Dự tính</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="onlineApplyServicesTableBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-2">
+                                                    <i class="bi bi-info-circle me-1"></i>Vui lòng chọn Tòa nhà và Phòng
+                                                    ở để xem chi tiết danh mục dịch vụ & đơn giá...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Tiện nghi & Trang thiết bị của phòng -->
+                                <div class="p-2 rounded bg-light border small text-muted d-flex align-items-center gap-2 mb-2"
+                                    id="onlineApplyAmenitiesBox">
+                                    <i class="bi bi-stars text-warning fs-5 flex-shrink-0"></i>
+                                    <div id="onlineApplyAmenitiesText">
+                                        <b>Tiện nghi phòng:</b> Điều hòa nhiệt độ, bình nóng lạnh, quạt trần, giường
+                                        tầng có đệm, tủ khóa cá nhân, bàn học, mạng wifi và WC khép kín.
+                                    </div>
+                                </div>
+
+                                <!-- Dự tính tổng chi phí sinh hoạt hàng tháng -->
+                                <div
+                                    class="p-2 rounded-3 bg-success-subtle border border-success-subtle text-dark small">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                        <div>
+                                            <i class="bi bi-calculator-fill text-success me-1"></i>
+                                            <b>Ước tính chi phí sinh hoạt/tháng:</b> <span class="text-muted">(Tiền
+                                                phòng + Dịch vụ KTX + Điện nước dự kiến)</span>
+                                        </div>
+                                        <div class="fs-6 fw-bold text-success" id="onlineApplyEstimatedTotal">
+                                            0 đ / tháng
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-pencil-square"></i>III. GHI CHÚ NGUYỆN VỌNG BỔ SUNG
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <label class="form-label">Ghi chú / Nguyện vọng (nếu có)</label>
+                            <textarea id="onlineApplyNotes" class="form-control" rows="2"
+                                placeholder="VD: Muốn ở cùng bạn cùng lớp, ở giường tầng dưới..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="submitOnlineContractApply()">
+                        <i class="bi bi-send-check me-1"></i>Gửi đơn đăng ký nội trú
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:src="@{/js/main.js(v='20261102_v3')}"></script>
+    <script>
+        if (typeof unwrapList === 'undefined') {
+            window.unwrapList = function (res) {
+                if (!res) return [];
+                const r = res.result !== undefined ? res.result : res;
+                if (Array.isArray(r)) return r;
+                if (r && Array.isArray(r.data)) return r.data;
+                if (r && Array.isArray(r.content)) return r.content;
+                return [];
+            };
+        }
+
+        let reportModal = null;
+        let transferModal = null;
+        let studentProfileModal = null;
+        let onlineContractModal = null;
+        let openRegistrationPeriods = [];
+        let studentRooms = [];
+        let studentBuildings = [];
+        let myContractsList = [];
+        let myCurrentRoomId = '';
+        let myActiveContract = null;
+        let cachedStudentServices = [];
+        let currentRating = 5;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            reportModal = new bootstrap.Modal(document.getElementById('studentReportModal'));
+            transferModal = new bootstrap.Modal(document.getElementById('studentTransferModal'));
+            studentProfileModal = new bootstrap.Modal(document.getElementById('studentProfileModal'));
+            onlineContractModal = new bootstrap.Modal(document.getElementById('onlineContractModal'));
+
+            // Nạp thông báo cá nhân cho chuông thông báo
+            if (typeof loadTopbarNotifications === 'function') {
+                loadTopbarNotifications();
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transferDateInput').value = today;
+
+            const user = Auth.getUser() || {};
+            if (user && user.fullName) {
+                document.querySelectorAll('.user-display-name').forEach(el => el.textContent = user.fullName);
+            }
+
+            // Tải hồ sơ sinh viên thực tế từ API /api/students/my
+            try {
+                const stuRes = await apiFetch('/students/my');
+                if (stuRes && stuRes.result) {
+                    const s = stuRes.result;
+                    if (s.fullName) {
+                        document.querySelectorAll('.user-display-name').forEach(el => el.textContent = s.fullName);
+                    }
+                    if (s.avatarUrl) {
+                        updatePortalNavAvatar(s.avatarUrl, s.fullName);
+                    }
+                    const code = s.studentCode || user.username || '-';
+                    const hCode = document.getElementById('headerStudentCode');
+                    if (hCode) hCode.textContent = code;
+                    const rCode = document.getElementById('roommateSelfCode');
+                    if (rCode) rCode.textContent = code;
+                    const nBadge = document.getElementById('navStudentCodeBadge');
+                    if (nBadge) nBadge.textContent = `MSSV: ${code}`;
+                    if (s.faculty || s.className) {
+                        const fText = document.getElementById('headerFacultyText');
+                        if (fText) fText.textContent = s.faculty ? `${s.faculty} (${s.className || ''})` : s.className;
+                    }
+                    const statusBadge = document.getElementById('headerStudentStatus');
+                    if (statusBadge) {
+                        statusBadge.textContent = s.status === 'ACTIVE' ? 'Đang lưu trú' : (s.status || 'Sinh viên');
+                    }
+                }
+            } catch (e) {
+                const code = (user && user.userCode) ? user.userCode : (user && user.username ? user.username : '-');
+                const hCode = document.getElementById('headerStudentCode');
+                if (hCode) hCode.textContent = code;
+                const rCode = document.getElementById('roommateSelfCode');
+                if (rCode) rCode.textContent = code;
+                const nBadge = document.getElementById('navStudentCodeBadge');
+                if (nBadge) nBadge.textContent = `MSSV: ${code}`;
+            }
+
+            loadAllStudentPortalData();
+        });
+
+        async function loadAllStudentPortalData() {
+            await Promise.all([
+                loadStudentFacilityAndContract(),
+                loadStudentMaintenanceRequests(),
+                loadStudentInvoices(),
+                loadStudentServicePrices(),
+                loadStudentVehicles(),
+                loadStudentVisitors(),
+                loadStudentFeedbacks(),
+                loadStudentTransfers(),
+                loadStudentViolations(),
+                loadStudentNotifications()
+            ]);
+        }
+
+        async function loadStudentFacilityAndContract() {
+            try {
+                const [bRes, rRes, myContractsRes, rtRes] = await Promise.all([
+                    apiFetch('/buildings/all').catch(() => apiFetch('/buildings').catch(() => ({ result: [] }))),
+                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms').catch(() => ({ result: [] }))),
+                    apiFetch('/contracts/my').catch(() => ({ result: [] })),
+                    apiFetch('/room-types/all').catch(() => apiFetch('/room-types').catch(() => ({ result: [] })))
+                ]);
+
+                studentBuildings = unwrapList(bRes);
+                const roomTypesList = unwrapList(rtRes);
+                const rtMap = {};
+                roomTypesList.forEach(rt => {
+                    if (rt && rt.roomTypeId) rtMap[rt.roomTypeId] = rt;
+                });
+
+                const rawRooms = unwrapList(rRes);
+                studentRooms = rawRooms.map(r => {
+                    const rt = (r.roomTypeId && rtMap[r.roomTypeId]) || roomTypesList.find(t => t.typeName === r.roomTypeName);
+                    return {
+                        ...r,
+                        roomTypePrice: (rt && rt.pricePerMonth) || r.roomTypePrice || r.pricePerMonth || 0,
+                        roomTypeDesc: (rt && rt.description) || '',
+                        areaM2: (rt && rt.areaM2) || null
+                    };
+                });
+                myContractsList = unwrapList(myContractsRes);
+
+                // Đổ danh sách tòa nhà vào bộ lọc
+                const bSelect = document.getElementById('studentBuildingFilter');
+                bSelect.innerHTML = '<option value="">-- Tất cả Tòa nhà --</option>' +
+                    studentBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
+
+                // Xác định hợp đồng và phòng đang ở của sinh viên
+                const activeContract = myContractsList.find(c => c.status === 'ACTIVE');
+                const pendingContract = myContractsList.find(c => c.status === 'PENDING' || c.status === 'PENDING_APPROVAL');
+
+                const headerBtn = document.getElementById('headerRegisterContractBtn');
+                const cardActionBox = document.getElementById('studentContractActionBox');
+                const noContractBanner = document.getElementById('noContractBannerContainer');
+
+                if (activeContract) {
+                    myActiveContract = activeContract;
+                    myCurrentRoomId = myActiveContract.roomId || '';
+                    if (headerBtn) headerBtn.style.display = 'none';
+                    if (cardActionBox) cardActionBox.style.display = 'none';
+                    if (noContractBanner) noContractBanner.innerHTML = '';
+
+                    document.getElementById('studentRoomLabel').textContent = `Phòng ${myActiveContract.roomNumber || '-'}`;
+                    document.getElementById('studentBedLabel').textContent = `Giường ${myActiveContract.bedNumber || '-'} • ${myActiveContract.contractCode || '-'}`;
+                    document.getElementById('studentContractStatus').textContent = 'Đang hiệu lực';
+                    document.getElementById('studentContractPeriod').textContent = `${myActiveContract.periodName || 'Học kỳ'} • Đến ${formatDate(myActiveContract.endDate)}`;
+
+                    document.getElementById('detailRoomNumber').textContent = myActiveContract.roomNumber || '-';
+                    document.getElementById('detailContractCode').textContent = myActiveContract.contractCode || '-';
+                    document.getElementById('detailBedNumber').textContent = `Giường ${myActiveContract.bedNumber || 'G01'}`;
+                    document.getElementById('detailPeriodName').textContent = myActiveContract.periodName || 'Năm học 2026-2027';
+                    document.getElementById('detailMonthlyFee').textContent = myActiveContract.monthlyFee != null ? `${formatCurrency(myActiveContract.monthlyFee)} / tháng` : 'Theo biểu phí phòng';
+                } else if (pendingContract) {
+                    myActiveContract = pendingContract;
+                    myCurrentRoomId = '';
+                    if (headerBtn) headerBtn.style.display = 'none';
+                    if (cardActionBox) cardActionBox.style.display = 'none';
+
+                    document.getElementById('studentRoomLabel').textContent = `Phòng ${pendingContract.roomNumber || '-'}`;
+                    document.getElementById('studentBedLabel').textContent = `Giường ${pendingContract.bedNumber || '-'} (Tạm giữ chỗ)`;
+                    document.getElementById('studentContractStatus').textContent = 'Chờ BQL duyệt';
+                    document.getElementById('studentContractPeriod').textContent = `Mã ĐK: ${pendingContract.contractCode}`;
+
+                    document.getElementById('detailRoomNumber').textContent = `Phòng ${pendingContract.roomNumber || '-'} (Chờ duyệt)`;
+                    document.getElementById('detailContractCode').textContent = pendingContract.contractCode || '-';
+                    document.getElementById('detailBedNumber').textContent = `Giường ${pendingContract.bedNumber || '-'}`;
+                    document.getElementById('detailPeriodName').textContent = pendingContract.periodName || '-';
+                    document.getElementById('detailMonthlyFee').textContent = pendingContract.monthlyFee != null ? `${formatCurrency(pendingContract.monthlyFee)} / tháng` : '-';
+
+                    if (noContractBanner) {
+                        noContractBanner.innerHTML = `
+                        <div class="alert alert-info border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <i class="bi bi-hourglass-split fs-5 text-primary me-2"></i>
+                                <b>Đơn đăng ký nội trú của bạn đang chờ phê duyệt:</b> Mã đơn <code>${pendingContract.contractCode}</code> • Phòng <b>${pendingContract.roomNumber || '-'}</b> • Giường <b>${pendingContract.bedNumber || '-'}</b>.
+                            </div>
+                            <span class="badge bg-warning text-dark px-3 py-2 fw-semibold">Đang chờ xét duyệt</span>
+                        </div>
+                    `;
+                    }
+                } else {
+                    myActiveContract = null;
+                    myCurrentRoomId = '';
+                    if (headerBtn) headerBtn.style.display = 'inline-flex';
+                    if (cardActionBox) cardActionBox.style.display = 'block';
+
+                    document.getElementById('studentRoomLabel').textContent = 'Chưa xếp phòng';
+                    document.getElementById('studentBedLabel').textContent = 'Chưa phân giường';
+                    document.getElementById('studentContractStatus').textContent = 'Chưa có hợp đồng';
+                    document.getElementById('studentContractPeriod').textContent = 'Bấm nút dưới để nộp đơn online';
+
+                    document.getElementById('detailRoomNumber').textContent = 'Chưa có phòng';
+                    document.getElementById('detailContractCode').textContent = '-';
+                    document.getElementById('detailBedNumber').textContent = '-';
+                    document.getElementById('detailPeriodName').textContent = '-';
+                    document.getElementById('detailMonthlyFee').textContent = '0 đ / tháng';
+
+                    if (noContractBanner) {
+                        noContractBanner.innerHTML = `
+                        <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <i class="bi bi-door-open-fill fs-5 text-warning me-2"></i>
+                                <b>Bạn chưa đăng ký hợp đồng ở KTX!</b> Hãy chọn đợt đăng ký và phòng còn giường trống để nộp đơn giữ chỗ trực tuyến ngay.
+                            </div>
+                            <button class="btn btn-univ-primary btn-sm rounded-pill px-3 fw-semibold" onclick="openOnlineContractModal()">
+                                <i class="bi bi-pencil-square me-1"></i> Đăng ký ở KTX ngay
+                            </button>
+                        </div>
+                    `;
+                    }
+                }
+
+                const contractTbody = document.getElementById('studentContractTableBody');
+                if (contractTbody) {
+                    if (myContractsList.length === 0) {
+                        contractTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Bạn chưa có hợp đồng nào. Bấm <b>"Đăng ký ở KTX ngay"</b> để nộp đơn.</td></tr>';
+                    } else {
+                        contractTbody.innerHTML = myContractsList.map(c => {
+                            let stBadge = '<span class="badge bg-secondary-subtle text-secondary">' + c.status + '</span>';
+                            let cancelBtn = '';
+                            if (c.status === 'ACTIVE') {
+                                stBadge = '<span class="badge bg-success-subtle text-success">Đang hiệu lực</span>';
+                            } else if (c.status === 'PENDING' || c.status === 'PENDING_APPROVAL') {
+                                stBadge = '<span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock me-1"></i>Chờ BQL duyệt</span>';
+                                cancelBtn = ` <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-2" style="font-size: 0.72rem;" onclick="cancelMyContract('${c.contractId}')" title="Hủy đơn đăng ký này"><i class="bi bi-x-circle me-1"></i>Hủy đơn</button>`;
+                            } else if (c.status === 'TERMINATED') {
+                                stBadge = '<span class="badge bg-danger-subtle text-danger">Đã thanh lý</span>';
+                            } else if (c.status === 'REJECTED') {
+                                stBadge = '<span class="badge bg-danger-subtle text-danger">Bị từ chối</span>';
+                            } else if (c.status === 'CANCELLED') {
+                                stBadge = '<span class="badge bg-secondary-subtle text-secondary">Đã hủy đơn</span>';
+                            }
+                            return `
+                            <tr>
+                                <td><a href="javascript:void(0)" class="fw-bold text-primary text-decoration-none" onclick="openMyContractDetailModal('${c.contractId}')">${c.contractCode}</a></td>
+                                <td>Phòng <b>${c.roomNumber || '-'}</b> • Giường <b>${c.bedNumber || '-'}</b></td>
+                                <td>${formatDate(c.startDate)} → ${formatDate(c.endDate)}</td>
+                                <td>${c.monthlyFee != null ? formatCurrency(c.monthlyFee) : 'Theo phòng'} / Cọc ${formatCurrency(c.depositAmount || 0)}</td>
+                                <td>${stBadge}${cancelBtn}</td>
+                            </tr>
+                        `;
+                        }).join('');
+                    }
+                }
+
+                if (!activeContract) {
+                    const bedBadge = document.getElementById('roomBedsSummaryBadge');
+                    if (bedBadge) bedBadge.textContent = pendingContract ? 'Chờ duyệt phòng' : 'Chưa có phòng';
+                    const bedBox = document.getElementById('roomBedsContainer');
+                    if (bedBox) {
+                        bedBox.innerHTML = `
+                        <div class="col-12 text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-3 d-block text-secondary mb-2"></i>
+                            ${pendingContract ? 'Đơn đăng ký của bạn đang chờ Ban Quản lý duyệt. Sau khi duyệt sẽ hiển thị giường cùng phòng.' : 'Bạn chưa có hợp đồng lưu trú hiệu lực nên chưa có danh sách giường cùng phòng.'}
+                        </div>
+                    `;
+                    }
+                }
+
+                // Đổ danh sách phòng vào modal báo hỏng và modal chuyển phòng
+                if (studentRooms.length > 0) {
+                    const roomSelect = document.getElementById('reportRoomSelect');
+                    roomSelect.innerHTML = studentRooms.map(r =>
+                        `<option value="${r.roomId}" ${r.roomId === myCurrentRoomId ? 'selected' : ''}>Phòng ${r.roomNumber} (${r.buildingName || r.roomTypeName || 'KTX'})</option>`
+                    ).join('');
+
+                    const transferSelect = document.getElementById('transferTargetRoomSelect');
+                    if (transferSelect) {
+                        const eligibleRooms = studentRooms.filter(r => {
+                            if (r.roomId === myCurrentRoomId || r.status === 'MAINTENANCE') return false;
+                            const cap = Number(r.capacity) || 0;
+                            const occ = Number(r.currentOccupancy) || 0;
+                            return (cap - occ) > 0 || r.status === 'AVAILABLE';
+                        });
+                        if (eligibleRooms.length === 0) {
+                            transferSelect.innerHTML = '<option value="">-- Hiện không có phòng nào còn giường trống --</option>';
+                        } else {
+                            transferSelect.innerHTML = '<option value="">-- Chọn phòng còn giường trống --</option>' +
+                                eligibleRooms.map(r => {
+                                    const cap = Number(r.capacity) || 0;
+                                    const occ = Number(r.currentOccupancy) || 0;
+                                    const emptyBeds = Math.max(0, cap - occ);
+                                    return `<option value="${r.roomId}">Phòng ${r.roomNumber} - ${r.buildingName || 'KTX'} (${r.roomTypeName || 'Tiêu chuẩn'} • Còn ${emptyBeds}/${cap} giường)</option>`;
+                                }).join('');
+                        }
+                    }
+                }
+
+                // Tải danh sách giường, tài sản bàn giao và chỉ số điện nước của phòng đang ở
+                if (myCurrentRoomId) {
+                    loadBedsInMyRoom(myCurrentRoomId);
+                    loadAssetsInMyRoom(myCurrentRoomId);
+                    loadReadingsInMyRoom(myCurrentRoomId);
+                }
+
+                renderStudentExploreRooms(studentRooms);
+            } catch (e) {
+                console.warn('Lỗi tải thông tin phòng ở:', e);
+            }
+        }
+
+        async function openMyContractDetailModal(contractId) {
+            let c = null;
+            if (contractId && myContractsList.length > 0) {
+                c = myContractsList.find(item => item.contractId === contractId);
+            }
+            if (!c) c = myActiveContract;
+            if (!c) {
+                try {
+                    const res = await apiFetch('/contracts/my');
+                    const list = unwrapList(res);
+                    if (list.length > 0) {
+                        myContractsList = list;
+                        c = list[0];
+                        myActiveContract = c;
+                    }
+                } catch (e) { }
+            }
+            if (!c) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Chưa có hợp đồng',
+                    text: 'Bạn hiện chưa có hợp đồng lưu trú nào được kích hoạt.'
+                });
+                return;
+            }
+
+            Swal.fire({
+                width: window.innerWidth < 768 ? '96%' : 700,
+                title: `Hợp đồng Nội trú KTX (${c.contractCode})`,
+                html: `
+                <div class="text-start small border rounded-4 p-3 bg-light">
+                    <div class="row g-2 mb-2">
+                        <div class="col-12 col-sm-6"><b>Sinh viên nội trú:</b> ${c.studentFullName || (Auth.getUser() && Auth.getUser().fullName) || '-'}</div>
+                        <div class="col-12 col-sm-6"><b>Mã số SV:</b> <span class="badge bg-primary-subtle text-primary">${c.studentCode || (Auth.getUser() && Auth.getUser().userCode) || '-'}</span></div>
+                        <div class="col-12 col-sm-6"><b>Phòng / Giường:</b> Phòng <b>${c.roomNumber || '-'}</b> • Giường <b>${c.bedNumber || '-'}</b></div>
+                        <div class="col-12 col-sm-6"><b>Đợt lưu trú:</b> ${c.periodName || 'Năm học 2026 - 2027'}</div>
+                        <div class="col-12 col-sm-6"><b>Ngày bắt đầu:</b> ${formatDate(c.startDate)}</div>
+                        <div class="col-12 col-sm-6"><b>Ngày kết thúc:</b> ${formatDate(c.endDate)}</div>
+                        <div class="col-12 col-sm-6"><b>Tiền thuê hàng tháng:</b> <span class="text-primary fw-bold">${c.monthlyFee != null ? formatCurrency(c.monthlyFee) + '/tháng' : 'Theo quy định phòng'}</span></div>
+                        <div class="col-12 col-sm-6"><b>Tiền đặt cọc:</b> <span class="fw-semibold">${formatCurrency(c.depositAmount || 0)}</span></div>
+                        <div class="col-12 col-sm-6"><b>Ngày ký hợp đồng:</b> ${formatDate(c.signedDate || c.startDate)}</div>
+                        <div class="col-12 col-sm-6"><b>Người phê duyệt:</b> ${c.approvedByStaffName || 'Ban Quản lý KTX'}</div>
+                        <div class="col-12 border-top pt-2 mt-2 d-flex justify-content-between align-items-center">
+                            <span><b>Trạng thái hiệu lực:</b></span>
+                            <span class="badge bg-success">${c.status === 'ACTIVE' ? 'Đang hiệu lực (ACTIVE)' : c.status}</span>
+                        </div>
+                    </div>
+                </div>
+            `,
+                confirmButtonText: 'Đóng',
+                confirmButtonColor: '#003366'
+            });
+        }
+
+        async function cancelMyContract(contractId) {
+            const confirmed = await showConfirm('Hủy đơn đăng ký?', 'Bạn có chắc chắn muốn hủy đơn đăng ký lưu trú này không? Giường đang giữ chỗ sẽ được giải phóng ngay lập tức.');
+            if (!confirmed) return;
+            try {
+                await apiFetch(`/contracts/${contractId}/cancel?reason=${encodeURIComponent('Sinh viên tự hủy đơn đăng ký')}`, { method: 'PUT' });
+                showToastSuccess('Đã hủy đơn đăng ký và giải phóng giường thành công!');
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function loadAssetsInMyRoom(roomId) {
+            try {
+                const res = await apiFetch(`/room-assets/room/${roomId}`);
+                const assets = unwrapList(res);
+                const el = document.getElementById('detailRoomAssets');
+                if (el && assets.length > 0) {
+                    el.innerHTML = assets.map(a => `<span class="badge bg-light text-dark border me-1 mb-1">${a.assetName} (x${a.quantity})</span>`).join('');
+                }
+            } catch (e) { }
+        }
+
+        async function loadReadingsInMyRoom(roomId) {
+            const tbody = document.getElementById('studentUtilityReadingBody');
+            if (!tbody) return;
+            try {
+                const res = await apiFetch(`/utility-readings/room/${roomId}`);
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Chưa có bản ghi chỉ số điện nước cho phòng này.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.map(r => {
+                    const prev = Number(r.previousIndex || 0);
+                    const curr = Number(r.currentIndex || 0);
+                    const cons = r.consumption !== undefined ? Number(r.consumption) : Math.max(0, curr - prev);
+                    const isElec = (r.serviceName || '').toLowerCase().includes('điện');
+                    return `
+                    <tr>
+                        <td class="fw-semibold">${formatDate(r.readingMonth)}</td>
+                        <td>
+                            <span class="badge ${isElec ? 'bg-warning-subtle text-dark' : 'bg-info-subtle text-info'}">
+                                ${r.serviceName || 'Điện/Nước'}
+                            </span>
+                        </td>
+                        <td>${prev}</td>
+                        <td class="fw-bold text-primary">${curr}</td>
+                        <td><b class="text-danger">${cons} ${isElec ? 'kWh' : 'm³'}</b></td>
+                        <td class="small text-muted">${r.recordedByStaffName || 'Nhân viên KTX'}</td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Chưa có dữ liệu chỉ số điện nước.</td></tr>';
+            }
+        }
+
+        async function loadStudentServicePrices() {
+            const tbody = document.getElementById('studentServicePriceBody');
+            try {
+                const res = await apiFetch('/service-types');
+                const list = unwrapList(res);
+                cachedStudentServices = list;
+                if (!tbody) return;
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Chưa có bảng giá dịch vụ.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.map(s => `
+                <tr>
+                    <td class="fw-semibold text-dark">${s.serviceName}</td>
+                    <td><span class="badge bg-light text-dark border">${s.unit || '-'}</span></td>
+                    <td class="fw-bold text-danger">${formatCurrency(s.unitPrice)}</td>
+                    <td class="small text-muted">${s.billingType === 'METERED' ? 'Theo đồng hồ' : (s.billingType === 'FLAT' ? 'Theo phòng' : 'Theo người')}</td>
+                </tr>
+            `).join('');
+            } catch (e) { }
+        }
+
+        async function loadStudentNotifications() {
+            const box = document.getElementById('studentNotificationList');
+            if (!box) return;
+            try {
+                const res = await apiFetch('/notifications/published');
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    box.innerHTML = '<div class="col-12 text-muted small">Hiện chưa có thông báo mới từ Ban Quản lý.</div>';
+                    return;
+                }
+                box.innerHTML = list.map(n => `
+                <div class="col-12 col-md-6">
+                    <div class="p-3 rounded-3 bg-light border h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-primary"><i class="bi bi-bell-fill me-1"></i>${n.title}</span>
+                            <span class="badge bg-success-subtle text-success">${formatDate(n.publishedAt || n.createdAt)}</span>
+                        </div>
+                        <div class="small text-secondary">${n.content}</div>
+                    </div>
+                </div>
+            `).join('');
+            } catch (e) { }
+        }
+
+        async function loadBedsInMyRoom(roomId) {
+            const badge = document.getElementById('roomBedsSummaryBadge');
+            const container = document.getElementById('roomBedsContainer');
+            try {
+                const res = await apiFetch(`/beds/room/${roomId}`);
+                const beds = unwrapList(res);
+                if (!beds || beds.length === 0) {
+                    if (badge) badge.textContent = 'Chưa có thông tin giường';
+                    if (container) container.innerHTML = '<div class="col-12 text-center text-muted py-3">Phòng này chưa có dữ liệu giường.</div>';
+                    return;
+                }
+
+                const occupiedCount = beds.filter(b => b.status === 'OCCUPIED').length;
+                if (badge) badge.textContent = `${occupiedCount} / ${beds.length} giường đang sử dụng`;
+
+                const user = Auth.getUser();
+                const myBedId = myActiveContract ? myActiveContract.bedId : '';
+
+                if (container) {
+                    container.innerHTML = beds.map(b => {
+                        const isMine = (myBedId && b.bedId === myBedId) || (myActiveContract && myActiveContract.bedNumber && b.bedNumber === myActiveContract.bedNumber);
+                        const isOccupied = b.status === 'OCCUPIED';
+                        if (isMine) {
+                            return `
+                            <div class="col-12 col-md-6">
+                                <div class="roommate-card is-me">
+                                    <div class="roommate-avatar">${b.bedNumber}</div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="fw-bold mb-0 text-primary">${(user && user.fullName) || 'Bạn'}</h6>
+                                            <span class="badge text-white" style="background-color: var(--univ-navy) !important;">Chính bạn</span>
+                                        </div>
+                                        <div class="small text-muted">Giường ${b.bedNumber} • Đang lưu trú</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        }
+                        return `
+                        <div class="col-12 col-md-6">
+                            <div class="roommate-card ${isOccupied ? '' : 'bg-light'}">
+                                <div class="roommate-avatar ${isOccupied ? '' : 'bg-white text-secondary border'}">${b.bedNumber}</div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0 ${isOccupied ? 'text-dark' : 'text-muted'}">Giường ${b.bedNumber}</h6>
+                                        <span class="badge ${isOccupied ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'}">
+                                            ${isOccupied ? 'Đang có SV ở' : 'Còn trống'}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">${isOccupied ? 'Cư dân cùng phòng' : 'Sẵn sàng tiếp nhận SV'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.warn('Lỗi tải danh sách giường:', e);
+                if (badge) badge.textContent = myActiveContract ? `Phòng ${myActiveContract.roomNumber || ''}` : 'Không thể tải';
+            }
+        }
+
+        function renderStudentExploreRooms(rooms) {
+            const grid = document.getElementById('studentRoomsGrid');
+            if (!rooms || rooms.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-4">Hiện không có phòng nào phù hợp điều kiện lọc.</div>';
+                return;
+            }
+
+            grid.innerHTML = rooms.map(r => {
+                const cap = Number(r.capacity) || 0;
+                const occ = Number(r.currentOccupancy) || 0;
+                const emptyBeds = Math.max(0, cap - occ);
+                const isMaint = r.status === 'MAINTENANCE';
+                const hasEmptyBeds = !isMaint && (emptyBeds > 0 || r.status === 'AVAILABLE');
+
+                let badge = '';
+                if (isMaint) {
+                    badge = '<span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-tools me-1"></i>Đang bảo trì</span>';
+                } else if (hasEmptyBeds) {
+                    badge = `<span class="badge bg-success-subtle text-success"><i class="bi bi-check2-circle me-1"></i>Còn ${emptyBeds} giường trống</span>`;
+                } else {
+                    badge = `<span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Hết giường (${occ}/${cap})</span>`;
+                }
+
+                return `
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                    <div class="p-3 rounded-4 border bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold mb-0 text-dark">Phòng ${r.roomNumber}</h6>
+                                ${badge}
+                            </div>
+                            <div class="small text-primary fw-medium mb-1">${r.buildingName || 'Khu Nội Trú'}</div>
+                            <div class="small text-muted mb-2">${r.roomTypeName || 'Phòng tiêu chuẩn'}</div>
+                        </div>
+                        <div class="pt-2 border-top small">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="bi bi-people me-1"></i>Đang ở: <b>${occ} / ${cap} SV</b></span>
+                                <span class="${hasEmptyBeds ? 'text-success fw-bold' : 'text-danger fw-semibold'}">
+                                    ${hasEmptyBeds ? `Trống ${emptyBeds} giường` : 'Đã đầy'}
+                                </span>
+                            </div>
+                            ${hasEmptyBeds ? `
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-2 w-100 mt-2" onclick="selectRoomForOnlineApply('${r.roomId}', '${r.buildingId}')">
+                                    <i class="bi bi-pencil-square me-1"></i> Đăng ký giường phòng này
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-light border text-muted rounded-pill px-2 w-100 mt-2" disabled>
+                                    <i class="bi bi-slash-circle me-1"></i> Hết giường trống
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function filterStudentRooms() {
+            const bId = document.getElementById('studentBuildingFilter').value;
+            const filter = document.getElementById('studentStatusFilter').value;
+            let filtered = studentRooms;
+            if (bId) {
+                filtered = filtered.filter(r => r.buildingId === bId);
+            }
+            if (filter === 'AVAILABLE_BEDS') {
+                filtered = filtered.filter(r => {
+                    if (r.status === 'MAINTENANCE') return false;
+                    const cap = Number(r.capacity) || 0;
+                    const occ = Number(r.currentOccupancy) || 0;
+                    return (cap - occ) > 0 || r.status === 'AVAILABLE';
+                });
+            } else if (filter === 'FULL_BEDS') {
+                filtered = filtered.filter(r => {
+                    if (r.status === 'MAINTENANCE') return false;
+                    const cap = Number(r.capacity) || 0;
+                    const occ = Number(r.currentOccupancy) || 0;
+                    return cap > 0 && (cap - occ) <= 0;
+                });
+            } else if (filter === 'MAINTENANCE') {
+                filtered = filtered.filter(r => r.status === 'MAINTENANCE');
+            }
+            renderStudentExploreRooms(filtered);
+        }
+
+        // ==================== 1. BÁO HỎNG THIẾT BỊ (LƯU THẬT VÀO CSDL) ====================
+        async function loadStudentMaintenanceRequests() {
+            const tbody = document.getElementById('studentMaintTableBody');
+            try {
+                const res = await apiFetch('/maintenance-requests/my');
+                const list = unwrapList(res);
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Bạn chưa gửi yêu cầu báo hỏng thiết bị nào.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = list.map(m => {
+                    const prioBadge = m.priority === 'HIGH'
+                        ? '<span class="badge bg-danger-subtle text-danger">Khẩn cấp</span>'
+                        : (m.priority === 'LOW'
+                            ? '<span class="badge bg-light text-secondary border">Thấp</span>'
+                            : '<span class="badge bg-light text-dark border">Bình thường</span>');
+
+                    let statusBadge = '<span class="badge bg-warning-subtle text-warning">Chờ kỹ thuật xử lý</span>';
+                    if (m.status === 'IN_PROGRESS') {
+                        statusBadge = '<span class="badge bg-info-subtle text-info">Đang sửa chữa</span>';
+                    } else if (m.status === 'COMPLETED') {
+                        statusBadge = `<span class="badge bg-success-subtle text-success">Đã hoàn thành${m.resolutionNote ? ': ' + m.resolutionNote : ''}</span>`;
+                    }
+
+                    return `
+                    <tr>
+                        <td class="fw-bold text-primary">${m.requestCode || '-'}</td>
+                        <td><span class="badge bg-light text-dark border">${m.roomNumber || '-'}</span></td>
+                        <td class="fw-medium">${m.description || '-'}</td>
+                        <td>${formatDate(m.requestedDate || new Date())}</td>
+                        <td>${prioBadge}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Không thể tải lịch sử báo hỏng: ${e.message}</td></tr>`;
+            }
+        }
+
+        function openReportModal() {
+            document.getElementById('studentMaintDesc').value = '';
+            reportModal.show();
+        }
+
+        async function submitStudentReport() {
+            const roomId = document.getElementById('reportRoomSelect').value || myCurrentRoomId;
+            const cat = document.getElementById('maintCategory').value;
+            const priority = document.getElementById('maintPriority').value;
+            const desc = document.getElementById('studentMaintDesc').value.trim();
+
+            if (!desc) {
+                showToastError('Vui lòng mô tả chi tiết sự cố!');
+                return;
+            }
+
+            const reqCode = 'SC-' + Date.now().toString().slice(-6);
+            const payload = {
+                requestCode: reqCode,
+                roomId: roomId,
+                category: cat,
+                description: `[${cat}] ${desc}`,
+                priority: priority,
+                status: 'PENDING'
+            };
+
+            try {
+                await apiFetch('/maintenance-requests', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                reportModal.hide();
+                await loadStudentMaintenanceRequests();
+
+                // Chuyển sang tab Báo hỏng thiết bị để sinh viên thấy ngay bản ghi từ DB
+                const maintTabBtn = document.querySelector('button[data-bs-target="#tabMaintenance"]');
+                if (maintTabBtn) new bootstrap.Tab(maintTabBtn).show();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đã lưu báo hỏng vào hệ thống!',
+                    text: `Mã yêu cầu ${reqCode} đã được lưu vào CSDL và gửi tới Admin, Quản lý & Nhân viên kỹ thuật KTX.`,
+                    confirmButtonColor: '#003366'
+                });
+            } catch (e) {
+                showToastError('Lỗi gửi báo hỏng: ' + e.message);
+            }
+        }
+
+        // ==================== 2. HÓA ĐƠN & THANH TOÁN VIETQR (LƯU THẬT VÀO CSDL) ====================
+        async function loadStudentInvoices() {
+            const tbody = document.getElementById('studentInvoiceTableBody');
+            try {
+                const res = await apiFetch('/invoices/my');
+                const list = unwrapList(res);
+
+                // Tính tổng công nợ chưa thanh toán
+                const unpaidTotal = list
+                    .filter(i => i.status !== 'PAID')
+                    .reduce((sum, i) => {
+                        const total = Number(i.totalAmount || i.subtotalAmount || 0);
+                        const paid = Number(i.paidAmount || 0);
+                        return sum + Math.max(0, total - paid);
+                    }, 0);
+
+                const debtEl = document.getElementById('studentDebtAmount');
+                const debtSub = document.getElementById('studentDebtSubtext');
+                if (unpaidTotal > 0) {
+                    debtEl.textContent = formatCurrency(unpaidTotal);
+                    debtEl.className = 'fw-bold text-danger mb-1';
+                    debtSub.className = 'small text-danger fw-medium';
+                    debtSub.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i>Có hóa đơn chờ thanh toán';
+                } else {
+                    debtEl.textContent = '0 đ';
+                    debtEl.className = 'fw-bold text-success mb-1';
+                    debtSub.className = 'small text-success fw-medium';
+                    debtSub.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Đã hoàn tất thanh toán';
+                }
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Hiện bạn chưa có hóa đơn nào.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = list.map(inv => {
+                    const total = Number(inv.totalAmount || inv.subtotalAmount || 0);
+                    const paid = Number(inv.paidAmount || 0);
+                    const remain = Math.max(0, total - paid);
+                    const isPaid = inv.status === 'PAID' || remain <= 0;
+
+                    const items = inv.invoiceItems || [];
+                    let breakdownBadges = '';
+                    if (items && items.length > 0) {
+                        const types = [...new Set(items.map(it => it.itemType))];
+                        const typeLabels = types.map(t => {
+                            if (t === 'RENT') return '<span class="badge bg-primary-subtle text-primary border" style="font-size:0.65rem;">🏠 Phòng</span>';
+                            if (t === 'UTILITY') return '<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:0.65rem;">⚡ Điện nước</span>';
+                            if (t === 'SERVICE') return '<span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.65rem;">🛡️ Dịch vụ</span>';
+                            if (t === 'VEHICLE') return '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.65rem;">🚲 Xe</span>';
+                            if (t === 'FINE') return '<span class="badge bg-danger-subtle text-danger border" style="font-size:0.65rem;">⚠️ Phạt</span>';
+                            return `<span class="badge bg-light text-dark border" style="font-size:0.65rem;">${t}</span>`;
+                        }).join(' ');
+                        breakdownBadges = `<div class="d-flex flex-wrap gap-1 mt-1">${typeLabels}</div>`;
+                    } else {
+                        breakdownBadges = `<div class="text-muted mt-1" style="font-size:0.68rem;"><i class="bi bi-check2-circle text-success me-1"></i>Phòng + Điện nước + Dịch vụ</div>`;
+                    }
+
+                    return `
+                    <tr>
+                        <td>
+                            <a href="javascript:void(0)" class="fw-bold text-primary text-decoration-none" onclick='viewStudentInvoiceDetails(${JSON.stringify(inv)})' title="Bấm để xem chi tiết các khoản thu & giá từng khoản">
+                                <i class="bi bi-receipt-cutoff me-1"></i>${inv.invoiceCode}
+                            </a>
+                        </td>
+                        <td>${formatDate(inv.invoiceMonth)}</td>
+                        <td>${formatDate(inv.dueDate)}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${formatCurrency(total)}</div>
+                            ${breakdownBadges}
+                        </td>
+                        <td class="text-success fw-semibold">${formatCurrency(paid)}</td>
+                        <td class="fw-bold ${remain > 0 ? 'text-danger' : 'text-muted'}">${formatCurrency(remain)}</td>
+                        <td>
+                            <span class="badge ${isPaid ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}">
+                                ${isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-info rounded-pill px-2 py-1 me-1" onclick='viewStudentInvoiceDetails(${JSON.stringify(inv)})' title="Xem chi tiết các khoản thu & đơn giá">
+                                <i class="bi bi-eye"></i> Chi tiết
+                            </button>
+                            ${!isPaid ? `
+                                <button class="btn btn-sm btn-univ-primary rounded-pill px-3 py-1" onclick="payStudentInvoice('${inv.invoiceId}', '${inv.invoiceCode}', ${remain})">
+                                    <i class="bi bi-qr-code me-1"></i> Thanh toán
+                                </button>
+                            ` : '<i class="bi bi-check2-all text-success fs-5 ms-1" title="Đã hoàn tất thanh toán"></i>'}
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">Không thể tải hóa đơn: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function viewStudentInvoiceDetails(inv) {
+            let fullInv = inv;
+            try {
+                const fRes = await apiFetch(`/invoices/${inv.invoiceId}`);
+                if (fRes) fullInv = (fRes.result !== undefined) ? fRes.result : fRes;
+            } catch (e) { }
+
+            let items = fullInv.invoiceItems || inv.invoiceItems || [];
+            let payments = [];
+            try {
+                const pRes = await apiFetch(`/payments/invoice/${inv.invoiceId}`);
+                payments = unwrapList(pRes);
+            } catch (e) { }
+
+            const total = Number(fullInv.totalAmount || fullInv.subtotalAmount || 0);
+            const paid = Number(fullInv.paidAmount || 0);
+            const remain = Math.max(0, total - paid);
+            const disc = Number(fullInv.discountAmount || 0);
+            const lateFee = Number(fullInv.lateFeeAmount || 0);
+            const isPaid = fullInv.status === 'PAID' || remain <= 0;
+
+            let rentSum = 0, utilSum = 0, srvSum = 0;
+            items.forEach(it => {
+                const amt = Number(it.amount || 0);
+                if (it.itemType === 'RENT') rentSum += amt;
+                else if (it.itemType === 'UTILITY') utilSum += amt;
+                else if (it.itemType === 'SERVICE') srvSum += amt;
+            });
+
+            const itemsHtml = items.length > 0
+                ? items.map(it => {
+                    let badge = '<span class="badge bg-secondary-subtle text-secondary border">Dịch vụ</span>';
+                    if (it.itemType === 'RENT') badge = '<span class="badge bg-primary-subtle text-primary border"><i class="bi bi-house-door-fill me-1"></i>Tiền phòng</span>';
+                    else if (it.itemType === 'UTILITY') {
+                        const isWater = (it.description || '').toLowerCase().includes('nước');
+                        badge = isWater
+                            ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet-fill me-1"></i>Nước sạch</span>'
+                            : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge-fill me-1"></i>Điện sinh hoạt</span>';
+                    } else if (it.itemType === 'SERVICE') {
+                        const desc = (it.description || '').toLowerCase();
+                        if (desc.includes('wifi') || desc.includes('internet')) {
+                            badge = '<span class="badge bg-info-subtle text-info-emphasis border"><i class="bi bi-wifi me-1"></i>Wifi KTX</span>';
+                        } else if (desc.includes('rác') || desc.includes('vệ sinh')) {
+                            badge = '<span class="badge bg-success-subtle text-success border"><i class="bi bi-trash-fill me-1"></i>Vệ sinh rác</span>';
+                        } else if (desc.includes('ninh')) {
+                            badge = '<span class="badge bg-primary-subtle text-primary border"><i class="bi bi-shield-lock-fill me-1"></i>Điện an ninh</span>';
+                        } else {
+                            badge = '<span class="badge bg-info-subtle text-info-emphasis border"><i class="bi bi-tag-fill me-1"></i>Dịch vụ KTX</span>';
+                        }
+                    } else if (it.itemType === 'VEHICLE') badge = '<span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-bicycle me-1"></i>Gửi xe</span>';
+                    else if (it.itemType === 'FINE') badge = '<span class="badge bg-danger-subtle text-danger border"><i class="bi bi-exclamation-octagon-fill me-1"></i>Phạt vi phạm</span>';
+
+                    return `
+                        <tr>
+                            <td>${badge}</td>
+                            <td><div class="fw-semibold text-dark">${it.description || '-'}</div></td>
+                            <td class="text-end">${it.quantity || 1}</td>
+                            <td class="text-end text-muted">${formatCurrency(it.unitPrice || 0)}</td>
+                            <td class="text-end fw-bold text-dark">${formatCurrency(it.amount || 0)}</td>
+                        </tr>
+                    `;
+                }).join('')
+                : `<tr><td colspan="5" class="text-center text-muted py-3">Chi phí trọn gói kỳ: <b>${formatCurrency(total)}</b></td></tr>`;
+
+            const payHtml = payments.length > 0
+                ? payments.map(p => `
+                    <div class="d-flex justify-content-between align-items-center small border-bottom py-2">
+                        <div>
+                            <span class="badge bg-success-subtle text-success border me-2"><i class="bi bi-check-circle me-1"></i>Đã thanh toán</span>
+                            <b>${p.paymentCode}</b> (${p.paymentMethod}) — <span class="text-muted">${formatDate(p.paymentDate)}</span>
+                            ${p.referenceCode ? `<span class="text-muted small ms-1">(Mã GD: ${p.referenceCode})</span>` : ''}
+                        </div>
+                        <b class="text-success fs-6">+${formatCurrency(p.amount)}</b>
+                    </div>
+                `).join('')
+                : '<div class="small text-muted py-2"><i class="bi bi-info-circle me-1"></i>Chưa có giao dịch thanh toán nào được ghi nhận cho hóa đơn này.</div>';
+
+            const modalResult = await Swal.fire({
+                width: 800,
+                title: `<div class="d-flex align-items-center gap-2 justify-content-center text-primary fs-5 fw-bold"><i class="bi bi-receipt-cutoff"></i> Chi tiết Hóa đơn ${fullInv.invoiceCode}</div>`,
+                html: `
+                <div class="text-start" style="font-size: 0.88rem;">
+                    <!-- Thông tin tổng quan kỳ tính phí -->
+                    <div class="row g-2 mb-3 p-3 bg-light rounded-3 border">
+                        <div class="col-12 col-md-6"><b>Mã hóa đơn:</b> <span class="text-primary fw-bold">${fullInv.invoiceCode}</span></div>
+                        <div class="col-12 col-md-6"><b>Hợp đồng nội trú:</b> <span class="badge bg-white text-dark border">${fullInv.contractCode || '-'}</span></div>
+                        <div class="col-12 col-md-6"><b>Kỳ tính phí:</b> <span class="fw-semibold">${formatDate(fullInv.invoiceMonth)}</span></div>
+                        <div class="col-12 col-md-6"><b>Hạn thanh toán:</b> <span class="text-danger fw-semibold">${formatDate(fullInv.dueDate)}</span></div>
+                        <div class="col-12 col-md-6"><b>Trạng thái:</b> <span class="badge ${isPaid ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}">${isPaid ? 'Đã hoàn tất thanh toán' : 'Chưa thanh toán'}</span></div>
+                        <div class="col-12 col-md-6"><b>Số tiền còn nợ:</b> <span class="fw-bold ${remain > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(remain)}</span></div>
+                    </div>
+
+                    <!-- 4 Thẻ phân loại chi phí -->
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 border bg-primary-subtle">
+                                <div class="text-muted" style="font-size: 0.72rem;">🏠 TIỀN PHÒNG</div>
+                                <div class="fw-bold text-primary">${formatCurrency(rentSum || fullInv.subtotalAmount || 0)}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 border bg-warning-subtle">
+                                <div class="text-muted" style="font-size: 0.72rem;">⚡💧 ĐIỆN & NƯỚC</div>
+                                <div class="fw-bold text-warning-emphasis">${formatCurrency(utilSum)}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 border bg-info-subtle">
+                                <div class="text-muted" style="font-size: 0.72rem;">🛡️ DỊCH VỤ KTX</div>
+                                <div class="fw-bold text-info-emphasis">${formatCurrency(srvSum)}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 border bg-danger-subtle">
+                                <div class="text-muted" style="font-size: 0.72rem;">💵 TỔNG TIỀN</div>
+                                <div class="fw-bold text-danger">${formatCurrency(total)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bảng bóc tách chi tiết từng khoản thu và đơn giá -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-list-check text-primary me-1"></i>Chi tiết từng khoản thu & đơn giá áp dụng (Bảng <code>chi_tiet_hoa_don</code>):</h6>
+                        <span class="badge bg-light text-muted border">${items.length} khoản mục</span>
+                    </div>
+                    <div class="table-responsive border rounded-3 mb-3">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 125px;">Phân loại</th>
+                                    <th>Khoản thu & Diễn giải</th>
+                                    <th class="text-end" style="width: 55px;">SL</th>
+                                    <th class="text-end" style="width: 100px;">Đơn giá</th>
+                                    <th class="text-end" style="width: 110px;">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                            <tfoot class="table-light fw-bold">
+                                ${disc > 0 ? `<tr><td colspan="4" class="text-end text-success">Giảm trừ / Học bổng:</td><td class="text-end text-success">-${formatCurrency(disc)}</td></tr>` : ''}
+                                ${lateFee > 0 ? `<tr><td colspan="4" class="text-end text-danger">Phí trễ hạn:</td><td class="text-end text-danger">+${formatCurrency(lateFee)}</td></tr>` : ''}
+                                <tr>
+                                    <td colspan="4" class="text-end">TỔNG TIỀN PHẢI NỘP:</td>
+                                    <td class="text-end text-danger fs-6">${formatCurrency(total)}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end text-muted font-normal">Đã thanh toán: <span class="text-success">${formatCurrency(paid)}</span> | Còn phải nộp:</td>
+                                    <td class="text-end ${remain > 0 ? 'text-danger' : 'text-success'} fs-6">${formatCurrency(remain)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Lịch sử giao dịch thanh toán -->
+                    <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-clock-history text-success me-1"></i>Biên lai giao dịch đã nộp (Bảng <code>thanh_toan</code>):</h6>
+                    <div class="p-2 bg-light rounded-3 border">${payHtml}</div>
+                </div>
+            `,
+                showCancelButton: !isPaid && remain > 0,
+                confirmButtonText: '<i class="bi bi-x-lg me-1"></i>Đóng',
+                cancelButtonText: '<i class="bi bi-qr-code me-1"></i>Thanh toán QR ngay',
+                cancelButtonColor: '#16a34a',
+                confirmButtonColor: '#6b7280'
+            });
+
+            if (modalResult.dismiss === Swal.DismissReason.cancel && !isPaid && remain > 0) {
+                payStudentInvoice(fullInv.invoiceId, fullInv.invoiceCode, remain);
+            }
+        }
+
+        async function copyToClipboard(text, label) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToastSuccess(`Đã sao chép ${label}: ${text}`);
+            } catch (e) {
+                const temp = document.createElement('input');
+                temp.value = text;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToastSuccess(`Đã sao chép ${label}: ${text}`);
+            }
+        }
+
+        async function payStudentInvoice(invoiceId, invoiceCode, amount) {
+            const transferContent = `SEVQR ${invoiceCode}`;
+
+            const qrUrl = `https://vietqr.app/img?bank=VietinBank&acc=106877498123&template=qronly&des=${encodeURIComponent(transferContent)}&showinfo=true&holder=NGUYEN%20HAI%20DANG&amount=${amount}`;
+
+
+            // const qrUrl = `https://vietqr.app/img?bank=VietinBank&showinfo=true&acc=106877498123&template=compact&des=${encodeURIComponent(transferContent)}&amount=${amount}&showinfo=true&holder=NGUYEN%20HAI%20DANG`;
+
+            let checkInterval = null;
+            const res = await Swal.fire({
+                title: `<span class="text-primary fw-bold"><i class="bi bi-qr-code-scan me-2"></i>Thanh toán VietQR</span>`,
+                html: `
+                <div class="text-center p-1">
+                    <p class="small text-muted mb-2">Quét mã bằng bất kỳ ứng dụng Ngân hàng (VietinBank iPay, Techcombank, MB, Momo, v.v.)</p>
+                    <div class="bg-white p-2 rounded-4 shadow-sm border d-inline-block mb-3" style="max-width: 320px;">
+                        <img src="${qrUrl}" alt="Mã VietQR" class="img-fluid rounded-3" style="min-height: 220px;">
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 small text-start mt-2 mb-0">
+                        <i class="bi bi-info-circle-fill me-1 text-warning"></i>
+                        <b>Lưu ý quan trọng:</b> Giữ nguyên <b>nội dung chuyển khoản</b>. Hệ thống sẽ tự động gạch nợ trong vòng 5 - 30 giây ngay sau khi ngân hàng ghi có!
+                    </div>
+                </div>
+            `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-check2-circle me-1"></i> Tôi đã chuyển khoản',
+                cancelButtonText: 'Đóng',
+                confirmButtonColor: '#003366',
+                didOpen: () => {
+                    // Tự động kiểm tra trạng thái hóa đơn mỗi 5s
+                    checkInterval = setInterval(async () => {
+                        try {
+                            const check = await apiFetch(`/invoices/${invoiceId}`);
+                            const inv = check.result || check;
+                            if (inv && (inv.status === 'PAID' || (inv.paidAmount >= inv.totalAmount))) {
+                                clearInterval(checkInterval);
+                                Swal.close();
+                                showToastSuccess('Hệ thống đã tự động gạch nợ thành công!');
+                                await loadStudentInvoices();
+                            }
+                        } catch (err) { }
+                    }, 5000);
+                },
+                willClose: () => {
+                    if (checkInterval) clearInterval(checkInterval);
+                }
+            });
+
+            if (res.isConfirmed) {
+                showToastSuccess('Cảm ơn bạn! Hệ thống đang xử lý và sẽ cập nhật hóa đơn ngay khi nhận được biến động từ ngân hàng.');
+                setTimeout(() => loadStudentInvoices(), 3000);
+            }
+        }
+
+        // ==================== 3. ĐĂNG KÝ VÉ XE THÁNG (LƯU THẬT VÀO CSDL) ====================
+        async function loadStudentVehicles() {
+            const box = document.getElementById('studentVehicleList');
+            try {
+                const res = await apiFetch('/vehicle-registrations/my');
+                const list = unwrapList(res);
+
+                if (list.length === 0) {
+                    box.innerHTML = '<div class="p-3 bg-light rounded-3 small text-muted border text-center">Bạn chưa đăng ký phương tiện gửi xe nào.</div>';
+                    return;
+                }
+
+                box.innerHTML = list.map(v => {
+                    let badgeClass = 'bg-secondary-subtle text-secondary';
+                    let statusLabel = v.status || 'Chờ duyệt';
+                    if (v.status === 'PENDING') {
+                        badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+                        statusLabel = 'Chờ BQL duyệt';
+                    } else if (v.status === 'ACTIVE') {
+                        badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+                        statusLabel = 'Đang hoạt động';
+                    } else if (v.status === 'REJECTED') {
+                        badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+                        statusLabel = 'Bị từ chối';
+                    }
+                    return `
+                <div class="p-3 bg-light rounded-3 small mb-2 border">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span><b>${v.brandModel || (v.vehicleType === 'MOTORBIKE' ? 'Xe máy' : 'Phương tiện')}</b></span>
+                        <span class="badge ${badgeClass}">${statusLabel}</span>
+                    </div>
+                    <div class="text-muted">Biển kiểm soát: <b class="text-primary">${v.licensePlate || 'Xe đạp'}</b></div>
+                    <div class="text-muted">Phí gửi tháng: <b>${formatCurrency(v.monthlyFee || 0)}</b></div>
+                </div>
+            `;
+                }).join('');
+            } catch (e) {
+                box.innerHTML = `<div class="small text-danger">${e.message}</div>`;
+            }
+        }
+
+        async function registerVehicle() {
+            const type = document.getElementById('vehicleTypeSelect').value;
+            const brand = document.getElementById('vehicleBrandInput').value.trim() || (type === 'MOTORBIKE' ? 'Honda Wave' : 'Xe cá nhân');
+            const plate = document.getElementById('vehiclePlateInput').value.trim();
+
+            if (!plate && type !== 'BICYCLE') {
+                showToastError('Vui lòng nhập biển kiểm soát phương tiện!');
+                return;
+            }
+
+            try {
+                await apiFetch('/vehicle-registrations', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        vehicleType: type,
+                        brandModel: brand,
+                        licensePlate: plate || 'XE-DAP'
+                    })
+                });
+                document.getElementById('vehiclePlateInput').value = '';
+                document.getElementById('vehicleBrandInput').value = '';
+                showToastSuccess('Đã gửi đơn đăng ký gửi xe! Ban Quản lý sẽ sớm phê duyệt.');
+                await loadStudentVehicles();
+            } catch (e) {
+                showToastError('Lỗi đăng ký xe: ' + e.message);
+            }
+        }
+
+        // ==================== 4. ĐĂNG KÝ KHÁCH ĐẾN THĂM (LƯU THẬT VÀO CSDL) ====================
+        async function loadStudentVisitors() {
+            const box = document.getElementById('studentVisitorList');
+            try {
+                const res = await apiFetch('/visitors/my');
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    box.innerHTML = 'Chưa có lịch sử khách thăm.';
+                    return;
+                }
+                box.innerHTML = list.slice(0, 4).map(v => `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                    <span><b>${v.visitorName}</b> (${v.nationalId || 'CCCD'})</span>
+                    <span class="badge ${v.checkOutTime ? 'bg-secondary-subtle text-secondary' : 'bg-info-subtle text-info'}">
+                        ${v.checkOutTime ? 'Đã về' : 'Đang thăm'}
+                    </span>
+                </div>
+            `).join('');
+            } catch (e) { }
+        }
+
+        async function submitVisitor() {
+            const name = document.getElementById('visitorName').value.trim();
+            const nationalId = document.getElementById('visitorNationalId').value.trim();
+            const phone = document.getElementById('visitorPhone').value.trim();
+            const purpose = document.getElementById('visitorPurpose').value.trim();
+
+            if (!name) {
+                showToastError('Vui lòng điền họ tên khách đến thăm!');
+                return;
+            }
+
+            try {
+                await apiFetch('/visitors/check-in', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        visitorName: name,
+                        nationalId: nationalId || '001204009999',
+                        phone: phone || '0912345678',
+                        roomId: myCurrentRoomId,
+                        purpose: purpose || 'Thăm sinh viên nội trú'
+                    })
+                });
+                document.getElementById('visitorName').value = '';
+                document.getElementById('visitorNationalId').value = '';
+                document.getElementById('visitorPhone').value = '';
+                showToastSuccess(`Đã lưu đăng ký khách thăm "${name}" vào CSDL!`);
+                await loadStudentVisitors();
+            } catch (e) {
+                showToastError('Lỗi đăng ký khách: ' + e.message);
+            }
+        }
+
+        // ==================== 5. GỬI PHẢN ÁNH & ĐÁNH GIÁ (LƯU THẬT VÀO CSDL) ====================
+        function setRating(stars) {
+            currentRating = stars;
+            const icons = document.querySelectorAll('#feedbackStars i');
+            icons.forEach((icon, idx) => {
+                if (idx < stars) icon.classList.add('active');
+                else icon.classList.remove('active');
+            });
+        }
+
+        async function loadStudentFeedbacks() {
+            const box = document.getElementById('studentFeedbackList');
+            try {
+                const res = await apiFetch('/feedbacks/my');
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    box.innerHTML = 'Chưa có phản ánh nào.';
+                    return;
+                }
+                box.innerHTML = list.slice(0, 4).map(fb => `
+                <div class="border-bottom py-1">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold text-dark">${fb.category || 'Góp ý'}</span>
+                        <span class="text-warning fw-bold">${'★'.repeat(fb.rating || 5)}</span>
+                    </div>
+                    <div class="text-muted text-truncate">${fb.content}</div>
+                    ${fb.response ? `<div class="text-success small mt-1"><i class="bi bi-reply-fill"></i> BQL: ${fb.response}</div>` : ''}
+                </div>
+            `).join('');
+            } catch (e) { }
+        }
+
+        async function submitStudentFeedback() {
+            const category = document.getElementById('feedbackCategory').value;
+            const content = document.getElementById('feedbackContent').value.trim();
+            if (!content) {
+                showToastError('Vui lòng nhập nội dung góp ý của bạn!');
+                return;
+            }
+
+            try {
+                await apiFetch('/feedbacks', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        category: category,
+                        content: content,
+                        rating: currentRating
+                    })
+                });
+                document.getElementById('feedbackContent').value = '';
+                showToastSuccess(`Đã lưu đánh giá ${currentRating} sao về "${category}" vào CSDL!`);
+                await loadStudentFeedbacks();
+            } catch (e) {
+                showToastError('Lỗi gửi phản ánh: ' + e.message);
+            }
+        }
+
+        // ==================== 6. ĐƠN XIN CHUYỂN PHÒNG (LƯU THẬT VÀO CSDL) ====================
+        function openTransferModal() {
+            document.getElementById('transferReasonInput').value = '';
+            const bedSelect = document.getElementById('transferTargetBedSelect');
+            if (bedSelect) bedSelect.innerHTML = '<option value="">-- Vui lòng chọn phòng trước để xem danh sách giường --</option>';
+            const roomSelect = document.getElementById('transferTargetRoomSelect');
+            if (roomSelect && roomSelect.value) {
+                onTransferRoomChange();
+            }
+            transferModal.show();
+        }
+
+        async function onTransferRoomChange() {
+            const roomId = document.getElementById('transferTargetRoomSelect').value;
+            const bedSelect = document.getElementById('transferTargetBedSelect');
+            if (!bedSelect) return;
+            if (!roomId) {
+                bedSelect.innerHTML = '<option value="">-- Vui lòng chọn phòng trước để xem danh sách giường --</option>';
+                return;
+            }
+            bedSelect.innerHTML = '<option value="">Đang tải danh sách giường...</option>';
+            try {
+                const res = await apiFetch(`/beds/room/${roomId}`);
+                const beds = unwrapList(res);
+                const availableBeds = beds.filter(b => b.status === 'AVAILABLE' || !b.status);
+                if (availableBeds.length === 0) {
+                    bedSelect.innerHTML = '<option value="">-- Phòng này hiện không còn giường trống nào --</option>';
+                } else {
+                    bedSelect.innerHTML = '<option value="">-- Chọn giường muốn chuyển đến --</option>' +
+                        availableBeds.map(b => `<option value="${b.bedId}">Giường ${b.bedNumber} (Còn trống)</option>`).join('');
+                }
+            } catch (e) {
+                bedSelect.innerHTML = '<option value="">-- Không thể tải danh sách giường --</option>';
+            }
+        }
+
+        async function loadStudentTransfers() {
+            const box = document.getElementById('studentTransferList');
+            try {
+                const res = await apiFetch('/room-transfers/my');
+                const list = unwrapList(res);
+                if (list.length === 0) {
+                    box.innerHTML = 'Chưa có yêu cầu chuyển phòng nào.';
+                    return;
+                }
+                box.innerHTML = list.map(t => `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-1">
+                    <span>Chuyển từ <b>${t.oldRoomNumber || '-'}</b> → <b>${t.newRoomNumber || 'Phòng mới'} (${t.newBedNumber || ''})</b>: ${t.reason || ''}</span>
+                    <span class="badge ${t.status === 'APPROVED' ? 'bg-success-subtle text-success' : (t.status === 'REJECTED' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning')}">
+                        ${t.status === 'APPROVED' ? 'Đã duyệt' : (t.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt')}
+                    </span>
+                </div>
+            `).join('');
+            } catch (e) { }
+        }
+
+        async function submitRoomTransfer() {
+            const targetRoomId = document.getElementById('transferTargetRoomSelect').value;
+            const newBedId = document.getElementById('transferTargetBedSelect') ? document.getElementById('transferTargetBedSelect').value : null;
+            const transferDate = document.getElementById('transferDateInput').value;
+            const reason = document.getElementById('transferReasonInput').value.trim();
+
+            if (!targetRoomId) {
+                showToastError('Vui lòng chọn phòng muốn chuyển đến!');
+                return;
+            }
+            if (!newBedId) {
+                showToastError('Vui lòng chọn giường muốn chuyển đến!');
+                return;
+            }
+            if (!reason) {
+                showToastError('Vui lòng nhập lý do xin chuyển phòng!');
+                return;
+            }
+
+            try {
+                await apiFetch('/room-transfers', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        targetRoomId: targetRoomId,
+                        newBedId: newBedId,
+                        transferDate: transferDate || new Date().toISOString().slice(0, 10),
+                        reason: reason
+                    })
+                });
+                transferModal.hide();
+                showToastSuccess('Đã gửi đơn xin chuyển phòng vào CSDL!');
+                await loadStudentTransfers();
+            } catch (e) {
+                showToastError('Lỗi gửi đơn chuyển phòng: ' + e.message);
+            }
+        }
+
+        // ==================== 7. ĐIỂM RÈN LUYỆN & KỶ LUẬT ====================
+        async function loadStudentViolations() {
+            try {
+                const res = await apiFetch('/violations/my');
+                const list = unwrapList(res);
+                const totalMinus = list.reduce((sum, v) => sum + (Number(v.penaltyPointsApplied) || 5), 0);
+                const score = Math.max(0, 100 - totalMinus);
+                document.getElementById('studentConductPoints').textContent = `${score} / 100`;
+                const tbody = document.getElementById('studentViolationTableBody');
+                if (list.length > 0) {
+                    document.getElementById('studentConductSubtext').innerHTML = `<span class="text-danger">Có ${list.length} biên bản (-${totalMinus} điểm)</span>`;
+                    if (tbody) {
+                        tbody.innerHTML = list.map(v => `
+                        <tr>
+                            <td>${formatDate(v.violationDate)}</td>
+                            <td><span class="badge bg-secondary-subtle text-dark">${v.violationName || 'Nội quy KTX'}</span></td>
+                            <td>${v.description || '-'}</td>
+                            <td><span class="badge bg-danger-subtle text-danger">-${v.penaltyPointsApplied || 5} điểm</span></td>
+                            <td class="fw-semibold text-danger">${formatCurrency(v.fineAmount || 0)}</td>
+                            <td>
+                                <span class="badge ${v.status === 'RESOLVED' || v.status === 'DA_XU_LY' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
+                                    ${v.status === 'RESOLVED' || v.status === 'DA_XU_LY' ? 'Đã xử lý' : 'Đã ghi nhận'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+                    }
+                } else if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-success py-3"><i class="bi bi-check-circle-fill me-1"></i>Bạn chấp hành tốt nội quy, chưa có biên bản vi phạm nào.</td></tr>';
+                }
+            } catch (e) { }
+        }
+        // ==================== 8. HỒ SƠ CÁ NHÂN & ĐỔI MẬT KHẨU ====================
+        function updatePortalNavAvatar(avatarUrl, fullName) {
+            const resolved = resolveAvatarUrl(avatarUrl);
+            const avatarEl = document.querySelector('.user-avatar-text');
+            if (!avatarEl) return;
+            if (resolved) {
+                avatarEl.style.background = 'transparent';
+                avatarEl.innerHTML = `<img src="${escapeHtml(resolved)}" alt="Avatar" class="rounded-circle border" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.onerror=null;this.parentElement.innerHTML='${(fullName || 'S').trim().charAt(0).toUpperCase()}';this.parentElement.style.background='#003366'">`;
+            } else {
+                const initial = (fullName || 'S').trim().charAt(0).toUpperCase();
+                avatarEl.style.background = '#003366';
+                avatarEl.textContent = initial;
+            }
+        }
+
+        function updateStudentPortalAvatarPreview(url) {
+            const previewEl = document.getElementById('stuProfAvatarPreview');
+            const resolved = resolveAvatarUrl(url);
+            if (resolved) {
+                previewEl.src = resolved;
+            } else {
+                previewEl.src = DEFAULT_AVATAR_SVG;
+            }
+        }
+
+        let pendingStudentPortalAvatarFile = null;
+        let isStudentAvatarRemoved = false;
+
+        function clearStudentPortalAvatar() {
+            pendingStudentPortalAvatarFile = null;
+            isStudentAvatarRemoved = true;
+            document.getElementById('stuProfAvatarUrl').value = '';
+            document.getElementById('stuProfAvatarPreview').src = DEFAULT_AVATAR_SVG;
+            document.getElementById('stuProfAvatarFileInput').value = '';
+            document.getElementById('stuProfUploadStatusText').innerHTML = '<span class="text-secondary fw-semibold">Đã xóa ảnh. Bấm "Lưu thông tin" bên dưới để hoàn tất gỡ ảnh đại diện.</span>';
+        }
+
+        function handleStudentPortalAvatarSelect(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            if (file.size > 25 * 1024 * 1024) {
+                showToastError('Kích thước ảnh tối đa là 25MB!');
+                input.value = '';
+                return;
+            }
+
+            pendingStudentPortalAvatarFile = file;
+            isStudentAvatarRemoved = false;
+            const objectUrl = URL.createObjectURL(file);
+            document.getElementById('stuProfAvatarPreview').src = objectUrl;
+            document.getElementById('stuProfAvatarUrl').value = '';
+            document.getElementById('stuProfUploadStatusText').innerHTML =
+                `<span class="text-primary fw-semibold"><i class="bi bi-file-earmark-image me-1"></i>Đã chọn tệp: <b>${escapeHtml(file.name)}</b></span> <span class="text-muted small">(Chưa lưu - bấm 'Lưu thông tin' ở dưới để cập nhật)</span>`;
+        }
+
+        async function openStudentProfileModal() {
+            pendingStudentPortalAvatarFile = null;
+            isStudentAvatarRemoved = false;
+            try {
+                const [stuRes, userRes] = await Promise.all([
+                    apiFetch('/students/me').catch(() => apiFetch('/students/my')),
+                    apiFetch('/users/me')
+                ]);
+                const s = stuRes && stuRes.result ? stuRes.result : {};
+                const u = userRes && userRes.result ? userRes.result : {};
+
+                document.getElementById('stuProfAvatarUrl').value = s.avatarUrl || '';
+                document.getElementById('stuProfAvatarFileInput').value = '';
+                updateStudentPortalAvatarPreview(s.avatarUrl || '');
+                document.getElementById('stuProfUploadStatusText').innerHTML = s.avatarUrl ? '<span class="text-muted">Đang sử dụng ảnh đã lưu. Chọn tệp mới hoặc dán URL khác nếu muốn đổi.</span>' : '<span class="text-muted">Chưa có ảnh đại diện. Bạn có thể chọn ảnh từ máy tính hoặc dán URL ảnh.</span>';
+
+                document.getElementById('stuProfEmail').value = s.email || u.email || '';
+                document.getElementById('stuProfPhone').value = s.phone || u.phone || '';
+                document.getElementById('stuProfNationalId').value = s.nationalId || '';
+                document.getElementById('stuProfDob').value = s.dob || '';
+                document.getElementById('stuProfHometown').value = s.hometown || '';
+                document.getElementById('stuProfPermanentAddress').value = s.permanentAddress || '';
+                document.getElementById('stuProfEmerName').value = s.emergencyContactName || '';
+                document.getElementById('stuProfEmerPhone').value = s.emergencyContactPhone || '';
+                document.getElementById('stuProfEmerRelation').value = s.emergencyContactRelation || '';
+                if (document.getElementById('stuProfCurrentPassword')) document.getElementById('stuProfCurrentPassword').value = '';
+                document.getElementById('stuProfPassword').value = '';
+                document.getElementById('stuProfConfirmPassword').value = '';
+
+                studentProfileModal.show();
+            } catch (e) {
+                showToastError('Không thể nạp hồ sơ cá nhân: ' + e.message);
+            }
+        }
+
+        async function submitUpdateStudentProfile() {
+            const urlInput = document.getElementById('stuProfAvatarUrl').value.trim();
+            const email = document.getElementById('stuProfEmail').value.trim();
+            const phone = document.getElementById('stuProfPhone').value.trim();
+            const nationalId = document.getElementById('stuProfNationalId').value.trim();
+            const dob = document.getElementById('stuProfDob').value;
+            const hometown = document.getElementById('stuProfHometown').value.trim();
+            const permanentAddress = document.getElementById('stuProfPermanentAddress').value.trim();
+            const emerName = document.getElementById('stuProfEmerName').value.trim();
+            const emerPhone = document.getElementById('stuProfEmerPhone').value.trim();
+            const emerRelation = document.getElementById('stuProfEmerRelation').value.trim();
+            const currentPassword = document.getElementById('stuProfCurrentPassword') ? document.getElementById('stuProfCurrentPassword').value : '';
+            const newPassword = document.getElementById('stuProfPassword').value;
+            const confirmPassword = document.getElementById('stuProfConfirmPassword').value;
+
+            if (newPassword && newPassword.trim().length > 0) {
+                if (!currentPassword || currentPassword.trim().length === 0) {
+                    showToastError('Vui lòng nhập mật khẩu hiện tại để xác thực trước khi đổi mật khẩu mới!');
+                    return;
+                }
+                if (newPassword.trim().length < 6) {
+                    showToastError('Mật khẩu mới phải có tối thiểu 6 ký tự!');
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showToastError('Mật khẩu xác nhận không khớp!');
+                    return;
+                }
+            }
+
+            try {
+                // Khi bấm "Lưu thông tin" -> Nếu có chọn tệp ảnh mới thì mới thực hiện upload và lưu ảnh
+                let finalAvatarUrl = urlInput;
+                if (pendingStudentPortalAvatarFile) {
+                    const formData = new FormData();
+                    formData.append('file', pendingStudentPortalAvatarFile);
+                    const uploadRes = await apiFetch('/students/upload-avatar', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (uploadRes && uploadRes.result && uploadRes.result.url) {
+                        finalAvatarUrl = uploadRes.result.url;
+                    }
+                } else if (isStudentAvatarRemoved) {
+                    finalAvatarUrl = ""; // Gửi chuỗi rỗng để backend biết là gỡ ảnh và xóa file cũ
+                }
+
+                // 1. Cập nhật hồ sơ sinh viên
+                const stuPayload = {
+                    avatarUrl: finalAvatarUrl,
+                    email: email || null,
+                    phone: phone || null,
+                    nationalId: nationalId || null,
+                    dob: dob || null,
+                    hometown: hometown || null,
+                    permanentAddress: permanentAddress || null,
+                    emergencyContactName: emerName || null,
+                    emergencyContactPhone: emerPhone || null,
+                    emergencyContactRelation: emerRelation || null
+                };
+                await apiFetch('/students/me', {
+                    method: 'PUT',
+                    body: JSON.stringify(stuPayload)
+                });
+
+                // 2. Cập nhật tài khoản người dùng (email, phone)
+                const userPayload = {};
+                if (email) userPayload.email = email;
+                if (phone) userPayload.phone = phone;
+
+                if (Object.keys(userPayload).length > 0) {
+                    await apiFetch('/users/me', {
+                        method: 'PUT',
+                        body: JSON.stringify(userPayload)
+                    });
+                }
+
+                // 3. Nếu có đổi mật khẩu -> gọi endpoint xác thực mật khẩu cũ
+                if (newPassword && newPassword.trim().length > 0) {
+                    await apiFetch('/users/me/change-password', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            currentPassword: currentPassword,
+                            newPassword: newPassword.trim()
+                        })
+                    });
+                }
+
+                pendingStudentPortalAvatarFile = null;
+                studentProfileModal.hide();
+                showToastSuccess('Cập nhật hồ sơ và bảo mật tài khoản thành công!');
+                try {
+                    const refreshed = await apiFetch('/students/my');
+                    if (refreshed && refreshed.result) {
+                        if (refreshed.result.fullName) {
+                            document.querySelectorAll('.user-display-name').forEach(el => el.textContent = refreshed.result.fullName);
+                        }
+                        if (refreshed.result.avatarUrl) {
+                            updatePortalNavAvatar(refreshed.result.avatarUrl, refreshed.result.fullName);
+                        }
+                    }
+                } catch (_) { }
+            } catch (e) {
+                showToastError('Lỗi cập nhật hồ sơ: ' + e.message);
+            }
+        }
+
+        // ==================== 9. ĐĂNG KÝ HỢP ĐỒNG NỘI TRÚ ONLINE ====================
+        async function loadOpenRegistrationPeriods() {
+            try {
+                const res = await apiFetch('/registration-periods/all?status=OPEN');
+                openRegistrationPeriods = unwrapList(res);
+                if (!openRegistrationPeriods || openRegistrationPeriods.length === 0) {
+                    const allRes = await apiFetch('/registration-periods/all');
+                    const allPeriods = unwrapList(allRes);
+                    openRegistrationPeriods = allPeriods.filter(p => p.status === 'OPEN');
+                }
+            } catch (e) {
+                console.warn('Lỗi tải đợt đăng ký:', e);
+            }
+        }
+
+        async function openOnlineContractModal(preselectedRoomId, preselectedBuildingId) {
+            await loadOpenRegistrationPeriods();
+
+            // 1. Đổ đợt đăng ký
+            const pSel = document.getElementById('onlineApplyPeriodSelect');
+            if (openRegistrationPeriods && openRegistrationPeriods.length > 0) {
+                pSel.innerHTML = openRegistrationPeriods.map(p => `
+                <option value="${p.periodId}" data-start="${p.startDate || ''}" data-end="${p.endDate || ''}">
+                    ${p.periodName} (${p.academicYear || ''})
+                </option>
+            `).join('');
+            } else {
+                pSel.innerHTML = '<option value="">-- Hiện chưa có đợt đăng ký nào đang mở --</option>';
+            }
+            onPeriodChange();
+
+            // 2. Đổ danh sách tòa nhà
+            const bSel = document.getElementById('onlineApplyBuildingSelect');
+            bSel.innerHTML = '<option value="">-- Chọn tòa nhà --</option>' +
+                studentBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
+
+            if (preselectedBuildingId) {
+                bSel.value = preselectedBuildingId;
+            } else if (studentBuildings.length > 0) {
+                bSel.value = studentBuildings[0].buildingId;
+            }
+
+            onBuildingChange(preselectedRoomId);
+
+            onlineContractModal.show();
+        }
+
+        function onPeriodChange() {
+            const pSel = document.getElementById('onlineApplyPeriodSelect');
+            const opt = pSel && pSel.selectedOptions && pSel.selectedOptions[0];
+            const dateBox = document.getElementById('onlineApplyPeriodDates');
+            if (opt && opt.dataset.start && opt.dataset.end) {
+                dateBox.textContent = `${formatDate(opt.dataset.start)} → ${formatDate(opt.dataset.end)}`;
+            } else {
+                dateBox.textContent = 'Theo quy định học kỳ';
+            }
+        }
+
+        function onBuildingChange(preselectedRoomId) {
+            const bId = document.getElementById('onlineApplyBuildingSelect').value;
+            const rSel = document.getElementById('onlineApplyRoomSelect');
+
+            // Lọc các phòng còn giường trống: không bảo trì và (sức chứa - đang ở > 0)
+            let availableRooms = studentRooms.filter(r => {
+                if (r.status === 'MAINTENANCE') return false;
+                const cap = Number(r.capacity) || 0;
+                const occ = Number(r.currentOccupancy) || 0;
+                const emptyBeds = Math.max(0, cap - occ);
+                return emptyBeds > 0 || r.status === 'AVAILABLE';
+            });
+
+            if (bId) {
+                availableRooms = availableRooms.filter(r => r.buildingId === bId);
+            }
+
+            if (availableRooms.length === 0) {
+                rSel.innerHTML = '<option value="">-- Tòa này hiện đã hết giường trống --</option>';
+                document.getElementById('onlineApplyBedSelect').innerHTML = '<option value="">-- Không có giường trống --</option>';
+                resetRoomPricePreview();
+                return;
+            }
+
+            rSel.innerHTML = '<option value="">-- Chọn phòng còn giường trống --</option>' +
+                availableRooms.map(r => {
+                    const cap = Number(r.capacity) || 0;
+                    const occ = Number(r.currentOccupancy) || 0;
+                    const emptyBeds = Math.max(0, cap - occ);
+                    const bedText = cap > 0 ? `Còn ${emptyBeds}/${cap} giường trống` : 'Còn giường trống';
+                    return `
+                    <option value="${r.roomId}" data-price="${r.roomTypePrice || r.pricePerMonth || 0}" data-type="${r.roomTypeName || 'Tiêu chuẩn'}">
+                        Phòng ${r.roomNumber} (${r.roomTypeName || 'Tiêu chuẩn'} • ${bedText})
+                    </option>
+                `;
+                }).join('');
+
+            if (preselectedRoomId && availableRooms.some(r => r.roomId === preselectedRoomId)) {
+                rSel.value = preselectedRoomId;
+                onRoomChange();
+            } else {
+                resetRoomPricePreview();
+            }
+        }
+
+        async function onRoomChange() {
+            const rSel = document.getElementById('onlineApplyRoomSelect');
+            const roomId = rSel.value;
+            const bedSel = document.getElementById('onlineApplyBedSelect');
+
+            if (!roomId) {
+                bedSel.innerHTML = '<option value="">-- Chọn phòng trước để xem danh sách giường --</option>';
+                resetRoomPricePreview();
+                return;
+            }
+
+            const opt = rSel.selectedOptions && rSel.selectedOptions[0];
+            const roomObj = studentRooms.find(r => r.roomId === roomId);
+            const price = (opt && Number(opt.dataset.price)) || (roomObj && (roomObj.roomTypePrice || roomObj.pricePerMonth)) || 0;
+            const typeName = (opt && opt.dataset.type) || (roomObj && roomObj.roomTypeName) || 'Tiêu chuẩn';
+
+            document.getElementById('onlineApplyRoomType').textContent = typeName;
+            document.getElementById('onlineApplyMonthlyFee').textContent = price > 0 ? `${formatCurrency(price)}/tháng` : 'Theo biểu phí KTX';
+            document.getElementById('onlineApplyDeposit').textContent = price > 0 ? formatCurrency(price) : '0 đ';
+
+            // Cập nhật chi tiết các loại dịch vụ & tiện nghi theo phòng
+            await updateOnlineApplyRoomServices(roomObj, price);
+
+            bedSel.innerHTML = '<option value="">Đang tải danh sách giường còn trống...</option>';
+            try {
+                const res = await apiFetch(`/beds/available/room/${roomId}`);
+                const beds = unwrapList(res);
+
+                if (!beds || beds.length === 0) {
+                    bedSel.innerHTML = '<option value="">-- Phòng này đã hết giường trống --</option>';
+                    return;
+                }
+
+                bedSel.innerHTML = '<option value="">-- Chọn giường mong muốn --</option>' +
+                    beds.map(b => `<option value="${b.bedId}">Giường ${b.bedNumber} (Đang trống${b.pricePerMonth ? ' • ' + formatCurrency(b.pricePerMonth) + '/tháng' : ''})</option>`).join('');
+            } catch (e) {
+                bedSel.innerHTML = '<option value="">Lỗi tải giường: ' + e.message + '</option>';
+            }
+        }
+
+        async function updateOnlineApplyRoomServices(roomObj, price) {
+            const tableBody = document.getElementById('onlineApplyServicesTableBody');
+            const roomBadge = document.getElementById('onlineApplyRoomBadge');
+            const amenitiesText = document.getElementById('onlineApplyAmenitiesText');
+            const estTotalBox = document.getElementById('onlineApplyEstimatedTotal');
+
+            if (!roomObj) {
+                resetRoomPricePreview();
+                return;
+            }
+
+            const cap = Number(roomObj.capacity) || 4;
+            const roomNum = roomObj.roomNumber || '-';
+            const bName = roomObj.buildingName || 'KTX';
+            const roomType = roomObj.roomTypeName || 'Tiêu chuẩn';
+
+            if (roomBadge) {
+                roomBadge.innerHTML = `<i class="bi bi-door-open-fill me-1"></i>Phòng ${roomNum} (${bName} • ${roomType} • ${cap} SV/phòng)`;
+            }
+
+            if (amenitiesText) {
+                if (roomObj.roomTypeDesc && roomObj.roomTypeDesc.trim().length > 0) {
+                    amenitiesText.innerHTML = `<b>Tiện nghi phòng:</b> ${roomObj.roomTypeDesc}`;
+                } else {
+                    amenitiesText.innerHTML = `<b>Tiện nghi phòng:</b> Điều hòa nhiệt độ 2 chiều, bình nóng lạnh, quạt trần, giường tầng có đệm, tủ khóa cá nhân riêng biệt, bàn ghế học tập, Internet Wifi tốc độ cao và khu vệ sinh khép kín trong phòng.`;
+                }
+            }
+
+            // Đảm bảo có danh mục dịch vụ
+            if (!cachedStudentServices || cachedStudentServices.length === 0) {
+                try {
+                    const res = await apiFetch('/service-types');
+                    cachedStudentServices = unwrapList(res);
+                } catch (e) {
+                    console.warn('Lỗi nạp danh mục dịch vụ:', e);
+                }
+            }
+
+            const services = Array.isArray(cachedStudentServices) && cachedStudentServices.length > 0
+                ? cachedStudentServices
+                : [
+                    { serviceCode: 'DV_DIEN', serviceName: 'Điện sinh hoạt nội trú', unit: 'kWh', unitPrice: 3500, billingType: 'METERED', description: 'Tính theo công tơ riêng của phòng' },
+                    { serviceCode: 'DV_NUOC', serviceName: 'Nước sạch sinh hoạt', unit: 'm3', unitPrice: 12000, billingType: 'METERED', description: 'Tính theo đồng hồ nước của phòng' },
+                    { serviceCode: 'DV_VESINH', serviceName: 'Vệ sinh & Thu gom rác', unit: 'Tháng', unitPrice: 20000, billingType: 'PER_PERSON', description: 'Vệ sinh hành lang & thu gom rác' },
+                    { serviceCode: 'DV_ANNINH', serviceName: 'Điện an ninh trung', unit: 'Tháng', unitPrice: 20000, billingType: 'PER_PERSON', description: 'Chiếu sáng sân bãi & bảo vệ 24/7' },
+                    { serviceCode: 'DV_INTERNET', serviceName: 'Internet Wifi tốc độ cao', unit: 'Tháng', unitPrice: 50000, billingType: 'FLAT', description: 'Internet cáp quang trọn gói phòng' }
+                ];
+
+            let fixedPerPersonTotal = 0;
+
+            if (tableBody) {
+                tableBody.innerHTML = services.map(s => {
+                    const bType = (s.billingType || 'METERED').toUpperCase();
+                    const code = (s.serviceCode || '').toUpperCase();
+                    const uPrice = Number(s.unitPrice) || 0;
+
+                    let icon = '<i class="bi bi-tag-fill text-secondary me-1"></i>';
+                    if (code.includes('DIEN') && !code.includes('AN')) {
+                        icon = '<i class="bi bi-lightning-charge-fill text-warning me-1"></i>';
+                    } else if (code.includes('NUOC')) {
+                        icon = '<i class="bi bi-droplet-half text-info me-1"></i>';
+                    } else if (code.includes('NET') || code.includes('WIFI')) {
+                        icon = '<i class="bi bi-wifi text-primary me-1"></i>';
+                    } else if (code.includes('VE_SINH') || code.includes('VESINH') || code.includes('RAC')) {
+                        icon = '<i class="bi bi-trash3-fill text-success me-1"></i>';
+                    } else if (code.includes('AN_NINH') || code.includes('ANNINH') || code.includes('BAO_VE')) {
+                        icon = '<i class="bi bi-shield-lock-fill text-danger me-1"></i>';
+                    }
+
+                    let typeBadge = '';
+                    let noteText = '';
+
+                    if (bType === 'METERED') {
+                        typeBadge = '<span class="badge bg-info-subtle text-info border">Theo đồng hồ đo</span>';
+                        if (code.includes('DIEN')) {
+                            noteText = '<span class="text-secondary small">Công tơ riêng • Chia đều SV (~60.000 - 80.000 đ/SV)</span>';
+                        } else if (code.includes('NUOC')) {
+                            noteText = '<span class="text-secondary small">Đồng hồ riêng • Chia đều SV (~30.000 - 40.000 đ/SV)</span>';
+                        } else {
+                            noteText = '<span class="text-secondary small">Theo chỉ số thực tế tiêu thụ của phòng</span>';
+                        }
+                    } else if (bType === 'PER_PERSON') {
+                        typeBadge = '<span class="badge bg-success-subtle text-success border">Theo sinh viên (SV)</span>';
+                        noteText = `<span class="fw-semibold text-success small">${formatCurrency(uPrice)} / SV / tháng</span>`;
+                        fixedPerPersonTotal += uPrice;
+                    } else if (bType === 'FLAT') {
+                        typeBadge = '<span class="badge bg-primary-subtle text-primary border">Trọn gói theo phòng</span>';
+                        const perSv = Math.round(uPrice / (cap || 1));
+                        noteText = `<span class="text-primary small">${formatCurrency(uPrice)}/phòng <span class="text-muted">(~${formatCurrency(perSv)}/SV)</span></span>`;
+                        fixedPerPersonTotal += perSv;
+                    } else {
+                        typeBadge = `<span class="badge bg-secondary-subtle text-secondary border">${bType}</span>`;
+                        noteText = '<span class="text-secondary small">Theo quy chế KTX</span>';
+                    }
+
+                    return `
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    ${icon}
+                                    <div>
+                                        <div class="fw-bold text-dark">${s.serviceName || 'Dịch vụ'}</div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">Mã: ${s.serviceCode || '-'}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${typeBadge}</td>
+                            <td class="text-end fw-bold text-danger">${formatCurrency(uPrice)} <span class="small text-muted fw-normal">/${s.unit || 'kỳ'}</span></td>
+                            <td class="text-end">${noteText}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const roomRent = Number(price) || 0;
+            const minEstimate = roomRent + fixedPerPersonTotal + 70000;
+            const maxEstimate = roomRent + fixedPerPersonTotal + 130000;
+
+            if (estTotalBox) {
+                estTotalBox.innerHTML = `
+                    <span>~ ${formatCurrency(minEstimate)} - ${formatCurrency(maxEstimate)}</span>
+                    <span class="small fw-normal text-muted" style="font-size: 0.78rem;"> (Phòng: ${formatCurrency(roomRent)} + DV cố định: ~${formatCurrency(fixedPerPersonTotal)} + Điện nước tạm tính)</span>
+                `;
+            }
+        }
+
+        function onBedChange() { }
+
+        function resetRoomPricePreview() {
+            const rt = document.getElementById('onlineApplyRoomType');
+            if (rt) rt.textContent = '-';
+            const mf = document.getElementById('onlineApplyMonthlyFee');
+            if (mf) mf.textContent = '0 đ';
+            const dp = document.getElementById('onlineApplyDeposit');
+            if (dp) dp.textContent = '0 đ';
+            const badge = document.getElementById('onlineApplyRoomBadge');
+            if (badge) badge.textContent = 'Chưa chọn phòng';
+            const tbody = document.getElementById('onlineApplyServicesTableBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-2">
+                            <i class="bi bi-info-circle me-1"></i>Vui lòng chọn Tòa nhà và Phòng ở để xem chi tiết danh mục dịch vụ & đơn giá...
+                        </td>
+                    </tr>
+                `;
+            }
+            const estTotal = document.getElementById('onlineApplyEstimatedTotal');
+            if (estTotal) estTotal.textContent = '0 đ / tháng';
+            const amenities = document.getElementById('onlineApplyAmenitiesText');
+            if (amenities) {
+                amenities.innerHTML = '<b>Tiện nghi phòng:</b> Điều hòa nhiệt độ, bình nóng lạnh, quạt trần, giường tầng có đệm, tủ khóa cá nhân, bàn học, mạng wifi và WC khép kín.';
+            }
+        }
+
+        function selectRoomForOnlineApply(roomId, buildingId) {
+            openOnlineContractModal(roomId, buildingId);
+        }
+
+        async function submitOnlineContractApply() {
+            const bedId = document.getElementById('onlineApplyBedSelect').value;
+            const periodId = document.getElementById('onlineApplyPeriodSelect').value;
+            const notes = document.getElementById('onlineApplyNotes').value.trim();
+
+            if (!openRegistrationPeriods || openRegistrationPeriods.length === 0) {
+                showToastError('Hiện tại Ký túc xá chưa có đợt đăng ký nào đang mở. Vui lòng liên hệ Ban Quản lý!');
+                return;
+            }
+
+            if (!bedId) {
+                showToastError('Vui lòng chọn phòng và giường còn trống để nộp đơn!');
+                return;
+            }
+
+            try {
+                await apiFetch('/contracts/apply', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bedId: bedId,
+                        periodId: periodId || null,
+                        notes: notes || null
+                    })
+                });
+
+                onlineContractModal.hide();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Nộp đơn đăng ký thành công!',
+                    text: 'Đơn đăng ký thuê phòng KTX của bạn đã được gửi tới Ban Quản lý. Giường bạn chọn đã được tạm giữ chỗ.',
+                    confirmButtonColor: '#003366',
+                    confirmButtonText: 'Đã hiểu'
+                });
+
+                await loadAllStudentPortalData();
+            } catch (e) {
+                showToastError('Lỗi đăng ký: ' + e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

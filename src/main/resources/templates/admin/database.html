@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Trung tâm Quản trị CSDL 28 Bảng')}"></head>
+
+<body>
+
+    <aside th:replace="~{fragments/layout :: sidebar('admin-database')}"></aside>
+
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Trung tâm Quản trị Cơ sở Dữ liệu (28 Bảng CSDL)')}"></nav>
+
+        <div class="content-body">
+            <!-- Overview Header Card đồng bộ -->
+            <div class="card border shadow-sm rounded-3 p-3 bg-white mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 46px; height: 46px; font-size: 1.4rem;">
+                            <i class="bi bi-database-fill-gear"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">Trung tâm Quản trị Dữ liệu Tối cao (Master Database Center)</h5>
+                            <p class="text-muted small mb-0">Toàn quyền truy vấn, thêm, sửa, xóa trực tiếp lên <b>toàn bộ 28 bảng</b> trong CSDL MySQL của Ký túc xá</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-check-circle-fill"></i> MySQL: Đang kết nối
+                        </span>
+                        <button class="btn btn-outline-primary btn-sm fw-semibold px-3" onclick="refreshCurrentTable()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Làm mới dữ liệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Sidebar: Danh sách 28 Bảng CSDL -->
+                <div class="col-12 col-xl-3">
+                    <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-primary me-2"></i>Chọn bảng CSDL:</h6>
+                            <span class="badge bg-primary-subtle text-primary border px-2 py-1">28 Bảng</span>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="tableFilterInput" class="form-control border-start-0"
+                                    placeholder="Tìm tên bảng..." oninput="filterTableList()">
+                            </div>
+                        </div>
+
+                        <div class="list-group list-group-flush small overflow-auto" id="tableListGroup"
+                            style="max-height: 580px;">
+                            <!-- Nhóm 1: Hệ thống & Tài khoản -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Hệ
+                                thống & Tài khoản</div>
+                            <a href="javascript:void(0)"
+                                class="list-group-item list-group-item-action active rounded-2 mb-1"
+                                onclick="selectTable('users', 'Tài khoản Người dùng', '/users')">
+                                <i class="bi bi-person-circle me-1"></i> users <span
+                                    class="badge bg-light text-dark float-end" id="cnt-users">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('roles', 'Vai trò Hệ thống', '/roles')">
+                                <i class="bi bi-shield-shaded me-1"></i> roles <span
+                                    class="badge bg-light text-dark float-end" id="cnt-roles">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('permissions', 'Quyền hạn chi tiết', '/permissions')">
+                                <i class="bi bi-key-fill me-1"></i> permissions <span
+                                    class="badge bg-light text-dark float-end" id="cnt-permissions">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('system-settings', 'Cấu hình hệ thống', '/system-settings')">
+                                <i class="bi bi-sliders me-1"></i> system_settings <span
+                                    class="badge bg-light text-dark float-end" id="cnt-system-settings">...</span>
+                            </a>
+
+                            <!-- Nhóm 2: Cư dân & Nhân sự -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cư
+                                dân & Nhân sự</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('students', 'Hồ sơ Sinh viên', '/students')">
+                                <i class="bi bi-mortarboard-fill me-1"></i> students <span
+                                    class="badge bg-light text-dark float-end" id="cnt-students">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('staffs', 'Hồ sơ Nhân viên KTX', '/staffs')">
+                                <i class="bi bi-person-badge-fill me-1"></i> staffs <span
+                                    class="badge bg-light text-dark float-end" id="cnt-staffs">...</span>
+                            </a>
+
+                            <!-- Nhóm 3: Tòa nhà & Phòng -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cơ
+                                sở Hạ Tầng KTX</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('buildings', 'Tòa nhà KTX', '/buildings')">
+                                <i class="bi bi-building me-1"></i> buildings <span
+                                    class="badge bg-light text-dark float-end" id="cnt-buildings">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('floors', 'Các Tầng', '/floors')">
+                                <i class="bi bi-layers me-1"></i> floors <span
+                                    class="badge bg-light text-dark float-end" id="cnt-floors">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('room-types', 'Loại phòng KTX', '/room-types')">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i> room_types <span
+                                    class="badge bg-light text-dark float-end" id="cnt-room-types">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('rooms', 'Phòng ở KTX', '/rooms')">
+                                <i class="bi bi-door-open-fill me-1"></i> rooms <span
+                                    class="badge bg-light text-dark float-end" id="cnt-rooms">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('beds', 'Giường ngủ', '/beds')">
+                                <i class="bi bi-inbox me-1"></i> beds <span class="badge bg-light text-dark float-end"
+                                    id="cnt-beds">...</span>
+                            </a>
+
+                            <!-- Nhóm 4: Hợp đồng & Lưu trú -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Hợp
+                                đồng & Lưu trú</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('contracts', 'Hợp đồng lưu trú', '/contracts')">
+                                <i class="bi bi-file-earmark-text-fill me-1"></i> contracts <span
+                                    class="badge bg-light text-dark float-end" id="cnt-contracts">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('registration-periods', 'Đợt đăng ký lưu trú', '/registration-periods')">
+                                <i class="bi bi-calendar-event me-1"></i> registration_periods <span
+                                    class="badge bg-light text-dark float-end" id="cnt-registration-periods">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('room-transfers', 'Yêu cầu chuyển phòng', '/room-transfers')">
+                                <i class="bi bi-arrow-left-right me-1"></i> room_transfers <span
+                                    class="badge bg-light text-dark float-end" id="cnt-room-transfers">...</span>
+                            </a>
+
+                            <!-- Nhóm 5: Tài chính & Dịch vụ -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Tài
+                                chính & Điện Nước</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('service-types', 'Danh mục Dịch vụ', '/service-types')">
+                                <i class="bi bi-tags me-1"></i> service_types <span
+                                    class="badge bg-light text-dark float-end" id="cnt-service-types">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('utility-readings', 'Chỉ số Điện Nước', '/utility-readings')">
+                                <i class="bi bi-speedometer me-1"></i> utility_readings <span
+                                    class="badge bg-light text-dark float-end" id="cnt-utility-readings">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('invoices', 'Hóa đơn dịch vụ', '/invoices')">
+                                <i class="bi bi-receipt-cutoff me-1"></i> invoices <span
+                                    class="badge bg-light text-dark float-end" id="cnt-invoices">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('payments', 'Giao dịch thanh toán', '/payments')">
+                                <i class="bi bi-credit-card-2-front me-1"></i> payments <span
+                                    class="badge bg-light text-dark float-end" id="cnt-payments">...</span>
+                            </a>
+
+                            <!-- Nhóm 6: Tài sản & Sửa chữa -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cơ
+                                sở Vật chất & Báo hỏng</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('assets', 'Danh mục tài sản KTX', '/assets')">
+                                <i class="bi bi-box-seam me-1"></i> assets <span
+                                    class="badge bg-light text-dark float-end" id="cnt-assets">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('room-assets', 'Tài sản trong phòng', '/room-assets')">
+                                <i class="bi bi-boxes me-1"></i> room_assets <span
+                                    class="badge bg-light text-dark float-end" id="cnt-room-assets">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('maintenance-requests', 'Yêu cầu sửa chữa', '/maintenance-requests')">
+                                <i class="bi bi-tools me-1"></i> maintenance_requests <span
+                                    class="badge bg-light text-dark float-end" id="cnt-maintenance-requests">...</span>
+                            </a>
+
+                            <!-- Nhóm 7: An ninh & Tương tác -->
+                            <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">An
+                                ninh & Tương tác</div>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('vehicle-registrations', 'Đăng ký gửi xe', '/vehicle-registrations')">
+                                <i class="bi bi-bicycle me-1"></i> vehicle_registrations <span
+                                    class="badge bg-light text-dark float-end" id="cnt-vehicle-registrations">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('visitors', 'Khách ra vào KTX', '/visitors')">
+                                <i class="bi bi-person-lines-fill me-1"></i> visitors <span
+                                    class="badge bg-light text-dark float-end" id="cnt-visitors">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('violation-types', 'Loại vi phạm nội quy', '/violation-types')">
+                                <i class="bi bi-exclamation-octagon me-1"></i> violation_types <span
+                                    class="badge bg-light text-dark float-end" id="cnt-violation-types">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('violations', 'Biên bản vi phạm', '/violations')">
+                                <i class="bi bi-clipboard-x me-1"></i> violations <span
+                                    class="badge bg-light text-dark float-end" id="cnt-violations">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('feedbacks', 'Phản ánh sinh viên', '/feedbacks')">
+                                <i class="bi bi-chat-square-text me-1"></i> feedbacks <span
+                                    class="badge bg-light text-dark float-end" id="cnt-feedbacks">...</span>
+                            </a>
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
+                                onclick="selectTable('notifications', 'Thông báo cư dân', '/notifications')">
+                                <i class="bi bi-bell-fill me-1"></i> notifications <span
+                                    class="badge bg-light text-dark float-end" id="cnt-notifications">...</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Panel: Dữ liệu chi tiết & Các nút CRUD -->
+                <div class="col-12 col-xl-9">
+                    <div class="table-custom shadow-sm p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark" id="currentTableNameTitle">Bảng: users (Tài khoản Người dùng)</h5>
+                                <span class="text-muted small" id="currentTableEndpoint">REST API: <span class="badge bg-light text-primary border">/api/users</span></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="input-group input-group-sm" style="width: 230px;">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="tableSearchBox" class="form-control border-start-0"
+                                        placeholder="Tìm kiếm trong bảng..." oninput="searchInTable()">
+                                </div>
+                                <button class="btn btn-primary btn-sm px-3 fw-semibold shadow-sm"
+                                    onclick="openInsertModal()">
+                                    <i class="bi bi-plus-circle-fill me-1"></i> Thêm bản ghi mới
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0" id="dynamicDataTable">
+                                <thead class="table-light sticky-top" id="dynamicTableHead">
+                                    <tr>
+                                        <th>Đang tải cấu trúc bảng...</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dynamicTableBody">
+                                    <tr>
+                                        <td class="text-center text-muted py-5">Vui lòng chọn bảng từ danh sách bên trái</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small text-muted">
+                            <span id="recordCountInfo" class="fw-medium">Đang tải số bản ghi...</span>
+                            <span>Quyền hạn: <span class="badge bg-primary-subtle text-primary border">ADMIN (FULL ACCESS)</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem JSON / Thêm Bản Ghi Mới -->
+    <div class="modal fade" id="jsonModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header univ-modal-header py-2 px-3">
+                    <h6 class="modal-title fw-bold text-white mb-0" id="jsonModalTitle">
+                        <i class="bi bi-code-square me-2"></i>CHI TIẾT BẢN GHI DỮ LIỆU (JSON INSPECTOR)
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="form-section-title"><i class="bi bi-database me-1"></i> DỮ LIỆU LƯU TRỮ THỰC TẾ TRONG HỆ
+                        THỐNG</div>
+                    <div class="form-section-box mb-0">
+                        <p class="text-muted small mb-2" id="jsonModalDesc">Cấu trúc trường và giá trị JSON:</p>
+                        <pre class="bg-dark text-light p-3 rounded-2 mb-0"
+                            style="max-height: 400px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.85rem;"
+                            id="jsonContent"></pre>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Bản Ghi JSON Trực Tiếp (Admin Raw Insert) -->
+    <div class="modal fade" id="insertModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header univ-modal-header py-2 px-3">
+                    <h6 class="modal-title fw-bold text-white mb-0" id="insertModalTitle">
+                        <i class="bi bi-database-add me-2"></i>THÊM MỚI BẢN GHI TRỰC TIẾP VÀO CSDL
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="alert alert-light border small mb-3">
+                        <i class="bi bi-info-circle text-primary me-1"></i> Quản trị viên có thể nhập trực tiếp dữ liệu
+                        dạng JSON payload để POST vào CSDL qua REST API.
+                    </div>
+                    <div class="form-section-title"><i class="bi bi-braces me-1"></i> NỘI DUNG PAYLOAD JSON</div>
+                    <div class="form-section-box">
+                        <label class="form-label small fw-semibold">Dữ liệu đối tượng JSON <span
+                                class="text-danger">*</span></label>
+                        <textarea id="insertJsonPayload" class="form-control font-monospace form-control-sm" rows="8"
+                            placeholder='{\n  "fieldName": "value"\n}'></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Hủy bỏ
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold"
+                        onclick="submitInsertRecord()">
+                        <i class="bi bi-check2-circle me-1"></i>Lưu vào CSDL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        let currentTableKey = 'users';
+        let currentTableName = 'Tài khoản Người dùng';
+        let currentApiEndpoint = '/users';
+        let currentData = [];
+        let jsonModal = null;
+        let insertModal = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            jsonModal = new bootstrap.Modal(document.getElementById('jsonModal'));
+            insertModal = new bootstrap.Modal(document.getElementById('insertModal'));
+
+            // Tải bảng mặc định: users
+            selectTable('users', 'Tài khoản Người dùng', '/users');
+
+            // Cập nhật số đếm các bảng
+            loadTableCounts();
+        });
+
+        async function loadTableCounts() {
+            const endpoints = [
+                'users', 'roles', 'permissions', 'system-settings', 'students', 'staffs',
+                'buildings', 'floors', 'room-types', 'rooms', 'beds', 'contracts',
+                'registration-periods', 'room-transfers', 'service-types', 'utility-readings',
+                'invoices', 'payments', 'assets', 'room-assets', 'maintenance-requests',
+                'vehicle-registrations', 'visitors', 'violation-types', 'violations',
+                'feedbacks', 'notifications'
+            ];
+
+            for (const ep of endpoints) {
+                try {
+                    const res = await apiFetch('/' + ep);
+                    const list = unwrapList(res);
+                    const total = (res && res.result && typeof res.result.totalElements === 'number')
+                        ? res.result.totalElements
+                        : list.length;
+                    const el = document.getElementById('cnt-' + ep);
+                    if (el) el.textContent = total;
+                } catch (e) {
+                    // Ignore count errors
+                }
+            }
+        }
+
+        async function selectTable(key, name, endpoint) {
+            currentTableKey = key;
+            currentTableName = name;
+            currentApiEndpoint = endpoint;
+
+            // Active class on sidebar (an toàn kể cả khi gọi từ DOMContentLoaded)
+            document.querySelectorAll('#tableListGroup a').forEach(el => {
+                const onclickAttr = el.getAttribute('onclick') || '';
+                if (onclickAttr.includes(`'${key}'`)) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            document.getElementById('currentTableNameTitle').textContent = `Bảng: ${key} (${name})`;
+            document.getElementById('currentTableEndpoint').innerHTML = `REST API: <span class="badge bg-light text-primary border">/api${endpoint}</span>`;
+
+            await refreshCurrentTable();
+        }
+
+        async function refreshCurrentTable() {
+            const thead = document.getElementById('dynamicTableHead');
+            const tbody = document.getElementById('dynamicTableBody');
+            const countInfo = document.getElementById('recordCountInfo');
+
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-5"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Đang đọc dữ liệu từ CSDL MySQL...</td></tr>';
+
+            try {
+                const res = await apiFetch(currentApiEndpoint + (currentApiEndpoint.includes('?') ? '&size=100' : '?size=100'));
+                currentData = unwrapList(res);
+                const total = (res && res.result && typeof res.result.totalElements === 'number')
+                    ? res.result.totalElements
+                    : currentData.length;
+
+                countInfo.textContent = `Hiển thị ${currentData.length} / Tổng số ${total} bản ghi`;
+                const cntBadge = document.getElementById('cnt-' + currentTableKey);
+                if (cntBadge) cntBadge.textContent = total;
+
+                if (currentData.length === 0) {
+                    thead.innerHTML = '<tr><th>Bảng trống</th></tr>';
+                    tbody.innerHTML = '<tr><td class="text-center text-muted py-5">Bảng này hiện chưa có bản ghi nào trong CSDL. Bấm nút <b>"Thêm bản ghi mới"</b> để thêm dữ liệu.</td></tr>';
+                    return;
+                }
+
+                renderDynamicTable(currentData);
+            } catch (e) {
+                thead.innerHTML = '<tr><th>Lỗi</th></tr>';
+                tbody.innerHTML = `<tr><td class="text-center text-danger py-5">Lỗi đọc bảng: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderDynamicTable(data) {
+            const thead = document.getElementById('dynamicTableHead');
+            const tbody = document.getElementById('dynamicTableBody');
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không tìm thấy bản ghi phù hợp.</td></tr>';
+                return;
+            }
+
+            // Tự động phân tích các cột từ thuộc tính của Object đầu tiên
+            const sample = data[0];
+            const rawKeys = Object.keys(sample);
+            // Chọn tối đa 6 cột chính để hiển thị vừa vặn trên 1 màn hình
+            const keys = rawKeys.slice(0, 6);
+
+            // Header
+            thead.innerHTML = '<tr>' +
+                keys.map(k => `<th>${formatColName(k)}</th>`).join('') +
+                '<th class="text-end pe-3" style="width: 110px;">Thao tác</th></tr>';
+
+            // Body
+            tbody.innerHTML = data.map((row, idx) => {
+                const cells = keys.map(k => {
+                    let val = row[k];
+                    if (typeof val === 'object' && val !== null) {
+                        val = JSON.stringify(val);
+                    }
+                    if (val === null || val === undefined) {
+                        return `<td><span class="text-muted small">-</span></td>`;
+                    }
+                    const safeStr = String(val).replace(/"/g, '&quot;');
+                    return `<td class="text-truncate" style="max-width: 185px;" title="${safeStr}">${val}</td>`;
+                }).join('');
+
+                // ID của bản ghi để xóa (tìm trường có chứa "Id" hoặc "id")
+                let recordId = row.id || row[keys[0]] || idx;
+                for (const k of rawKeys) {
+                    if (k.toLowerCase().endsWith('id')) {
+                        recordId = row[k];
+                        break;
+                    }
+                }
+
+                return `
+                <tr>
+                    ${cells}
+                    <td class="text-end pe-3">
+                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                            <button class="btn btn-sm btn-light text-primary py-1 px-2" style="width: 30px;" onclick="viewRecordJson(${idx})" title="Xem chi tiết JSON CSDL">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteRecord('${recordId}')" title="Xóa khỏi CSDL">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        function formatColName(name) {
+            return name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        }
+
+        function viewRecordJson(index) {
+            const record = currentData[index];
+            document.getElementById('jsonModalTitle').textContent = `Chi tiết bản ghi bảng ${currentTableKey}`;
+            document.getElementById('jsonContent').textContent = JSON.stringify(record, null, 2);
+            jsonModal.show();
+        }
+
+        async function deleteRecord(id) {
+            const confirmed = await showConfirm('CẢNH BÁO QUẢN TRỊ VIÊN!', `Bạn có chắc chắn muốn XÓA vĩnh viễn bản ghi ID: [${id}] khỏi CSDL không?`);
+            if (!confirmed) return;
+
+            try {
+                await apiFetch(`${currentApiEndpoint}/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa bản ghi thành công!');
+                refreshCurrentTable();
+            } catch (e) {
+                showToastError('Không thể xóa: ' + e.message);
+            }
+        }
+
+        function openInsertModal() {
+            document.getElementById('insertModalTitle').textContent = `Thêm mới bản ghi vào bảng ${currentTableKey}`;
+            // Gợi ý template JSON mẫu dựa trên sample record
+            let template = {};
+            if (currentData.length > 0) {
+                const sample = currentData[0];
+                Object.keys(sample).forEach(k => {
+                    if (!k.toLowerCase().endsWith('id') && !k.toLowerCase().includes('at')) {
+                        template[k] = sample[k];
+                    }
+                });
+            }
+            document.getElementById('insertJsonPayload').value = JSON.stringify(template, null, 2);
+            insertModal.show();
+        }
+
+        async function submitInsertRecord() {
+            const rawJson = document.getElementById('insertJsonPayload').value;
+            let payload;
+            try {
+                payload = JSON.parse(rawJson);
+            } catch (err) {
+                showToastError('JSON không hợp lệ: ' + err.message);
+                return;
+            }
+
+            try {
+                await apiFetch(currentApiEndpoint, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                showToastSuccess(`Đã thêm mới bản ghi vào bảng ${currentTableKey}!`);
+                insertModal.hide();
+                refreshCurrentTable();
+            } catch (e) {
+                showToastError('Lỗi thêm bản ghi: ' + e.message);
+            }
+        }
+
+        function searchInTable() {
+            const query = document.getElementById('tableSearchBox').value.toLowerCase().trim();
+            if (!query) {
+                renderDynamicTable(currentData);
+                return;
+            }
+            const filtered = currentData.filter(row => {
+                return JSON.stringify(row).toLowerCase().includes(query);
+            });
+            renderDynamicTable(filtered);
+        }
+
+        function filterTableList() {
+            const q = document.getElementById('tableFilterInput').value.toLowerCase().trim();
+            document.querySelectorAll('#tableListGroup a').forEach(a => {
+                const text = a.textContent.toLowerCase();
+                a.style.display = text.includes(q) ? 'block' : 'none';
+            });
+        }
+    </script>
+</body>
+
+</html>
