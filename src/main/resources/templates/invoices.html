@@ -1107,8 +1107,9 @@
                 renderServiceTypes();
 
                 const contractSelect = document.getElementById('invoiceContractSelect');
+                const validContracts = allContracts.filter(c => c.status === 'ACTIVE');
                 contractSelect.innerHTML = '<option value="">-- Chọn Hợp đồng / Sinh viên --</option>' +
-                    allContracts.map(c =>
+                    validContracts.map(c =>
                         `<option value="${c.contractId}" data-student-id="${c.studentId || ''}" data-room-id="${c.roomId || ''}" data-fee="${c.monthlyFee || 0}">
                         ${c.contractCode} — ${c.studentFullName || 'SV'} (${c.studentCode || ''}) • Phòng ${c.roomNumber || '-'} (${formatCurrency(c.monthlyFee || 0)}/tháng)
                     </option>`
@@ -1964,8 +1965,12 @@
             next10Days.setDate(next10Days.getDate() + 10);
             document.getElementById('dueDate').value = next10Days.toISOString().split('T')[0];
 
-            if (allContracts.length > 0) {
-                document.getElementById('invoiceContractSelect').value = allContracts[0].contractId;
+            const validContracts = allContracts.filter(c => c.status === 'ACTIVE');
+            if (validContracts.length > 0) {
+                document.getElementById('invoiceContractSelect').value = validContracts[0].contractId;
+                onInvoiceContractChange();
+            } else {
+                document.getElementById('invoiceContractSelect').value = '';
                 onInvoiceContractChange();
             }
             invoiceModal.show();

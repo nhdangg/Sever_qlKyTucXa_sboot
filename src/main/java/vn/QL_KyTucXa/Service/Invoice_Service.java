@@ -81,6 +81,11 @@ public class Invoice_Service {
         Contract contract = contractRepository.findById(request.getContractId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
 
+        if (!"ACTIVE".equalsIgnoreCase(contract.getStatus())) {
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Chỉ được phép lập hóa đơn cho hợp đồng đang có hiệu lực (ACTIVE)");
+        }
+
         // Lấy thông tin sinh viên trực tiếp từ hợp đồng
         Student student = contract.getStudent();
         if (student == null) {
@@ -131,7 +136,8 @@ public class Invoice_Service {
         invoice.setIssueDate(issueDate);
         invoice.setDueDate(dueDate);
 
-        // Trạng thái ban đầu: ưu tiên theo request (ISSUED / DRAFT), số tiền đã trả luôn là 0
+        // Trạng thái ban đầu: ưu tiên theo request (ISSUED / DRAFT), số tiền đã trả
+        // luôn là 0
         String initialStatus = (request.getStatus() != null && !request.getStatus().isBlank())
                 ? request.getStatus().toUpperCase()
                 : "DRAFT";
@@ -147,7 +153,8 @@ public class Invoice_Service {
         if (request.getInvoiceItems() != null && !request.getInvoiceItems().isEmpty()) {
             for (vn.QL_KyTucXa.DTO.Request.InvoiceItem_Request itemReq : request.getInvoiceItems()) {
                 BigDecimal qty = itemReq.getQuantity() != null ? itemReq.getQuantity() : BigDecimal.ONE;
-                BigDecimal price = itemReq.getUnitPrice() != null ? itemReq.getUnitPrice().setScale(2, RoundingMode.HALF_UP)
+                BigDecimal price = itemReq.getUnitPrice() != null
+                        ? itemReq.getUnitPrice().setScale(2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
                 BigDecimal amt = itemReq.getAmount() != null ? itemReq.getAmount().setScale(2, RoundingMode.HALF_UP)
                         : qty.multiply(price).setScale(2, RoundingMode.HALF_UP);
@@ -164,7 +171,8 @@ public class Invoice_Service {
                 invoice.getInvoiceItems().add(item);
             }
         } else {
-            // 2. Tự động bóc tách các dòng chi tiết: RENT, UTILITY, SERVICE (PER_PERSON & FLAT)
+            // 2. Tự động bóc tách các dòng chi tiết: RENT, UTILITY, SERVICE (PER_PERSON &
+            // FLAT)
             BigDecimal roomRent;
             if (request.getSubtotalAmount() != null && request.getSubtotalAmount().compareTo(BigDecimal.ZERO) > 0) {
                 roomRent = request.getSubtotalAmount().setScale(2, RoundingMode.HALF_UP);
@@ -190,7 +198,8 @@ public class Invoice_Service {
                     && contract.getBed() != null && contract.getBed().getRoom() != null) {
                 String roomId = contract.getBed().getRoom().getRoomId();
                 LocalDate utilityMonth = invoiceMonth.minusMonths(1);
-                List<vn.QL_KyTucXa.Entity.UtilityReading> readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, utilityMonth);
+                List<vn.QL_KyTucXa.Entity.UtilityReading> readings = utilityReadingRepository
+                        .findByRoom_RoomIdAndReadingMonth(roomId, utilityMonth);
                 if (readings.isEmpty()) {
                     readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
                     if (!readings.isEmpty()) {
@@ -201,8 +210,9 @@ public class Invoice_Service {
                 final LocalDate finalInvoiceMonth = invoiceMonth;
                 for (vn.QL_KyTucXa.Entity.UtilityReading reading : readings) {
                     try {
-                        vn.QL_KyTucXa.DTO.Response.UtilitySplit_Response split = utilityReadingService.calculateRoomUtilitySplit(
-                                roomId, reading.getServiceType().getServiceTypeId(), utilityMonth);
+                        vn.QL_KyTucXa.DTO.Response.UtilitySplit_Response split = utilityReadingService
+                                .calculateRoomUtilitySplit(
+                                        roomId, reading.getServiceType().getServiceTypeId(), utilityMonth);
                         if (split != null && split.getResidentShares() != null) {
                             split.getResidentShares().stream()
                                     .filter(rs -> rs.getStudentId() != null
@@ -219,7 +229,8 @@ public class Invoice_Service {
                                                     .invoice(targetInvoice)
                                                     .itemType("UTILITY")
                                                     .description("Tiền " + srvName + " tháng "
-                                                            + finalInvoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")))
+                                                            + finalInvoiceMonth
+                                                                    .format(DateTimeFormatter.ofPattern("MM/yyyy")))
                                                     .quantity(BigDecimal.ONE)
                                                     .unitPrice(rs.getShareAmount().setScale(2, RoundingMode.HALF_UP))
                                                     .amount(rs.getShareAmount().setScale(2, RoundingMode.HALF_UP))
@@ -235,7 +246,8 @@ public class Invoice_Service {
                 }
             }
 
-            // Tự động gắn các dịch vụ KTX theo tháng (PER_PERSON: Rác, An ninh & FLAT: Wifi phòng)
+            // Tự động gắn các dịch vụ KTX theo tháng (PER_PERSON: Rác, An ninh & FLAT: Wifi
+            // phòng)
             if (serviceTypeRepository != null) {
                 List<ServiceType> serviceTypes = serviceTypeRepository.findAll();
                 String monthLabel = invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
@@ -267,7 +279,8 @@ public class Invoice_Service {
                             InvoiceItem flatItem = InvoiceItem.builder()
                                     .invoice(invoice)
                                     .itemType("SERVICE")
-                                    .description(st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
+                                    .description(
+                                            st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
                                     .quantity(BigDecimal.ONE)
                                     .unitPrice(flatShare)
                                     .amount(flatShare)
@@ -504,7 +517,8 @@ public class Invoice_Service {
     @Transactional
     public Invoice_Response issue(String invoiceId) {
         if (currentUserService != null && currentUserService.hasRole("STUDENT")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ nhân viên hoặc quản trị viên mới có quyền phát hành hóa đơn");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ nhân viên hoặc quản trị viên mới có quyền phát hành hóa đơn");
         }
 
         Invoice invoice = invoiceRepository.findById(invoiceId)
@@ -536,7 +550,8 @@ public class Invoice_Service {
     @Transactional
     public Invoice_Response update(String invoiceId, Invoice_Request request) {
         if (currentUserService != null && currentUserService.hasRole("STUDENT")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ quản lý hoặc quản trị viên mới có quyền chỉnh sửa hóa đơn");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ quản lý hoặc quản trị viên mới có quyền chỉnh sửa hóa đơn");
         }
 
         Invoice invoice = invoiceRepository.findById(invoiceId)
@@ -610,7 +625,8 @@ public class Invoice_Service {
                             + " VNĐ). Vui lòng hoàn tiền trước");
         }
 
-        // Giải phóng các biên bản vi phạm FINE khỏi hóa đơn hủy để không bị kẹt referenceId
+        // Giải phóng các biên bản vi phạm FINE khỏi hóa đơn hủy để không bị kẹt
+        // referenceId
         if (invoice.getInvoiceItems() != null) {
             for (InvoiceItem item : invoice.getInvoiceItems()) {
                 if ("FINE".equalsIgnoreCase(item.getItemType())) {
@@ -706,9 +722,12 @@ public class Invoice_Service {
                 }
             }
 
-            // Bỏ qua nếu đã có hóa đơn đang hoạt động (không tính hóa đơn đã bị hủy CANCELLED)
-            List<Invoice> existingInvoices = invoiceRepository.findByContract_ContractIdAndInvoiceMonth(contract.getContractId(), invoiceMonth);
-            if (existingInvoices != null && existingInvoices.stream().anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
+            // Bỏ qua nếu đã có hóa đơn đang hoạt động (không tính hóa đơn đã bị hủy
+            // CANCELLED)
+            List<Invoice> existingInvoices = invoiceRepository
+                    .findByContract_ContractIdAndInvoiceMonth(contract.getContractId(), invoiceMonth);
+            if (existingInvoices != null
+                    && existingInvoices.stream().anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
                 continue;
             }
 
@@ -758,12 +777,14 @@ public class Invoice_Service {
                 invoice.getInvoiceItems().add(rentItem);
             }
 
-            // Gắn tiền điện nước phòng (UTILITY) phân bổ cho sinh viên (ưu tiên chỉ số chốt tháng trước invoiceMonth.minusMonths(1))
+            // Gắn tiền điện nước phòng (UTILITY) phân bổ cho sinh viên (ưu tiên chỉ số chốt
+            // tháng trước invoiceMonth.minusMonths(1))
             if (utilityReadingRepository != null && utilityReadingService != null
                     && contract.getBed() != null && contract.getBed().getRoom() != null) {
                 String roomId = contract.getBed().getRoom().getRoomId();
                 LocalDate utilityMonth = invoiceMonth.minusMonths(1);
-                List<UtilityReading> readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, utilityMonth);
+                List<UtilityReading> readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId,
+                        utilityMonth);
                 if (readings.isEmpty()) {
                     readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
                     if (!readings.isEmpty()) {
@@ -809,8 +830,10 @@ public class Invoice_Service {
             }
 
             // Gắn các dịch vụ KTX theo tháng (SERVICE):
-            // 1. Phí theo đầu người (PER_PERSON): Vệ sinh thu gom rác, Điện an ninh chiếu sáng chung
-            // 2. Phí cố định theo phòng (FLAT) chia đều số SV trong phòng của kỳ tháng: Internet Wifi
+            // 1. Phí theo đầu người (PER_PERSON): Vệ sinh thu gom rác, Điện an ninh chiếu
+            // sáng chung
+            // 2. Phí cố định theo phòng (FLAT) chia đều số SV trong phòng của kỳ tháng:
+            // Internet Wifi
             if (serviceTypeRepository != null) {
                 List<ServiceType> serviceTypes = serviceTypeRepository.findAll();
                 String monthLabel = invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
@@ -851,7 +874,8 @@ public class Invoice_Service {
                             InvoiceItem flatItem = InvoiceItem.builder()
                                     .invoice(invoice)
                                     .itemType("SERVICE")
-                                    .description(st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
+                                    .description(
+                                            st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
                                     .quantity(BigDecimal.ONE)
                                     .unitPrice(flatShare)
                                     .amount(flatShare)
