@@ -242,7 +242,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person text-secondary"></i></span>
                             <input type="text" id="username" class="form-control" placeholder="admin / sinhvien"
-                                value="admin" required autofocus>
+                                required autofocus>
                         </div>
                     </div>
 
@@ -260,7 +260,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-shield-lock text-secondary"></i></span>
                             <input type="password" id="password" class="form-control border-end-0"
-                                placeholder="••••••••" value="admin" required>
+                                placeholder="••••••••" required>
                             <button class="btn btn-outline-secondary border border-start-0 bg-light" type="button"
                                 id="btnTogglePassword" onclick="togglePasswordVisibility()" title="Ẩn/Hiện mật khẩu">
                                 <i class="bi bi-eye text-secondary" id="togglePasswordIcon"></i>
@@ -276,7 +276,8 @@
                                 Ghi nhớ trạng thái đăng nhập
                             </label>
                         </div>
-                        <a th:href="@{/}" href="/QLyKyTucXa/" class="small text-danger text-decoration-none fw-medium d-inline-flex align-items-center gap-1 hover-underline">
+                        <a th:href="@{/}" href="/QLyKyTucXa/"
+                            class="small text-danger text-decoration-none fw-medium d-inline-flex align-items-center gap-1 hover-underline">
                             <i class="bi bi-house-door"></i> Trang Chủ
                         </a>
                     </div>
