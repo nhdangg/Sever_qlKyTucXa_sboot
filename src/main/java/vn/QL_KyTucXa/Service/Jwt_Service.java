@@ -82,8 +82,8 @@ public class Jwt_Service {
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-        JWSObject jwsObject = new JWSObject(header, payload);
 
+        JWSObject jwsObject = new JWSObject(header, payload);
         try {
             jwsObject.sign(new MACSigner(signerKey.getBytes(StandardCharsets.UTF_8)));
             return jwsObject.serialize();

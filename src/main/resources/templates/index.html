@@ -752,15 +752,12 @@
                         </div>
                     </div>
 
-                    <!-- <button type="button" class="btn btn-outline-univ btn-sm rounded-1 px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1"
-                        data-bs-toggle="modal" data-bs-target="#publicRegisterModal">
-                        <i class="bi bi-person-plus"></i> Đăng Ký
-                    </button> -->
-
-                    <a th:href="@{/login}"
-                        class="btn btn-univ-primary btn-sm rounded-1 px-3 py-1 fw-bold text-uppercase d-inline-flex align-items-center gap-1 shadow-sm">
-                        <i class="bi bi-box-arrow-in-right"></i> Đăng Nhập
-                    </a>
+                    <div id="headerAuthActions" class="d-inline-flex align-items-center gap-2">
+                        <a th:href="@{/login}"
+                            class="btn btn-univ-primary btn-sm rounded-1 px-3 py-1 fw-bold text-uppercase d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-box-arrow-in-right"></i> Đăng Nhập
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1075,68 +1072,113 @@
                     </div>
                 </div>
 
-                <!-- Right Column: Announcements -->
+                <!-- Right Column: Announcements & Registration Periods -->
                 <div class="col-12 col-lg-5">
                     <div class="section-header-bar">
                         <h5><i class="bi bi-bell-fill"></i> Thông báo Ban Quản Lý</h5>
+                        <span id="indexNoticeSyncBadge" class="badge bg-light text-secondary border small">Bản tin
+                            KTX</span>
                     </div>
 
-                    <div class="notice-list">
-                        <div class="notice-list-item">
-                            <div class="notice-date-badge">
-                                <span class="day"><i class="bi bi-calendar-event"></i></span>
-                                <span class="month">ĐỢT MỚI</span>
+                    <!-- Khối Đợt đăng ký lưu trú: Chỉ hiển thị khi có đợt đăng ký đang mở (OPEN) từ RegistrationPeriod_Service -->
+                    <div id="indexPeriodsBox" class="mb-3"
+                        th:with="openPeriods=${@registrationPeriod_Service.getAll(null, 'OPEN')}"
+                        th:if="${openPeriods != null and !openPeriods.isEmpty()}">
+                        <div th:each="p : ${openPeriods}"
+                            class="p-2 mb-2 bg-white border border-success-subtle rounded-2 shadow-sm small">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark"><i
+                                        class="bi bi-calendar2-check text-success me-1"></i><span
+                                        th:text="${p.periodName}">Đợt đăng ký</span></span>
+                                <span class="badge bg-success" style="font-size: 0.65rem;">ĐANG MỞ ĐĂNG KÝ</span>
                             </div>
-                            <div class="notice-content">
-                                <div class="notice-title">
-                                    Thông báo mở tiếp nhận hồ sơ đăng ký lưu trú các học kỳ
-                                </div>
-                                <div class="notice-meta"><i class="bi bi-tag me-1"></i>Hồ sơ trực tuyến • Ưu tiên chính
-                                    sách</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                Năm học: <b th:text="${p.academicYear}">2026-2027</b> • Thời hạn ở: <b
+                                    th:text="${#temporals.format(p.startDate, 'dd/MM/yyyy') + ' → ' + #temporals.format(p.endDate, 'dd/MM/yyyy')}">--</b>
+                                • Hạn nộp: <b class="text-danger"
+                                    th:text="${#temporals.format(p.registrationDeadline, 'dd/MM/yyyy')}">--</b>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="notice-list-item">
-                            <div class="notice-date-badge">
-                                <span class="day"><i class="bi bi-qr-code"></i></span>
-                                <span class="month">VIETQR</span>
-                            </div>
-                            <div class="notice-content">
-                                <div class="notice-title">
-                                    Hướng dẫn thanh toán tiền phòng & điện nước qua mã VietQR
+                    <div class="notice-list" id="indexNoticeList"
+                        th:with="pubNotices=${@notification_Service.getPublishedNotifications()}">
+                        <th:block th:if="${pubNotices != null and !pubNotices.isEmpty()}">
+                            <div class="notice-list-item" th:each="n, iterStat : ${pubNotices}"
+                                th:if="${iterStat.index < 5}">
+                                <div class="notice-date-badge">
+                                    <span class="day"
+                                        th:text="${n.publishedAt != null ? #temporals.format(n.publishedAt, 'dd') : (n.createdAt != null ? #temporals.format(n.createdAt, 'dd') : 'TB')}">15</span>
+                                    <span class="month"
+                                        th:text="${n.publishedAt != null ? ('THG ' + #temporals.format(n.publishedAt, 'MM')) : (n.createdAt != null ? ('THG ' + #temporals.format(n.createdAt, 'MM')) : 'BQL')}">THG
+                                        11</span>
                                 </div>
-                                <div class="notice-meta"><i class="bi bi-credit-card me-1"></i>Kế toán KTX • Gạch nợ tự
-                                    động</div>
+                                <div class="notice-content">
+                                    <div class="notice-title" th:text="${n.title}">Thông báo KTX</div>
+                                    <div class="notice-meta" th:text="${n.content}">Nội dung thông báo</div>
+                                </div>
                             </div>
-                        </div>
+                        </th:block>
+                        <th:block th:if="${pubNotices == null or pubNotices.isEmpty()}">
+                            <div class="notice-list-item">
+                                <div class="notice-date-badge">
+                                    <span class="day"><i class="bi bi-calendar-event"></i></span>
+                                    <span class="month">ĐỢT MỚI</span>
+                                </div>
+                                <div class="notice-content">
+                                    <div class="notice-title">
+                                        Thông báo mở tiếp nhận hồ sơ đăng ký lưu trú các học kỳ
+                                    </div>
+                                    <div class="notice-meta"><i class="bi bi-tag me-1"></i>Hồ sơ trực tuyến • Ưu tiên
+                                        chính
+                                        sách</div>
+                                </div>
+                            </div>
 
-                        <div class="notice-list-item">
-                            <div class="notice-date-badge">
-                                <span class="day"><i class="bi bi-clock"></i></span>
-                                <span class="month">NỘI QUY</span>
-                            </div>
-                            <div class="notice-content">
-                                <div class="notice-title">
-                                    Quy định giờ đóng mở cổng và lịch trực ban an ninh trật tự
+                            <div class="notice-list-item">
+                                <div class="notice-date-badge">
+                                    <span class="day"><i class="bi bi-qr-code"></i></span>
+                                    <span class="month">VIETQR</span>
                                 </div>
-                                <div class="notice-meta"><i class="bi bi-shield-check me-1"></i>Giờ mở cổng: 05h00 -
-                                    23h00</div>
+                                <div class="notice-content">
+                                    <div class="notice-title">
+                                        Hướng dẫn thanh toán tiền phòng & điện nước qua mã VietQR
+                                    </div>
+                                    <div class="notice-meta"><i class="bi bi-credit-card me-1"></i>Kế toán KTX • Gạch nợ
+                                        tự
+                                        động</div>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="notice-list-item">
-                            <div class="notice-date-badge">
-                                <span class="day"><i class="bi bi-tools"></i></span>
-                                <span class="month">BẢO TRÌ</span>
-                            </div>
-                            <div class="notice-content">
-                                <div class="notice-title">
-                                    Quy trình tiếp nhận và xử lý báo hỏng thiết bị phòng ở
+                            <div class="notice-list-item">
+                                <div class="notice-date-badge">
+                                    <span class="day"><i class="bi bi-clock"></i></span>
+                                    <span class="month">NỘI QUY</span>
                                 </div>
-                                <div class="notice-meta"><i class="bi bi-wrench me-1"></i>Gửi phiếu trực tiếp qua Cổng
-                                    Sinh Viên</div>
+                                <div class="notice-content">
+                                    <div class="notice-title">
+                                        Quy định giờ đóng mở cổng và lịch trực ban an ninh trật tự
+                                    </div>
+                                    <div class="notice-meta"><i class="bi bi-shield-check me-1"></i>Giờ mở cổng: 05h00 -
+                                        23h00</div>
+                                </div>
                             </div>
-                        </div>
+
+                            <div class="notice-list-item">
+                                <div class="notice-date-badge">
+                                    <span class="day"><i class="bi bi-tools"></i></span>
+                                    <span class="month">BẢO TRÌ</span>
+                                </div>
+                                <div class="notice-content">
+                                    <div class="notice-title">
+                                        Quy trình tiếp nhận và xử lý báo hỏng thiết bị phòng ở
+                                    </div>
+                                    <div class="notice-meta"><i class="bi bi-wrench me-1"></i>Gửi phiếu trực tiếp qua
+                                        Cổng
+                                        Sinh Viên</div>
+                                </div>
+                            </div>
+                        </th:block>
                     </div>
                 </div>
             </div>
@@ -1154,6 +1196,108 @@
                 <h3 class="fw-bold text-dark mb-1">Cơ Sở Vật Chất & Quản Lý Tài Sản Phòng Ở</h3>
                 <p class="text-muted small">Quy chuẩn quản lý trang thiết bị, bàn giao tài sản và hỗ trợ kỹ thuật tại Ký
                     túc xá</p>
+            </div>
+
+            <!-- Khối Dữ liệu thực tế từ Building_Service, RoomType_Service, Room_Service, ServiceType_Service -->
+            <div id="indexLiveCatalogSection" class="mb-4" th:with="pubBuildings=${@building_Service.getAll()},
+                          pubRooms=${@room_Service.getAll()},
+                          pubRoomTypes=${@roomType_Service.getAll()},
+                          pubServices=${@serviceType_Service.getAll()}">
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small fw-semibold">TÒA NHÀ NỘI TRÚ</div>
+                            <div class="fs-4 fw-bold text-dark mt-1" id="indexStatBuildings"
+                                th:text="${pubBuildings != null ? pubBuildings.size() : 0}">0</div>
+                            <div class="small text-secondary">Phân khu Nam / Nữ</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small fw-semibold">TỔNG SỐ PHÒNG Ở</div>
+                            <div class="fs-4 fw-bold text-dark mt-1" id="indexStatRooms"
+                                th:text="${pubRooms != null ? pubRooms.size() : 0}">0</div>
+                            <div class="small text-secondary">Phòng tiêu chuẩn KTX</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 bg-light border rounded-3 text-center h-100">
+                            <div class="text-muted small fw-semibold">LOẠI PHÒNG & DỊCH VỤ</div>
+                            <div class="fs-4 fw-bold text-dark mt-1" id="indexStatRoomTypes"
+                                th:text="${pubRoomTypes != null ? pubRoomTypes.size() : 0}">0</div>
+                            <div class="small text-secondary">Niêm yết theo quy định</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Danh mục Loại phòng & Giá phòng (RoomType_Service) -->
+                    <div class="col-12 col-lg-6">
+                        <div class="border rounded-3 p-3 bg-white h-100 shadow-sm">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-door-open text-primary me-2"></i>Loại
+                                Phòng & Đơn Giá Thuê</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Loại phòng</th>
+                                            <th class="text-center">Sức chứa</th>
+                                            <th class="text-end">Đơn giá/tháng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="indexRoomTypesBody">
+                                        <tr th:each="rt : ${pubRoomTypes}">
+                                            <td class="fw-semibold" th:text="${rt.typeName}">Phòng tiêu chuẩn</td>
+                                            <td class="text-center"
+                                                th:text="${(rt.capacity != null ? rt.capacity : 0) + ' SV'}">8 SV</td>
+                                            <td class="text-end fw-bold text-primary"
+                                                th:text="${#numbers.formatDecimal(rt.pricePerMonth != null ? rt.pricePerMonth : 0, 0, 'POINT', 0, 'COMMA') + ' đ'}">
+                                                250.000 đ</td>
+                                        </tr>
+                                        <tr th:if="${pubRoomTypes == null or pubRoomTypes.isEmpty()}">
+                                            <td colspan="3" class="text-center text-muted py-2">Chưa có dữ liệu loại
+                                                phòng</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Đơn giá Điện, Nước & Dịch vụ (ServiceType_Service) -->
+                    <div class="col-12 col-lg-6">
+                        <div class="border rounded-3 p-3 bg-white h-100 shadow-sm">
+                            <h6 class="fw-bold text-dark mb-3"><i
+                                    class="bi bi-lightning-charge text-primary me-2"></i>Đơn Giá Điện, Nước & Dịch Vụ
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Dịch vụ</th>
+                                            <th>Cách tính</th>
+                                            <th class="text-end">Đơn giá</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="indexServicesBody">
+                                        <tr th:each="sv : ${pubServices}">
+                                            <td class="fw-semibold" th:text="${sv.serviceName}">Điện sinh hoạt</td>
+                                            <td><span class="text-muted"
+                                                    th:text="${sv.unit != null ? sv.unit : 'tháng'}">kWh</span></td>
+                                            <td class="text-end fw-bold"
+                                                th:text="${#numbers.formatDecimal(sv.unitPrice != null ? sv.unitPrice : 0, 0, 'POINT', 0, 'COMMA') + ' đ'}">
+                                                3.500 đ</td>
+                                        </tr>
+                                        <tr th:if="${pubServices == null or pubServices.isEmpty()}">
+                                            <td colspan="3" class="text-center text-muted py-2">Chưa có dữ liệu dịch vụ
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="row g-3 justify-content-center mb-4">
@@ -1247,13 +1391,10 @@
                             </div>
                         </div>
                         <div class="d-flex gap-2 flex-shrink-0">
-                            <!-- <button type="button" class="btn btn-outline-univ btn-sm px-3 fw-semibold"
-                                data-bs-toggle="modal" data-bs-target="#publicRegisterModal">
-                                <i class="bi bi-person-plus me-1"></i>Đăng ký tài khoản
-                            </button>
-                            <a th:href="@{/login}" class="btn btn-univ-primary btn-sm px-3 fw-bold">
+                            <a th:href="@{/login}" id="indexBottomActionBtn"
+                                class="btn btn-univ-primary btn-sm px-3 fw-bold">
                                 <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập nộp đơn
-                            </a> -->
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1462,6 +1603,148 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script th:src="@{/js/main.js}"></script>
     <script>
+        function unwrapIndexList(res) {
+            if (!res) return [];
+            if (Array.isArray(res)) return res;
+            if (Array.isArray(res.result)) return res.result;
+            if (res.result && Array.isArray(res.result.data)) return res.result.data;
+            if (res.result && Array.isArray(res.result.content)) return res.result.content;
+            return [];
+        }
+
+        function formatIndexDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('vi-VN');
+        }
+
+        async function loadIndexLiveData() {
+            const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : localStorage.getItem('access_token');
+            const user = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : JSON.parse(localStorage.getItem('current_user') || '{}');
+            const role = (user.role || '').toUpperCase();
+
+            // 1. Đồng bộ nút điều hướng theo vai trò từ WebViewController
+            if (token) {
+                const portalUrl = (role === 'STUDENT') ? (CONTEXT_PATH + '/student-portal') : (CONTEXT_PATH + '/dashboard');
+                const portalLabel = (role === 'STUDENT') ? 'Cổng Sinh Viên' : 'Bảng Điều Khiển';
+                const headerBox = document.getElementById('headerAuthActions');
+                if (headerBox) {
+                    headerBox.innerHTML = `
+                        <a href="${portalUrl}" class="btn btn-univ-primary btn-sm rounded-1 px-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-grid-1x2-fill"></i> ${portalLabel}
+                        </a>
+                    `;
+                }
+                const bottomBtn = document.getElementById('indexBottomActionBtn');
+                if (bottomBtn) {
+                    bottomBtn.href = portalUrl;
+                    bottomBtn.innerHTML = `<i class="bi bi-arrow-right-circle me-1"></i>Vào ${portalLabel}`;
+                }
+            }
+
+            if (!token) return;
+
+            try {
+                const [noticesRes, periodsRes, buildingsRes, roomTypesRes, servicesRes, roomsRes, availBedsRes] = await Promise.all([
+                    apiFetch('/notifications/published?page=1&size=5').catch(() => null),
+                    apiFetch('/registration-periods/all').catch(() => null),
+                    apiFetch('/buildings/all').catch(() => null),
+                    apiFetch('/room-types/all').catch(() => null),
+                    apiFetch('/service-types').catch(() => null),
+                    apiFetch('/rooms/all').catch(() => null),
+                    apiFetch('/beds/search?status=AVAILABLE&page=1&size=1').catch(() => null)
+                ]);
+
+                // 2. Hiển thị Đợt đăng ký lưu trú: Chỉ hiện khi có đợt đang mở (OPEN)
+                const periods = unwrapIndexList(periodsRes);
+                const periodsBox = document.getElementById('indexPeriodsBox');
+                if (periodsBox) {
+                    const openPeriods = periods.filter(p => p.status === 'OPEN');
+                    if (openPeriods.length > 0) {
+                        periodsBox.classList.remove('d-none');
+                        periodsBox.innerHTML = openPeriods.map(p => `
+                            <div class="p-2 mb-2 bg-white border border-success-subtle rounded-2 shadow-sm small">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark"><i class="bi bi-calendar2-check text-success me-1"></i>${p.periodName || 'Đợt đăng ký'}</span>
+                                    <span class="badge bg-success" style="font-size: 0.65rem;">ĐANG MỞ ĐĂNG KÝ</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    Năm học: <b>${p.academicYear || '-'}</b> • Thời hạn ở: <b>${formatIndexDate(p.startDate)} → ${formatIndexDate(p.endDate)}</b> • Hạn nộp: <b class="text-danger">${formatIndexDate(p.registrationDeadline)}</b>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // 3. Hiển thị Thông báo đã xuất bản (Notification_Controller)
+                const notices = unwrapIndexList(noticesRes);
+                const noticeListEl = document.getElementById('indexNoticeList');
+                if (noticeListEl && notices.length > 0) {
+                    const syncBadge = document.getElementById('indexNoticeSyncBadge');
+                    if (syncBadge) syncBadge.textContent = `${notices.length} thông báo mới`;
+                    noticeListEl.innerHTML = notices.map(n => {
+                        const pubDate = n.publishedAt || n.createdAt;
+                        const dObj = pubDate ? new Date(pubDate) : null;
+                        const dayStr = dObj && !isNaN(dObj.getTime()) ? String(dObj.getDate()).padStart(2, '0') : '<i class="bi bi-bell"></i>';
+                        const monthStr = dObj && !isNaN(dObj.getTime()) ? ('THG ' + (dObj.getMonth() + 1)) : 'BQL';
+                        return `
+                            <div class="notice-list-item">
+                                <div class="notice-date-badge">
+                                    <span class="day">${dayStr}</span>
+                                    <span class="month">${monthStr}</span>
+                                </div>
+                                <div class="notice-content">
+                                    <div class="notice-title">${n.title || 'Thông báo KTX'}</div>
+                                    <div class="notice-meta text-truncate" style="max-width: 340px;">${n.content || ''}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // 4. Hiển thị Cơ sở vật chất, Loại phòng & Đơn giá dịch vụ (Building, RoomType, ServiceType, Room Controllers)
+                const buildings = unwrapIndexList(buildingsRes);
+                const roomTypes = unwrapIndexList(roomTypesRes);
+                const services = unwrapIndexList(servicesRes);
+                const rooms = unwrapIndexList(roomsRes);
+
+                if (buildings.length > 0 || roomTypes.length > 0 || services.length > 0) {
+                    const liveSection = document.getElementById('indexLiveCatalogSection');
+                    if (liveSection) liveSection.classList.remove('d-none');
+
+                    const statB = document.getElementById('indexStatBuildings');
+                    if (statB) statB.textContent = buildings.length;
+                    const statR = document.getElementById('indexStatRooms');
+                    if (statR) statR.textContent = rooms.length;
+                    const statRT = document.getElementById('indexStatRoomTypes');
+                    if (statRT) statRT.textContent = roomTypes.length;
+
+                    const rtBody = document.getElementById('indexRoomTypesBody');
+                    if (rtBody) {
+                        rtBody.innerHTML = roomTypes.length > 0 ? roomTypes.map(rt => `<tr>
+                            <td class="fw-semibold">${rt.typeName}</td>
+                            <td class="text-center">${rt.capacity || 0} SV</td>
+                            <td class="text-end fw-bold text-primary">${formatCurrency(rt.pricePerMonth || 0)}</td>
+                        </tr>`).join('') : '<tr><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+                    }
+
+                    const svBody = document.getElementById('indexServicesBody');
+                    if (svBody) {
+                        svBody.innerHTML = services.length > 0 ? services.map(sv => `<tr>
+                            <td class="fw-semibold">${sv.serviceName}</td>
+                            <td><span class="text-muted">${sv.unit || 'tháng'}</span></td>
+                            <td class="text-end fw-bold">${formatCurrency(sv.unitPrice || 0)}</td>
+                        </tr>`).join('') : '<tr><td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td></tr>';
+                    }
+                }
+            } catch (err) {
+                console.warn('Không tải được dữ liệu mở rộng trang chủ:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadIndexLiveData);
+
         async function submitPublicRegistration() {
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
