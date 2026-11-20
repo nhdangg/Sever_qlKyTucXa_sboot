@@ -1,6 +1,8 @@
 package vn.QL_KyTucXa.Config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -16,10 +18,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${app.upload.dir:uploads}")
     private String uploadDirConfig;
 
-    /**
-     * Lấy đường dẫn thư mục upload thực tế:
-     * Hỗ trợ cấu hình động qua biến môi trường UPLOAD_DIR khi deploy lên Linux Server / Docker
-     */
+    // Cấu hình ObjectMapper bean dùng chung cho toàn bộ ứng dụng và Jackson
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().findAndRegisterModules();
+    }
+
+    // Lấy đường dẫn thư mục upload thực tế hỗ trợ cấu hình động qua UPLOAD_DIR
     public Path getUploadDir() {
         return Paths.get(uploadDirConfig).toAbsolutePath().normalize();
     }
