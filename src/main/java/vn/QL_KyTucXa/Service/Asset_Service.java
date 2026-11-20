@@ -71,19 +71,19 @@ public class Asset_Service {
 
         String normalizedStatus = normalizeStatus(request.getStatus());
 
-        Asset asset = assetMapper.toEntity(request);
-        asset.setStatus(normalizedStatus);
-        asset = assetRepository.save(asset);
+        Asset tai_san = assetMapper.toEntity(request);
+        tai_san.setStatus(normalizedStatus);
+        tai_san = assetRepository.save(tai_san);
 
-        return assetMapper.toResponse(asset);
+        return assetMapper.toResponse(tai_san);
     }
 
     @Transactional(readOnly = true)
     public Asset_Response getById(String assetId) {
-        Asset asset = assetRepository.findById(assetId)
+        Asset tai_san = assetRepository.findById(assetId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản"));
 
-        return assetMapper.toResponse(asset);
+        return assetMapper.toResponse(tai_san);
     }
 
     @Transactional(readOnly = true)
@@ -91,8 +91,8 @@ public class Asset_Service {
         if (assetName == null || assetName.trim().isEmpty()) {
             return getAll();
         }
-        List<Asset> list = assetRepository.findByAssetNameContainingIgnoreCase(assetName.trim());
-        return assetMapper.toResponseList(list);
+        List<Asset> danh_sach_tai_san = assetRepository.findByAssetNameContainingIgnoreCase(assetName.trim());
+        return assetMapper.toResponseList(danh_sach_tai_san);
     }
 
     @Transactional(readOnly = true)
@@ -101,8 +101,8 @@ public class Asset_Service {
             return getAll();
         }
         String normalizedStatus = normalizeStatus(status);
-        List<Asset> list = assetRepository.findByStatus(normalizedStatus);
-        return assetMapper.toResponseList(list);
+        List<Asset> danh_sach_tai_san = assetRepository.findByStatus(normalizedStatus);
+        return assetMapper.toResponseList(danh_sach_tai_san);
     }
 
     @Transactional(readOnly = true)
@@ -110,8 +110,8 @@ public class Asset_Service {
         if (category == null || category.trim().isEmpty()) {
             return getAll();
         }
-        List<Asset> list = assetRepository.findByCategoryContainingIgnoreCase(category.trim());
-        return assetMapper.toResponseList(list);
+        List<Asset> danh_sach_tai_san = assetRepository.findByCategoryContainingIgnoreCase(category.trim());
+        return assetMapper.toResponseList(danh_sach_tai_san);
     }
 
     @Transactional(readOnly = true)
@@ -119,14 +119,14 @@ public class Asset_Service {
         if (assetCode == null || assetCode.trim().isEmpty()) {
             return getAll();
         }
-        List<Asset> list = assetRepository.findByAssetCodeContainingIgnoreCase(assetCode.trim());
-        return assetMapper.toResponseList(list);
+        List<Asset> danh_sach_tai_san = assetRepository.findByAssetCodeContainingIgnoreCase(assetCode.trim());
+        return assetMapper.toResponseList(danh_sach_tai_san);
     }
 
     @Transactional(readOnly = true)
     public List<Asset_Response> getAll() {
-        List<Asset> list = assetRepository.findAll();
-        return assetMapper.toResponseList(list);
+        List<Asset> danh_sach_tai_san = assetRepository.findAll();
+        return assetMapper.toResponseList(danh_sach_tai_san);
     }
 
     @Transactional(readOnly = true)
@@ -138,37 +138,37 @@ public class Asset_Service {
                 : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Asset> pageResult = assetRepository.findAll(pageable);
-        List<Asset_Response> data = assetMapper.toResponseList(pageResult.getContent());
+        Page<Asset> trang_tai_san = assetRepository.findAll(pageable);
+        List<Asset_Response> data = assetMapper.toResponseList(trang_tai_san.getContent());
 
         return Page_Response.<Asset_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_tai_san.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_tai_san.getTotalPages())
+                .totalElements(trang_tai_san.getTotalElements())
+                .hasPrevious(trang_tai_san.hasPrevious())
+                .hasNext(trang_tai_san.hasNext())
+                .isFirst(trang_tai_san.isFirst())
+                .isLast(trang_tai_san.isLast())
                 .data(data)
                 .build();
     }
 
     @Transactional
     public Asset_Response update(String assetId, Asset_Request request) {
-        Asset asset = assetRepository.findById(assetId)
+        Asset tai_san = assetRepository.findById(assetId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản"));
 
-        if (!asset.getAssetCode().equalsIgnoreCase(request.getAssetCode()) &&
+        if (!tai_san.getAssetCode().equalsIgnoreCase(request.getAssetCode()) &&
                 assetRepository.existsByAssetCode(request.getAssetCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mã tài sản '" + request.getAssetCode() + "' đã tồn tại");
         }
 
         LocalDate targetPurchaseDate = request.getPurchaseDate() != null ? request.getPurchaseDate()
-                : asset.getPurchaseDate();
+                : tai_san.getPurchaseDate();
         LocalDate targetWarrantyUntil = request.getWarrantyUntil() != null ? request.getWarrantyUntil()
-                : asset.getWarrantyUntil();
+                : tai_san.getWarrantyUntil();
         if (targetWarrantyUntil != null && targetPurchaseDate != null
                 && targetWarrantyUntil.isBefore(targetPurchaseDate)) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hạn bảo hành không được trước ngày mua");
@@ -177,26 +177,26 @@ public class Asset_Service {
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             String normalizedStatus = normalizeStatus(request.getStatus());
             request.setStatus(normalizedStatus);
-            asset.setStatus(normalizedStatus);
+            tai_san.setStatus(normalizedStatus);
         }
 
-        assetMapper.updateEntityFromRequest(asset, request);
-        asset = assetRepository.save(asset);
+        assetMapper.updateEntityFromRequest(tai_san, request);
+        tai_san = assetRepository.save(tai_san);
 
-        return assetMapper.toResponse(asset);
+        return assetMapper.toResponse(tai_san);
     }
 
     // Xóa tài sản: kiểm tra tồn tại và chặn xóa nếu tài sản đã được phân bổ cho
     // phòng
     @Transactional
     public void delete(String assetId) {
-        Asset asset = assetRepository.findById(assetId)
+        Asset tai_san = assetRepository.findById(assetId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản"));
 
         if (roomAssetRepository.existsByAsset_AssetId(assetId)) {
             throw new AppException(ErrorCode.ASSET_IN_USE);
         }
 
-        assetRepository.delete(asset);
+        assetRepository.delete(tai_san);
     }
 }

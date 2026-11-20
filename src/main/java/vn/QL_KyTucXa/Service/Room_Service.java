@@ -91,10 +91,10 @@ public class Room_Service {
                     "Trạng thái phòng không hợp lệ. Cho phép: " + String.join(", ", ALLOWED_STATUSES));
         }
 
-        Floor floor = floorRepository.findById(request.getFloorId())
+        Floor tang = floorRepository.findById(request.getFloorId())
                 .orElseThrow(() -> new AppException(ErrorCode.FLOOR_NOT_FOUND));
 
-        RoomType roomType = roomTypeRepository.findById(request.getRoomTypeId())
+        RoomType loai_phong = roomTypeRepository.findById(request.getRoomTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại phòng"));
 
         String trimmedRoomNumber = request.getRoomNumber().trim();
@@ -103,47 +103,47 @@ public class Room_Service {
                     "Phòng số " + trimmedRoomNumber + " đã tồn tại ở tầng này");
         }
 
-        Room room = roomMapper.toEntity(request);
-        room.setFloor(floor);
-        room.setRoomType(roomType);
-        room.setRoomNumber(trimmedRoomNumber);
+        Room phong = roomMapper.toEntity(request);
+        phong.setFloor(tang);
+        phong.setRoomType(loai_phong);
+        phong.setRoomNumber(trimmedRoomNumber);
 
-        if (room.getCapacity() == null || room.getCapacity() <= 0) {
-            room.setCapacity(roomType.getCapacity() != null ? roomType.getCapacity() : 4);
-        } else if (roomType.getCapacity() != null && room.getCapacity() > roomType.getCapacity()) {
+        if (phong.getCapacity() == null || phong.getCapacity() <= 0) {
+            phong.setCapacity(loai_phong.getCapacity() != null ? loai_phong.getCapacity() : 4);
+        } else if (loai_phong.getCapacity() != null && phong.getCapacity() > loai_phong.getCapacity()) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Sức chứa phòng (" + room.getCapacity() + ") không được vượt quá sức chứa tối đa của loại phòng (" + roomType.getCapacity() + ")");
+                    "Sức chứa phòng (" + phong.getCapacity() + ") không được vượt quá sức chứa tối đa của loại phòng (" + loai_phong.getCapacity() + ")");
         }
-        room.setStatus(initialStatus);
+        phong.setStatus(initialStatus);
 
-        room = roomRepository.save(room);
+        phong = roomRepository.save(phong);
 
         // Tự động khởi tạo các giường mặc định (G01, G02, ...) theo sức chứa của phòng
-        int capacity = room.getCapacity() != null ? room.getCapacity() : 0;
+        int capacity = phong.getCapacity() != null ? phong.getCapacity() : 0;
         for (int i = 1; i <= capacity; i++) {
             String bedNumber = String.format("G%02d", i);
-            Bed bed = Bed.builder()
-                    .room(room)
+            Bed giuong = Bed.builder()
+                    .room(phong)
                     .bedNumber(bedNumber)
                     .status("AVAILABLE")
                     .build();
-            bedRepository.save(bed);
+            bedRepository.save(giuong);
         }
 
         if (auditLogService != null) {
-            auditLogService.recordAction("CREATE_ROOM", "phong", room.getRoomId(), null, request);
+            auditLogService.recordAction("CREATE_ROOM", "phong", phong.getRoomId(), null, request);
         }
 
-        return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
+        return enrichOccupancy(List.of(roomMapper.toResponse(phong))).get(0);
     }
 
     // Lấy thông tin chi tiết một phòng theo ID kèm số người đang ở
     @Transactional(readOnly = true)
     public Room_Response getById(String roomId) {
-        Room room = roomRepository.findById(roomId)
+        Room phong = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
+        return enrichOccupancy(List.of(roomMapper.toResponse(phong))).get(0);
     }
 
     // Lấy danh sách phòng theo ID tầng
@@ -153,14 +153,14 @@ public class Room_Service {
             throw new AppException(ErrorCode.FLOOR_NOT_FOUND);
         }
 
-        List<Room> rooms = roomRepository.findByFloor_FloorId(floorId);
-        return enrichOccupancy(roomMapper.toResponseList(rooms));
+        List<Room> danh_sach_phong = roomRepository.findByFloor_FloorId(floorId);
+        return enrichOccupancy(roomMapper.toResponseList(danh_sach_phong));
     }
 
     @Transactional(readOnly = true)
     public List<Room_Response> getAll() {
-        List<Room> rooms = roomRepository.findAll();
-        return enrichOccupancy(roomMapper.toResponseList(rooms));
+        List<Room> danh_sach_phong = roomRepository.findAll();
+        return enrichOccupancy(roomMapper.toResponseList(danh_sach_phong));
     }
 
     // Lấy danh sách phòng có phân trang cơ bản
@@ -195,7 +195,7 @@ public class Room_Service {
         String cleanRoomTypeId = (roomTypeId != null && !roomTypeId.isBlank()) ? roomTypeId.trim() : null;
         String cleanStatus = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
 
-        Page<Room> pageResult = roomRepository.searchRooms(
+        Page<Room> trang_phong = roomRepository.searchRooms(
                 cleanRoomNumber,
                 cleanBuildingId,
                 cleanFloorId,
@@ -204,17 +204,17 @@ public class Room_Service {
                 hasAvailableBeds,
                 pageable);
 
-        List<Room_Response> data = enrichOccupancy(roomMapper.toResponseList(pageResult.getContent()));
+        List<Room_Response> data = enrichOccupancy(roomMapper.toResponseList(trang_phong.getContent()));
 
         return Page_Response.<Room_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_phong.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_phong.getTotalPages())
+                .totalElements(trang_phong.getTotalElements())
+                .hasPrevious(trang_phong.hasPrevious())
+                .hasNext(trang_phong.hasNext())
+                .isFirst(trang_phong.isFirst())
+                .isLast(trang_phong.isLast())
                 .data(data)
                 .build();
     }
@@ -223,32 +223,32 @@ public class Room_Service {
     // và trạng thái
     @Transactional
     public Room_Response update(String roomId, Room_Request request) {
-        Room room = roomRepository.findById(roomId)
+        Room phong = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         String targetFloorId = (request.getFloorId() != null && !request.getFloorId().isBlank())
                 ? request.getFloorId()
-                : room.getFloor().getFloorId();
+                : phong.getFloor().getFloorId();
 
-        if (!room.getFloor().getFloorId().equals(targetFloorId)) {
-            Floor floor = floorRepository.findById(targetFloorId)
+        if (!phong.getFloor().getFloorId().equals(targetFloorId)) {
+            Floor tang = floorRepository.findById(targetFloorId)
                     .orElseThrow(() -> new AppException(ErrorCode.FLOOR_NOT_FOUND));
-            room.setFloor(floor);
+            phong.setFloor(tang);
         }
 
         String targetRoomTypeId = (request.getRoomTypeId() != null && !request.getRoomTypeId().isBlank())
                 ? request.getRoomTypeId()
-                : room.getRoomType().getRoomTypeId();
+                : phong.getRoomType().getRoomTypeId();
 
-        if (!room.getRoomType().getRoomTypeId().equals(targetRoomTypeId)) {
-            RoomType roomType = roomTypeRepository.findById(targetRoomTypeId)
+        if (!phong.getRoomType().getRoomTypeId().equals(targetRoomTypeId)) {
+            RoomType loai_phong = roomTypeRepository.findById(targetRoomTypeId)
                     .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại phòng"));
-            room.setRoomType(roomType);
+            phong.setRoomType(loai_phong);
         }
 
         String targetRoomNumber = (request.getRoomNumber() != null && !request.getRoomNumber().isBlank())
                 ? request.getRoomNumber().trim()
-                : room.getRoomNumber();
+                : phong.getRoomNumber();
 
         // Kiểm tra ràng buộc duy nhất uq_floor_room khi đổi tầng hoặc đổi số phòng
         if (roomRepository.existsByFloor_FloorIdAndRoomNumberIgnoreCaseAndRoomIdNot(targetFloorId, targetRoomNumber,
@@ -256,7 +256,7 @@ public class Room_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Phòng số " + targetRoomNumber + " đã tồn tại ở tầng này");
         }
-        room.setRoomNumber(targetRoomNumber);
+        phong.setRoomNumber(targetRoomNumber);
 
         // Kiểm tra sức chứa mới không được nhỏ hơn số giường hiện có hoặc số người đang
         // ở và không vượt quá sức chứa tối đa của loại phòng
@@ -264,11 +264,11 @@ public class Room_Service {
             if (request.getCapacity() <= 0) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Sức chứa phòng phải lớn hơn 0");
             }
-            if (room.getRoomType() != null && room.getRoomType().getCapacity() != null
-                    && request.getCapacity() > room.getRoomType().getCapacity()) {
+            if (phong.getRoomType() != null && phong.getRoomType().getCapacity() != null
+                    && request.getCapacity() > phong.getRoomType().getCapacity()) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Sức chứa phòng (" + request.getCapacity() + ") không được vượt quá sức chứa tối đa của loại phòng ("
-                                + room.getRoomType().getCapacity() + ")");
+                                + phong.getRoomType().getCapacity() + ")");
             }
             long currentBedCount = bedRepository.countByRoom_RoomId(roomId);
             if (request.getCapacity() < currentBedCount) {
@@ -282,7 +282,7 @@ public class Room_Service {
                         "Sức chứa mới (" + request.getCapacity() + ") không được nhỏ hơn số người đang ở ("
                                 + currentOccupancy + ")");
             }
-            room.setCapacity(request.getCapacity());
+            phong.setCapacity(request.getCapacity());
         }
 
         // Cập nhật trạng thái và chặn chuyển sang bảo trì hoặc đóng phòng khi còn người
@@ -301,14 +301,14 @@ public class Room_Service {
                                     + currentOccupancy + " người)");
                 }
             }
-            room.setStatus(normalizedStatus);
+            phong.setStatus(normalizedStatus);
         }
 
-        room = roomRepository.save(room);
+        phong = roomRepository.save(phong);
         if (auditLogService != null) {
-            auditLogService.recordAction("UPDATE_ROOM", "phong", room.getRoomId(), null, request);
+            auditLogService.recordAction("UPDATE_ROOM", "phong", phong.getRoomId(), null, request);
         }
-        return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
+        return enrichOccupancy(List.of(roomMapper.toResponse(phong))).get(0);
     }
 
     // Cập nhật trạng thái phòng: chỉ cho phép các trạng thái trong danh mục hợp lệ
@@ -325,7 +325,7 @@ public class Room_Service {
                     "Trạng thái phòng không hợp lệ. Cho phép: " + String.join(", ", ALLOWED_STATUSES));
         }
 
-        Room room = roomRepository.findById(roomId)
+        Room phong = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         if ("MAINTENANCE".equals(normalizedStatus) || "CLOSED".equals(normalizedStatus)) {
@@ -337,18 +337,18 @@ public class Room_Service {
             }
         }
 
-        room = roomRepository.save(room);
+        phong = roomRepository.save(phong);
         if (auditLogService != null) {
-            auditLogService.recordAction("UPDATE_ROOM_STATUS", "phong", room.getRoomId(), null, Map.of("status", normalizedStatus));
+            auditLogService.recordAction("UPDATE_ROOM_STATUS", "phong", phong.getRoomId(), null, Map.of("status", normalizedStatus));
         }
-        return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
+        return enrichOccupancy(List.of(roomMapper.toResponse(phong))).get(0);
     }
 
     // Xóa phòng: kiểm tra toàn bộ các ràng buộc khóa ngoại (giường, hợp đồng, tài
     // sản, điện nước, bảo trì)
     @Transactional
     public void delete(String roomId) {
-        Room room = roomRepository.findById(roomId)
+        Room phong = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         if (bedRepository.existsByRoom_RoomId(roomId)) {
@@ -371,9 +371,9 @@ public class Room_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa phòng đã có yêu cầu bảo trì sửa chữa");
         }
 
-        roomRepository.delete(room);
+        roomRepository.delete(phong);
         if (auditLogService != null) {
-            auditLogService.recordAction("DELETE_ROOM", "phong", roomId, Map.of("roomNumber", room.getRoomNumber()), null);
+            auditLogService.recordAction("DELETE_ROOM", "phong", roomId, Map.of("roomNumber", phong.getRoomNumber()), null);
         }
     }
 }

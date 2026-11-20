@@ -56,46 +56,46 @@ public class RoomAsset_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Số lượng tài sản phải lớn hơn 0");
         }
 
-        Room room = roomRepository.findById(request.getRoomId())
+        Room phong = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        if ("CLOSED".equalsIgnoreCase(room.getStatus())) {
+        if ("CLOSED".equalsIgnoreCase(phong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể phân bổ tài sản vào phòng đang đóng cửa");
         }
 
-        Asset asset = assetRepository.findById(request.getAssetId())
+        Asset tai_san = assetRepository.findById(request.getAssetId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản"));
 
-        if (asset.getStatus() != null && UNASSIGNABLE_ASSET_STATUSES.contains(asset.getStatus().trim().toUpperCase())) {
+        if (tai_san.getStatus() != null && UNASSIGNABLE_ASSET_STATUSES.contains(tai_san.getStatus().trim().toUpperCase())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Không thể phân bổ tài sản đang ở trạng thái '" + asset.getStatus() + "' (hỏng hoặc đã thanh lý)");
+                    "Không thể phân bổ tài sản đang ở trạng thái '" + tai_san.getStatus() + "' (hỏng hoặc đã thanh lý)");
         }
 
         // Chặn trùng lặp cặp (phòng, tài sản) bằng cách cộng dồn số lượng vào bản ghi
         // hiện có
-        Optional<RoomAsset> existingOpt = roomAssetRepository.findByRoom_RoomIdAndAsset_AssetId(request.getRoomId(),
+        Optional<RoomAsset> tai_san_phong_ton_tai = roomAssetRepository.findByRoom_RoomIdAndAsset_AssetId(request.getRoomId(),
                 request.getAssetId());
-        if (existingOpt.isPresent()) {
-            RoomAsset existing = existingOpt.get();
+        if (tai_san_phong_ton_tai.isPresent()) {
+            RoomAsset tai_san_phong_hien_co = tai_san_phong_ton_tai.get();
             log.info("Tài sản ID: {} đã tồn tại ở phòng ID: {}, tiến hành cộng dồn thêm số lượng {}",
                     request.getAssetId(), request.getRoomId(), request.getQuantity());
-            existing.setQuantity(existing.getQuantity() + request.getQuantity());
+            tai_san_phong_hien_co.setQuantity(tai_san_phong_hien_co.getQuantity() + request.getQuantity());
             if (request.getConditionNote() != null && !request.getConditionNote().isBlank()) {
-                existing.setConditionNote(request.getConditionNote().trim());
+                tai_san_phong_hien_co.setConditionNote(request.getConditionNote().trim());
             }
             if (request.getAssignedDate() != null) {
-                existing.setAssignedDate(request.getAssignedDate());
+                tai_san_phong_hien_co.setAssignedDate(request.getAssignedDate());
             }
-            existing = roomAssetRepository.save(existing);
-            return roomAssetMapper.toResponse(existing);
+            tai_san_phong_hien_co = roomAssetRepository.save(tai_san_phong_hien_co);
+            return roomAssetMapper.toResponse(tai_san_phong_hien_co);
         }
 
-        RoomAsset roomAsset = roomAssetMapper.toEntity(request);
-        roomAsset.setRoom(room);
-        roomAsset.setAsset(asset);
-        roomAsset = roomAssetRepository.save(roomAsset);
+        RoomAsset tai_san_phong = roomAssetMapper.toEntity(request);
+        tai_san_phong.setRoom(phong);
+        tai_san_phong.setAsset(tai_san);
+        tai_san_phong = roomAssetRepository.save(tai_san_phong);
 
-        return roomAssetMapper.toResponse(roomAsset);
+        return roomAssetMapper.toResponse(tai_san_phong);
     }
 
     // Lấy toàn bộ danh sách tài sản phòng không phân trang
@@ -131,23 +131,23 @@ public class RoomAsset_Service {
         String cleanRoomId = (roomId != null && !roomId.isBlank()) ? roomId.trim() : null;
         String cleanAssetId = (assetId != null && !assetId.isBlank()) ? assetId.trim() : null;
 
-        Page<RoomAsset> pageResult = roomAssetRepository.searchRoomAssets(
+        Page<RoomAsset> trang_tai_san_phong = roomAssetRepository.searchRoomAssets(
                 cleanBuildingId,
                 cleanRoomId,
                 cleanAssetId,
                 pageable);
 
-        List<RoomAsset_Response> data = roomAssetMapper.toResponseList(pageResult.getContent());
+        List<RoomAsset_Response> data = roomAssetMapper.toResponseList(trang_tai_san_phong.getContent());
 
         return Page_Response.<RoomAsset_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_tai_san_phong.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_tai_san_phong.getTotalPages())
+                .totalElements(trang_tai_san_phong.getTotalElements())
+                .hasPrevious(trang_tai_san_phong.hasPrevious())
+                .hasNext(trang_tai_san_phong.hasNext())
+                .isFirst(trang_tai_san_phong.isFirst())
+                .isLast(trang_tai_san_phong.isLast())
                 .data(data)
                 .build();
     }
@@ -155,11 +155,11 @@ public class RoomAsset_Service {
     // Lấy chi tiết thông tin phân bổ tài sản theo ID
     @Transactional(readOnly = true)
     public RoomAsset_Response getById(String roomAssetId) {
-        RoomAsset roomAsset = roomAssetRepository.findById(roomAssetId)
+        RoomAsset tai_san_phong = roomAssetRepository.findById(roomAssetId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin tài sản phòng"));
 
-        return roomAssetMapper.toResponse(roomAsset);
+        return roomAssetMapper.toResponse(tai_san_phong);
     }
 
     // Lấy danh sách tài sản thuộc một phòng cụ thể
@@ -169,8 +169,8 @@ public class RoomAsset_Service {
             throw new AppException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        List<RoomAsset> list = roomAssetRepository.findByRoom_RoomId(roomId);
-        return roomAssetMapper.toResponseList(list);
+        List<RoomAsset> danh_sach_tai_san_phong = roomAssetRepository.findByRoom_RoomId(roomId);
+        return roomAssetMapper.toResponseList(danh_sach_tai_san_phong);
     }
 
     // Lấy danh sách phòng đang sử dụng một tài sản cụ thể theo assetId
@@ -180,8 +180,8 @@ public class RoomAsset_Service {
             throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản");
         }
 
-        List<RoomAsset> list = roomAssetRepository.findByAsset_AssetId(assetId);
-        return roomAssetMapper.toResponseList(list);
+        List<RoomAsset> danh_sach_tai_san_phong = roomAssetRepository.findByAsset_AssetId(assetId);
+        return roomAssetMapper.toResponseList(danh_sach_tai_san_phong);
     }
 
     // Cập nhật thông tin phân bổ tài sản: kiểm tra ngày bàn giao, trạng thái và
@@ -196,37 +196,37 @@ public class RoomAsset_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Số lượng tài sản phải lớn hơn 0");
         }
 
-        RoomAsset roomAsset = roomAssetRepository.findById(roomAssetId)
+        RoomAsset tai_san_phong = roomAssetRepository.findById(roomAssetId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin tài sản phòng"));
 
         String targetRoomId = (request.getRoomId() != null && !request.getRoomId().isBlank())
                 ? request.getRoomId()
-                : roomAsset.getRoom().getRoomId();
+                : tai_san_phong.getRoom().getRoomId();
 
-        if (!roomAsset.getRoom().getRoomId().equals(targetRoomId)) {
-            Room room = roomRepository.findById(targetRoomId)
+        if (!tai_san_phong.getRoom().getRoomId().equals(targetRoomId)) {
+            Room phong = roomRepository.findById(targetRoomId)
                     .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
-            if ("CLOSED".equalsIgnoreCase(room.getStatus())) {
+            if ("CLOSED".equalsIgnoreCase(phong.getStatus())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể phân bổ tài sản vào phòng đang đóng cửa");
             }
-            roomAsset.setRoom(room);
+            tai_san_phong.setRoom(phong);
         }
 
         String targetAssetId = (request.getAssetId() != null && !request.getAssetId().isBlank())
                 ? request.getAssetId()
-                : roomAsset.getAsset().getAssetId();
+                : tai_san_phong.getAsset().getAssetId();
 
-        if (!roomAsset.getAsset().getAssetId().equals(targetAssetId)) {
-            Asset asset = assetRepository.findById(targetAssetId)
+        if (!tai_san_phong.getAsset().getAssetId().equals(targetAssetId)) {
+            Asset tai_san = assetRepository.findById(targetAssetId)
                     .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy tài sản"));
-            if (asset.getStatus() != null
-                    && UNASSIGNABLE_ASSET_STATUSES.contains(asset.getStatus().trim().toUpperCase())) {
+            if (tai_san.getStatus() != null
+                    && UNASSIGNABLE_ASSET_STATUSES.contains(tai_san.getStatus().trim().toUpperCase())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
-                        "Không thể phân bổ tài sản đang ở trạng thái '" + asset.getStatus()
+                        "Không thể phân bổ tài sản đang ở trạng thái '" + tai_san.getStatus()
                                 + "' (hỏng hoặc đã thanh lý)");
             }
-            roomAsset.setAsset(asset);
+            tai_san_phong.setAsset(tai_san);
         }
 
         // Kiểm tra không để trùng lặp với bản ghi phân bổ khác trong cùng phòng
@@ -236,19 +236,19 @@ public class RoomAsset_Service {
                     "Tài sản này đã được phân bổ cho phòng ở một bản ghi khác");
         }
 
-        roomAssetMapper.updateEntityFromRequest(roomAsset, request);
-        roomAsset = roomAssetRepository.save(roomAsset);
+        roomAssetMapper.updateEntityFromRequest(tai_san_phong, request);
+        tai_san_phong = roomAssetRepository.save(tai_san_phong);
 
-        return roomAssetMapper.toResponse(roomAsset);
+        return roomAssetMapper.toResponse(tai_san_phong);
     }
 
     // Xóa bản ghi phân bổ tài sản phòng
     @Transactional
     public void delete(String roomAssetId) {
-        RoomAsset roomAsset = roomAssetRepository.findById(roomAssetId)
+        RoomAsset tai_san_phong = roomAssetRepository.findById(roomAssetId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin tài sản phòng"));
 
-        roomAssetRepository.delete(roomAsset);
+        roomAssetRepository.delete(tai_san_phong);
     }
 }
