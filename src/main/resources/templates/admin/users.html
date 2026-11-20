@@ -283,12 +283,61 @@
     </div>
 </div>
 
+<!-- Modal Đặt lại Mật khẩu (POST /api/users/{userId}/reset-password) -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header univ-modal-header py-2 px-3">
+                <h6 class="modal-title fw-bold text-white mb-0">
+                    <i class="bi bi-key-fill me-2"></i>ĐẶT LẠI MẬT KHẨU CHO NGƯỜI DÙNG
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <input type="hidden" id="resetPwdUserId">
+                <div class="alert alert-warning py-2 px-3 small mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Chức năng chỉ dành cho <b>Quản trị viên (ADMIN)</b> để cấp lại mật khẩu khi người dùng quên mật khẩu.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Tài khoản</label>
+                    <input type="text" id="resetPwdUsername" class="form-control form-control-sm bg-light fw-bold text-primary" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Mật khẩu mới (Tùy chọn)</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="resetPwdNewPassword" class="form-control" placeholder="Để trống để hệ thống tự tạo mật khẩu ngẫu nhiên">
+                        <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPwdUI()" title="Tạo mật khẩu ngẫu nhiên">
+                            <i class="bi bi-magic me-1"></i>Tự sinh
+                        </button>
+                    </div>
+                    <div class="form-text small text-muted">Nếu để trống, hệ thống sẽ tự động tạo một mật khẩu bảo mật ngẫu nhiên.</div>
+                </div>
+                <div id="resetPwdSuccessAlert" class="alert alert-success py-2 px-3 small d-none">
+                    <div class="fw-bold mb-1"><i class="bi bi-check-circle-fill me-1"></i>Đặt lại mật khẩu thành công!</div>
+                    <div>Mật khẩu mới: <code id="resetPwdResultCode" class="fs-6 fw-bold px-2 py-1 bg-white border rounded text-danger"></code></div>
+                    <div class="mt-2 text-muted">Hãy sao chép và gửi mật khẩu này cho người dùng. Người dùng sẽ phải đổi lại mật khẩu ở lần đăng nhập tiếp theo.</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 border-top">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Đóng
+                </button>
+                <button type="button" id="btnConfirmResetPwd" class="btn btn-sm btn-warning px-3 fw-semibold text-dark" onclick="submitResetPassword()">
+                    <i class="bi bi-check2-circle me-1"></i>Xác nhận đặt lại
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
 <script>
     let userModal = null;
     let editUserModal = null;
     let user2faModal = null;
+    let resetPasswordModal = null;
     let rolesList = [];
     let isAdminUser = false;
     let allUsersCache = [];
@@ -303,6 +352,7 @@
         userModal = new bootstrap.Modal(document.getElementById('userModal'));
         editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
         user2faModal = new bootstrap.Modal(document.getElementById('user2faModal'));
+        resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
         const user = Auth.getUser() || {};
         isAdminUser = ((user.role || '').toUpperCase() === 'ADMIN');
         await Promise.all([
@@ -447,6 +497,11 @@
                                 <button class="btn btn-sm btn-light text-primary" style="width: 30px; padding: 0.25rem 0;" onclick="openEditUserModal('${u.userId}')" title="Sửa thông tin tài khoản">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
+                                ${isAdminUser ? `
+                                    <button class="btn btn-sm btn-light text-warning" style="width: 30px; padding: 0.25rem 0;" onclick="openResetPasswordModal('${u.userId}', '${u.username}')" title="Đặt lại mật khẩu khi quên MK (Dành riêng cho Admin)">
+                                        <i class="bi bi-key-fill"></i>
+                                    </button>
+                                ` : ''}
                                 ${isTargetAdmin ? `
                                     <button class="btn btn-sm btn-light text-info" style="width: 30px; padding: 0.25rem 0;" onclick="openUser2faModal('${u.userId}', '${u.username}', '${u.telegramChatId || ''}')" title="Cấu hình Telegram 2FA (Dành riêng cho Admin)">
                                         <i class="bi bi-telegram"></i>
@@ -615,6 +670,54 @@
             loadUsers(1);
         } catch (e) {
             showToastError(e.message);
+        }
+    }
+
+    function openResetPasswordModal(userId, username) {
+        document.getElementById('resetPwdUserId').value = userId;
+        document.getElementById('resetPwdUsername').value = username;
+        document.getElementById('resetPwdNewPassword').value = '';
+        document.getElementById('resetPwdSuccessAlert').classList.add('d-none');
+        document.getElementById('resetPwdResultCode').textContent = '';
+        document.getElementById('btnConfirmResetPwd').disabled = false;
+        resetPasswordModal.show();
+    }
+
+    function generateRandomPwdUI() {
+        const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const lower = "abcdefghijkmnopqrstuvwxyz";
+        const digits = "23456789";
+        const specials = "@#$%&*";
+        const all = upper + lower + digits + specials;
+        let pwd = upper[Math.floor(Math.random() * upper.length)] +
+                  lower[Math.floor(Math.random() * lower.length)] +
+                  digits[Math.floor(Math.random() * digits.length)] +
+                  specials[Math.floor(Math.random() * specials.length)];
+        for (let i = 0; i < 4; i++) {
+            pwd += all[Math.floor(Math.random() * all.length)];
+        }
+        document.getElementById('resetPwdNewPassword').value = pwd;
+    }
+
+    async function submitResetPassword() {
+        const userId = document.getElementById('resetPwdUserId').value;
+        const newPassword = document.getElementById('resetPwdNewPassword').value.trim();
+        const payload = newPassword ? { newPassword: newPassword } : {};
+
+        try {
+            document.getElementById('btnConfirmResetPwd').disabled = true;
+            const res = await apiFetch(`/users/${userId}/reset-password`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const newPwdResult = unwrapResult(res);
+            document.getElementById('resetPwdResultCode').textContent = newPwdResult;
+            document.getElementById('resetPwdSuccessAlert').classList.remove('d-none');
+            showToastSuccess('Đặt lại mật khẩu thành công!');
+            loadUsers(1);
+        } catch (e) {
+            document.getElementById('btnConfirmResetPwd').disabled = false;
+            showToastError(e.message || 'Lỗi đặt lại mật khẩu');
         }
     }
 </script>

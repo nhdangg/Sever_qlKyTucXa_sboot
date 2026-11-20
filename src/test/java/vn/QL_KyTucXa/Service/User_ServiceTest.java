@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import vn.QL_KyTucXa.DTO.Request.ResetPassword_Request;
 import vn.QL_KyTucXa.DTO.Request.UserSelfUpdate_Request;
 import vn.QL_KyTucXa.DTO.Request.User_Request;
 import vn.QL_KyTucXa.DTO.Response.Page_Response;
@@ -450,5 +451,53 @@ class User_ServiceTest {
         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.OPERATION_FAILED);
         assertThat(ex.getMessage()).contains("Không thể tự xóa tài khoản của chính mình");
         verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Admin đặt lại mật khẩu thành công với mật khẩu chỉ định")
+    void resetPassword_byAdmin_withCustomPassword_success() {
+        when(currentUserService.hasRole("ADMIN")).thenReturn(true);
+        when(userRepository.findById("user-123")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("NewSecret123@")).thenReturn("hashed_new_pwd");
+
+        ResetPassword_Request req = ResetPassword_Request.builder().newPassword("NewSecret123@").build();
+        String result = userService.resetPassword("user-123", req);
+
+        assertThat(result).isEqualTo("NewSecret123@");
+        assertThat(user.getPasswordHash()).isEqualTo("hashed_new_pwd");
+        assertThat(user.getMustChangePassword()).isTrue();
+        assertThat(user.getFailedLoginAttempts()).isEqualTo(0);
+        verify(userRepository).save(user);
+        verify(refreshTokenService).revokeAllActiveByUserId("user-123");
+    }
+
+    @Test
+    @DisplayName("Admin đặt lại mật khẩu tự sinh khi không truyền mật khẩu mới")
+    void resetPassword_byAdmin_withoutPassword_generatesRandom() {
+        user.setStatus("LOCKED");
+        when(currentUserService.hasRole("ADMIN")).thenReturn(true);
+        when(userRepository.findById("user-123")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_random");
+
+        String result = userService.resetPassword("user-123", null);
+
+        assertThat(result).isNotBlank().hasSize(8);
+        assertThat(user.getPasswordHash()).isEqualTo("hashed_random");
+        assertThat(user.getMustChangePassword()).isTrue();
+        assertThat(user.getFailedLoginAttempts()).isEqualTo(0);
+        assertThat(user.getStatus()).isEqualTo("ACTIVE"); // Mở khóa tài khoản bị LOCKED
+        verify(userRepository).save(user);
+        verify(refreshTokenService).revokeAllActiveByUserId("user-123");
+    }
+
+    @Test
+    @DisplayName("Người không phải ADMIN cố đặt lại mật khẩu sẽ bị chặn UNAUTHORIZED")
+    void resetPassword_byNonAdmin_throwsUnauthorized() {
+        when(currentUserService.hasRole("ADMIN")).thenReturn(false);
+
+        AppException ex = assertThrows(AppException.class,
+                () -> userService.resetPassword("user-123", null));
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED);
+        verify(userRepository, never()).save(any());
     }
 }

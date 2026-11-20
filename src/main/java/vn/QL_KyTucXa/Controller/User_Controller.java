@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.QL_KyTucXa.DTO.Api_Response;
+import vn.QL_KyTucXa.DTO.Request.ResetPassword_Request;
 import vn.QL_KyTucXa.DTO.Request.UserSelfUpdate_Request;
 import vn.QL_KyTucXa.DTO.Request.User_Request;
 import vn.QL_KyTucXa.DTO.Request.UserStatus_Request;
@@ -88,6 +89,17 @@ public class User_Controller {
                                 : userService.updateTelegram2FA(userId, chatId);
                 return Api_Response.<User_Response>builder()
                                 .result(res)
+                                .build();
+        }
+
+        // API Quản trị viên đặt lại mật khẩu cho người dùng khi quên mật khẩu
+        @PostMapping("/{userId}/reset-password")
+        @PreAuthorize("hasRole('ADMIN')")
+        public Api_Response<String> resetPassword(
+                        @PathVariable String userId,
+                        @RequestBody(required = false) @Valid ResetPassword_Request request) {
+                return Api_Response.<String>builder()
+                                .result(userService.resetPassword(userId, request))
                                 .build();
         }
 

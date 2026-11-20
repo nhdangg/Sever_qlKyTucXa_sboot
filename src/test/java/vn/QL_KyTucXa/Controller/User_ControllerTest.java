@@ -222,4 +222,17 @@ class User_ControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.code").value(100));
         }
+
+        @Test
+        @DisplayName("POST /api/users/{userId}/reset-password - Admin đặt lại mật khẩu cho người dùng khi quên mật khẩu")
+        void resetPassword_byAdmin_success() throws Exception {
+                when(userService.resetPassword(eq("user-02"), any())).thenReturn("Ktx@123456");
+
+                mockMvc.perform(post("/api/users/user-02/reset-password")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.code").value(100))
+                                .andExpect(jsonPath("$.result").value("Ktx@123456"));
+        }
 }

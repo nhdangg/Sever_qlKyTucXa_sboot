@@ -11,6 +11,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import vn.QL_KyTucXa.DTO.Request.ResetPassword_Request;
 import vn.QL_KyTucXa.DTO.Request.UserSelfUpdate_Request;
 import vn.QL_KyTucXa.DTO.Request.User_Request;
 import vn.QL_KyTucXa.DTO.Response.Page_Response;
@@ -193,7 +195,8 @@ public class User_Service {
                 .build();
     }
 
-    // Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu hồi token khi đổi vai trò)
+    // Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu
+    // hồi token khi đổi vai trò)
     @Transactional
     public User_Response update(String userId, User_Request request) {
         log.info("Cập nhật thông tin người dùng: {}", userId);
@@ -201,7 +204,8 @@ public class User_Service {
         User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null
+                && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
 
         // Chặn người không phải ADMIN sửa tài khoản ADMIN
@@ -228,12 +232,13 @@ public class User_Service {
             Role vai_tro_moi = roleRepository.findById(request.getRoleId())
                     .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-            String newRoleCode = vai_tro_moi.getRoleCode() != null ? vai_tro_moi.getRoleCode().trim().toUpperCase() : "";
+            String newRoleCode = vai_tro_moi.getRoleCode() != null ? vai_tro_moi.getRoleCode().trim().toUpperCase()
+                    : "";
 
             // Chặn người không phải ADMIN nâng quyền thành ADMIN hoặc MANAGER
             if (("ADMIN".equals(newRoleCode) || "MANAGER".equals(newRoleCode)) && !callerIsAdmin) {
                 throw new AppException(ErrorCode.UNAUTHORIZED,
-                    "Chỉ Quản trị viên cấp cao (ADMIN) mới có quyền gán vai trò Quản lý (MANAGER) hoặc Quản trị viên (ADMIN)");
+                        "Chỉ Quản trị viên cấp cao (ADMIN) mới có quyền gán vai trò Quản lý (MANAGER) hoặc Quản trị viên (ADMIN)");
             }
 
             // Chặn hạ quyền ADMIN cuối cùng hoặc tự hạ quyền ADMIN của chính mình
@@ -319,7 +324,8 @@ public class User_Service {
         User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null
+                && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         if (targetIsAdmin && !callerIsAdmin) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
                     "Chỉ Quản trị viên cấp cao mới có quyền thay đổi trạng thái tài khoản ADMIN");
@@ -406,7 +412,68 @@ public class User_Service {
         }
     }
 
-    // Cập nhật Telegram Chat ID phục vụ xác thực 2FA (chỉ chính chủ hoặc Quản trị viên được đổi)
+
+    // Quản trị viên đặt lại mật khẩu cho người dùng khi người dùng quên mật khẩu
+    @Transactional
+    public String resetPassword(String userId, ResetPassword_Request request) {
+        log.info("Quản trị viên đặt lại mật khẩu cho người dùng: {}", userId);
+
+        if (currentUserService == null || !currentUserService.hasRole("ADMIN")) {
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ Quản trị viên (ADMIN) mới có quyền đặt lại mật khẩu cho người dùng");
+        }
+
+        User nguoi_dung = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        String mat_khau_moi = (request != null && StringUtils.hasText(request.getNewPassword()))
+                ? request.getNewPassword().trim()
+                : generateRandomPassword();
+
+        nguoi_dung.setPasswordHash(passwordEncoder.encode(mat_khau_moi));
+        nguoi_dung.setMustChangePassword(true);
+        nguoi_dung.setFailedLoginAttempts(0);
+
+        if ("LOCKED".equalsIgnoreCase(nguoi_dung.getStatus())) {
+            nguoi_dung.setStatus("ACTIVE");
+        }
+
+        userRepository.save(nguoi_dung);
+
+        if (refreshTokenService != null) {
+            refreshTokenService.revokeAllActiveByUserId(userId);
+        }
+
+        if (auditLogService != null) {
+            auditLogService.recordAction("RESET_PASSWORD", "nguoiDung", userId, null,
+                    "Admin đặt lại mật khẩu cho tài khoản: " + nguoi_dung.getUsername());
+        }
+
+        return mat_khau_moi;
+    }
+
+    // Sinh mật khẩu ngẫu nhiên an toàn gồm chữ hoa, chữ thường, số và ký tự đặc
+    // biệt
+    private String generateRandomPassword() {
+        String chu_hoa = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        String chu_thuong = "abcdefghijkmnopqrstuvwxyz";
+        String chu_so = "23456789";
+        String ky_tu_dac_biet = "@#$%&*";
+        java.security.SecureRandom ngau_nhien = new java.security.SecureRandom();
+        StringBuilder chuoi_mat_khau = new StringBuilder();
+        chuoi_mat_khau.append(chu_hoa.charAt(ngau_nhien.nextInt(chu_hoa.length())));
+        chuoi_mat_khau.append(chu_thuong.charAt(ngau_nhien.nextInt(chu_thuong.length())));
+        chuoi_mat_khau.append(chu_so.charAt(ngau_nhien.nextInt(chu_so.length())));
+        chuoi_mat_khau.append(ky_tu_dac_biet.charAt(ngau_nhien.nextInt(ky_tu_dac_biet.length())));
+        String tat_ca_ky_tu = chu_hoa + chu_thuong + chu_so + ky_tu_dac_biet;
+        for (int i = 0; i < 4; i++) {
+            chuoi_mat_khau.append(tat_ca_ky_tu.charAt(ngau_nhien.nextInt(tat_ca_ky_tu.length())));
+        }
+        return chuoi_mat_khau.toString();
+    }
+
+    // Cập nhật Telegram Chat ID phục vụ xác thực 2FA (chỉ chính chủ hoặc Quản trị
+    // viên được đổi)
     @Transactional
     public User_Response updateTelegram2FA(String userId, String telegramChatId, String confirmPassword) {
         User nguoi_dung = userRepository.findById(userId)
@@ -428,7 +495,8 @@ public class User_Service {
                     "Chỉ chính chủ tài khoản hoặc Quản trị viên mới được phép cập nhật Telegram Chat ID");
         }
 
-        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null
+                && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
 
         // Nếu cập nhật Telegram 2FA cho tài khoản ADMIN, bắt buộc xác nhận lại mật khẩu
         // của người đang thao tác
@@ -455,7 +523,8 @@ public class User_Service {
         return updateTelegram2FA(userId, telegramChatId, null);
     }
 
-    // Xóa tài khoản người dùng theo ID (kiểm tra ràng buộc sinh viên, nhân viên, quản trị viên)
+    // Xóa tài khoản người dùng theo ID (kiểm tra ràng buộc sinh viên, nhân viên,
+    // quản trị viên)
     @Transactional
     public void delete(String userId) {
         log.info("Xóa người dùng có ID: {}", userId);
@@ -466,6 +535,7 @@ public class User_Service {
         boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
 
+                
         // 1. Kiểm tra quyền bảo vệ ADMIN
         if (targetIsAdmin) {
             if (!callerIsAdmin) {
@@ -503,7 +573,9 @@ public class User_Service {
 
         if (auditLogService != null) {
             auditLogService.recordAction("DELETE_USER", "nguoiDung", userId, Map.of("username", nguoi_dung.getUsername()),
+
                     null);
+                    
         }
 
         if (refreshTokenService != null) {
