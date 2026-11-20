@@ -62,10 +62,6 @@ public class TelegramService {
             log.warn("[TELEGRAM 2FA] Chưa cấu hình TELEGRAM_BOT_TOKEN hoặc TELEGRAM_ADMIN_CHAT_ID!");
             if (isDev) {
                 log.warn("Tài khoản '{}' đang chờ xác thực 2FA với mã: {}", session.getUsername(), session.getVerificationId());
-                log.warn("👉 Để phê duyệt thủ công (DEV/TEST): GET {}/api/auth/telegram-confirm?id={}&action=APPROVE",
-                        telegramProperties.getServerUrl(), session.getVerificationId());
-                log.warn("👉 Để từ chối thủ công (DEV/TEST):  GET {}/api/auth/telegram-confirm?id={}&action=REJECT",
-                        telegramProperties.getServerUrl(), session.getVerificationId());
                 return null;
             } else {
                 log.warn("Tài khoản '{}' yêu cầu xác thực 2FA nhưng Telegram chưa được cấu hình trên môi trường production", session.getUsername());

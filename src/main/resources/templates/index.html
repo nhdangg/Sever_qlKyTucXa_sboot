@@ -1624,24 +1624,7 @@
             const user = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : JSON.parse(localStorage.getItem('current_user') || '{}');
             const role = (user.role || '').toUpperCase();
 
-            // 1. Đồng bộ nút điều hướng theo vai trò từ WebViewController
-            if (token) {
-                const portalUrl = (role === 'STUDENT') ? (CONTEXT_PATH + '/student-portal') : (CONTEXT_PATH + '/dashboard');
-                const portalLabel = (role === 'STUDENT') ? 'Cổng Sinh Viên' : 'Bảng Điều Khiển';
-                const headerBox = document.getElementById('headerAuthActions');
-                if (headerBox) {
-                    headerBox.innerHTML = `
-                        <a href="${portalUrl}" class="btn btn-univ-primary btn-sm rounded-1 px-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
-                            <i class="bi bi-grid-1x2-fill"></i> ${portalLabel}
-                        </a>
-                    `;
-                }
-                const bottomBtn = document.getElementById('indexBottomActionBtn');
-                if (bottomBtn) {
-                    bottomBtn.href = portalUrl;
-                    bottomBtn.innerHTML = `<i class="bi bi-arrow-right-circle me-1"></i>Vào ${portalLabel}`;
-                }
-            }
+            // Giữ nguyên nút Đăng nhập trên thanh điều hướng trang chủ
 
             if (!token) return;
 
