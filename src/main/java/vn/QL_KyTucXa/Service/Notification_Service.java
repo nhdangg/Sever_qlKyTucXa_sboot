@@ -81,38 +81,38 @@ public class Notification_Service {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        User user = userRepository.findById(creatorId)
+        User nguoi_dung = userRepository.findById(creatorId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        Notification notification = notificationMapper.toEntity(request);
-        notification.setCreatedBy(user);
-        String targetType = (notification.getTargetType() == null || notification.getTargetType().isBlank())
+        Notification thong_bao = notificationMapper.toEntity(request);
+        thong_bao.setCreatedBy(nguoi_dung);
+        String targetType = (thong_bao.getTargetType() == null || thong_bao.getTargetType().isBlank())
                 ? "ALL"
-                : notification.getTargetType().trim().toUpperCase();
+                : thong_bao.getTargetType().trim().toUpperCase();
         String targetId = (request.getTargetId() != null && !request.getTargetId().isBlank())
                 ? request.getTargetId().trim()
                 : null;
 
         validateTarget(targetType, targetId);
-        notification.setTargetType(targetType);
-        notification.setTargetId(targetId);
+        thong_bao.setTargetType(targetType);
+        thong_bao.setTargetId(targetId);
 
         boolean isPub = Boolean.TRUE.equals(request.getIsPublished());
-        notification.setIsPublished(isPub);
+        thong_bao.setIsPublished(isPub);
         if (isPub) {
-            notification.setPublishedAt(LocalDateTime.now());
+            thong_bao.setPublishedAt(LocalDateTime.now());
         } else {
-            notification.setPublishedAt(null);
+            thong_bao.setPublishedAt(null);
         }
 
-        notification = notificationRepository.save(notification);
+        thong_bao = notificationRepository.save(thong_bao);
 
         // Tạo người nhận thông báo nếu đã phát hành ngay lúc tạo
         if (isPub) {
-            createRecipientsForNotification(notification);
+            createRecipientsForNotification(thong_bao);
         }
 
-        return notificationMapper.toResponse(notification);
+        return notificationMapper.toResponse(thong_bao);
     }
 
     // Lấy thông tin chi tiết thông báo theo ID
@@ -122,10 +122,10 @@ public class Notification_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Sinh viên chỉ được xem thông báo qua Hộp thư (/notifications/inbox)");
         }
 
-        Notification notification = notificationRepository.findById(notificationId)
+        Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        return notificationMapper.toResponse(notification);
+        return notificationMapper.toResponse(thong_bao);
     }
 
     // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) có phân trang
@@ -137,27 +137,27 @@ public class Notification_Service {
         Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Notification> pageResult = notificationRepository.findByIsPublishedAndTargetType(true, "ALL", pageable);
-        List<Notification_Response> data = notificationMapper.toResponseList(pageResult.getContent());
+        Page<Notification> trang_thong_bao = notificationRepository.findByIsPublishedAndTargetType(true, "ALL", pageable);
+        List<Notification_Response> danh_sach_ket_qua = notificationMapper.toResponseList(trang_thong_bao.getContent());
 
         return Page_Response.<Notification_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_thong_bao.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .totalPages(trang_thong_bao.getTotalPages())
+                .totalElements(trang_thong_bao.getTotalElements())
+                .hasPrevious(trang_thong_bao.hasPrevious())
+                .hasNext(trang_thong_bao.hasNext())
+                .isFirst(trang_thong_bao.isFirst())
+                .isLast(trang_thong_bao.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
     // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) không phân trang
     @Transactional(readOnly = true)
     public List<Notification_Response> getPublishedNotifications() {
-        List<Notification> list = notificationRepository.findByIsPublishedAndTargetType(true, "ALL");
-        return notificationMapper.toResponseList(list);
+        List<Notification> danh_sach_thong_bao = notificationRepository.findByIsPublishedAndTargetType(true, "ALL");
+        return notificationMapper.toResponseList(danh_sach_thong_bao);
     }
 
     // Lấy danh sách tất cả thông báo phân trang cơ bản
@@ -187,19 +187,19 @@ public class Notification_Service {
 
         String titleFilter = (title != null && !title.isBlank()) ? title.trim() : null;
 
-        Page<Notification> pageResult = notificationRepository.searchNotifications(titleFilter, isPublished, pageable);
-        List<Notification_Response> data = notificationMapper.toResponseList(pageResult.getContent());
+        Page<Notification> trang_thong_bao = notificationRepository.searchNotifications(titleFilter, isPublished, pageable);
+        List<Notification_Response> danh_sach_ket_qua = notificationMapper.toResponseList(trang_thong_bao.getContent());
 
         return Page_Response.<Notification_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_thong_bao.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .totalPages(trang_thong_bao.getTotalPages())
+                .totalElements(trang_thong_bao.getTotalElements())
+                .hasPrevious(trang_thong_bao.hasPrevious())
+                .hasNext(trang_thong_bao.hasNext())
+                .isFirst(trang_thong_bao.isFirst())
+                .isLast(trang_thong_bao.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
@@ -208,80 +208,80 @@ public class Notification_Service {
     public Notification_Response update(String notificationId, Notification_Request request) {
         log.info("Cập nhật thông báo có ID: {}", notificationId);
 
-        Notification notification = notificationRepository.findById(notificationId)
+        Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        if (Boolean.TRUE.equals(notification.getIsPublished())) {
+        if (Boolean.TRUE.equals(thong_bao.getIsPublished())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể cập nhật thông báo đã phát hành");
         }
 
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            notification.setTitle(request.getTitle().trim());
+            thong_bao.setTitle(request.getTitle().trim());
         }
         if (request.getContent() != null && !request.getContent().isBlank()) {
-            notification.setContent(request.getContent().trim());
+            thong_bao.setContent(request.getContent().trim());
         }
 
-        String targetType = notification.getTargetType();
+        String targetType = thong_bao.getTargetType();
         if (request.getTargetType() != null && !request.getTargetType().isBlank()) {
             targetType = request.getTargetType().trim().toUpperCase();
         }
-        String targetId = notification.getTargetId();
+        String targetId = thong_bao.getTargetId();
         if (request.getTargetId() != null) {
             targetId = request.getTargetId().isBlank() ? null : request.getTargetId().trim();
         }
 
         validateTarget(targetType, targetId);
-        notification.setTargetType(targetType);
-        notification.setTargetId(targetId);
+        thong_bao.setTargetType(targetType);
+        thong_bao.setTargetId(targetId);
 
         boolean isPub = Boolean.TRUE.equals(request.getIsPublished());
         if (isPub) {
-            notification.setIsPublished(true);
-            notification.setPublishedAt(LocalDateTime.now());
+            thong_bao.setIsPublished(true);
+            thong_bao.setPublishedAt(LocalDateTime.now());
         }
 
-        notification = notificationRepository.save(notification);
+        thong_bao = notificationRepository.save(thong_bao);
 
         if (isPub) {
-            createRecipientsForNotification(notification);
+            createRecipientsForNotification(thong_bao);
         }
 
-        return notificationMapper.toResponse(notification);
+        return notificationMapper.toResponse(thong_bao);
     }
 
     // Phát hành thông báo và phân phối đến hộp thư người nhận
     @Transactional
     public Notification_Response publish(String notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
+        Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        if (Boolean.TRUE.equals(notification.getIsPublished())) {
+        if (Boolean.TRUE.equals(thong_bao.getIsPublished())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Thông báo này đã được phát hành trước đó");
         }
 
-        notification.setIsPublished(true);
-        notification.setPublishedAt(LocalDateTime.now());
-        notification = notificationRepository.save(notification);
+        thong_bao.setIsPublished(true);
+        thong_bao.setPublishedAt(LocalDateTime.now());
+        thong_bao = notificationRepository.save(thong_bao);
 
-        createRecipientsForNotification(notification);
+        createRecipientsForNotification(thong_bao);
 
-        return notificationMapper.toResponse(notification);
+        return notificationMapper.toResponse(thong_bao);
     }
 
     // Xóa thông báo và xóa tất cả người nhận liên quan trước để tránh lỗi khóa ngoại
     @Transactional
     public void delete(String notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
+        Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        List<NotificationRecipient> recipients = notificationRecipientRepository.findByNotification_NotificationId(notificationId);
-        if (recipients != null && !recipients.isEmpty()) {
-            notificationRecipientRepository.deleteAll(recipients);
-            log.info("Đã xóa {} người nhận trước khi xóa thông báo {}", recipients.size(), notificationId);
+        List<NotificationRecipient> danh_sach_nguoi_nhan = notificationRecipientRepository.findByNotification_NotificationId(notificationId);
+        if (danh_sach_nguoi_nhan != null && !danh_sach_nguoi_nhan.isEmpty()) {
+            notificationRecipientRepository.deleteAll(danh_sach_nguoi_nhan);
+            log.info("Đã xóa {} người nhận trước khi xóa thông báo {}", danh_sach_nguoi_nhan.size(), notificationId);
         }
 
-        notificationRepository.delete(notification);
+        notificationRepository.delete(thong_bao);
     }
 
     // Tạo danh sách người nhận thông báo theo loại đối tượng targetType và targetId
@@ -290,14 +290,14 @@ public class Notification_Service {
             return;
         }
 
-        Set<User> recipients = new HashSet<>();
+        Set<User> tap_nguoi_nhan = new HashSet<>();
         String targetType = notification.getTargetType() != null ? notification.getTargetType().trim().toUpperCase() : "ALL";
         String targetId = notification.getTargetId() != null ? notification.getTargetId().trim() : null;
 
         switch (targetType) {
             case "ALL":
                 if (userRepository != null) {
-                    recipients.addAll(userRepository.findByStatus("ACTIVE"));
+                    tap_nguoi_nhan.addAll(userRepository.findByStatus("ACTIVE"));
                 }
                 break;
 
@@ -305,7 +305,7 @@ public class Notification_Service {
                 if (targetId != null && userRepository != null) {
                     userRepository.findById(targetId)
                             .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                            .ifPresent(recipients::add);
+                            .ifPresent(tap_nguoi_nhan::add);
                 }
                 break;
 
@@ -315,18 +315,18 @@ public class Notification_Service {
                         studentRepository.findById(targetId)
                                 .map(Student::getUser)
                                 .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .ifPresentOrElse(recipients::add, () -> {
+                                .ifPresentOrElse(tap_nguoi_nhan::add, () -> {
                                     studentRepository.findByUser_UserId(targetId)
                                             .map(Student::getUser)
                                             .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                            .ifPresent(recipients::add);
+                                            .ifPresent(tap_nguoi_nhan::add);
                                 });
                     } else {
                         studentRepository.findAll().stream()
                                 .map(Student::getUser)
                                 .filter(Objects::nonNull)
                                 .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .forEach(recipients::add);
+                                .forEach(tap_nguoi_nhan::add);
                     }
                 }
                 break;
@@ -337,20 +337,20 @@ public class Notification_Service {
                         staffRepository.findById(targetId)
                                 .map(Staff::getUser)
                                 .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .ifPresentOrElse(recipients::add, () -> {
+                                .ifPresentOrElse(tap_nguoi_nhan::add, () -> {
                                     staffRepository.findByUser_UserId(targetId)
                                             .map(Staff::getUser)
                                             .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                            .ifPresent(recipients::add);
+                                            .ifPresent(tap_nguoi_nhan::add);
                                 });
                     } else {
                         staffRepository.findAll().stream()
                                 .map(Staff::getUser)
                                 .filter(Objects::nonNull)
                                 .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .forEach(recipients::add);
+                                .forEach(tap_nguoi_nhan::add);
                         if (userRepository != null) {
-                            recipients.addAll(userRepository.findActiveStaffAndAdmins());
+                            tap_nguoi_nhan.addAll(userRepository.findActiveStaffAndAdmins());
                         }
                     }
                 }
@@ -362,7 +362,7 @@ public class Notification_Service {
                             .map(c -> c.getStudent() != null ? c.getStudent().getUser() : null)
                             .filter(Objects::nonNull)
                             .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                            .forEach(recipients::add);
+                            .forEach(tap_nguoi_nhan::add);
                 }
                 break;
 
@@ -372,7 +372,7 @@ public class Notification_Service {
                             .map(c -> c.getStudent() != null ? c.getStudent().getUser() : null)
                             .filter(Objects::nonNull)
                             .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                            .forEach(recipients::add);
+                            .forEach(tap_nguoi_nhan::add);
                 }
                 break;
 
@@ -382,7 +382,7 @@ public class Notification_Service {
                             .map(c -> c.getStudent() != null ? c.getStudent().getUser() : null)
                             .filter(Objects::nonNull)
                             .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                            .forEach(recipients::add);
+                            .forEach(tap_nguoi_nhan::add);
                 }
                 break;
 
@@ -400,21 +400,21 @@ public class Notification_Service {
                     .collect(Collectors.toSet());
         }
 
-        List<NotificationRecipient> recipientEntities = new ArrayList<>();
-        for (User u : recipients) {
-            if (u != null && u.getUserId() != null && !existingUserIds.contains(u.getUserId())) {
-                recipientEntities.add(NotificationRecipient.builder()
+        List<NotificationRecipient> danh_sach_nguoi_nhan_moi = new ArrayList<>();
+        for (User nguoi_nhan : tap_nguoi_nhan) {
+            if (nguoi_nhan != null && nguoi_nhan.getUserId() != null && !existingUserIds.contains(nguoi_nhan.getUserId())) {
+                danh_sach_nguoi_nhan_moi.add(NotificationRecipient.builder()
                         .notification(notification)
-                        .user(u)
+                        .user(nguoi_nhan)
                         .isRead(false)
                         .readAt(null)
                         .build());
             }
         }
 
-        if (!recipientEntities.isEmpty() && notificationRecipientRepository != null) {
-            notificationRecipientRepository.saveAll(recipientEntities);
-            log.info("Đã tạo {} bản ghi người nhận cho thông báo ID={}", recipientEntities.size(), notification.getNotificationId());
+        if (!danh_sach_nguoi_nhan_moi.isEmpty() && notificationRecipientRepository != null) {
+            notificationRecipientRepository.saveAll(danh_sach_nguoi_nhan_moi);
+            log.info("Đã tạo {} bản ghi người nhận cho thông báo ID={}", danh_sach_nguoi_nhan_moi.size(), notification.getNotificationId());
         }
     }
 
@@ -446,7 +446,7 @@ public class Notification_Service {
             }
             if (actor == null) return;
 
-            Notification notification = Notification.builder()
+            Notification thong_bao = Notification.builder()
                     .title(title)
                     .content(content)
                     .targetType("STAFF")
@@ -456,8 +456,8 @@ public class Notification_Service {
                     .publishedAt(LocalDateTime.now())
                     .build();
 
-            notification = notificationRepository.save(notification);
-            createRecipientsForNotification(notification);
+            thong_bao = notificationRepository.save(thong_bao);
+            createRecipientsForNotification(thong_bao);
             log.info("Đã tạo thông báo hệ thống cho Staff/Admin: {}", title);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo hệ thống tới Staff/Admin: {}", e.getMessage());
@@ -469,39 +469,39 @@ public class Notification_Service {
     public void notifyStudent(Student student, String title, String content, User actor) {
         try {
             if (student == null || student.getUser() == null) return;
-            User studentUser = student.getUser();
-            if (!"ACTIVE".equalsIgnoreCase(studentUser.getStatus())) return;
+            User nguoi_dung_sinh_vien = student.getUser();
+            if (!"ACTIVE".equalsIgnoreCase(nguoi_dung_sinh_vien.getStatus())) return;
 
             if (actor == null && userRepository != null) {
                 actor = userRepository.findAll().stream()
                         .filter(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getRoleCode()))
                         .findFirst()
-                        .orElse(studentUser);
+                        .orElse(nguoi_dung_sinh_vien);
             }
             if (actor == null) {
-                actor = studentUser;
+                actor = nguoi_dung_sinh_vien;
             }
 
-            Notification notification = Notification.builder()
+            Notification thong_bao = Notification.builder()
                     .title(title)
                     .content(content)
                     .targetType("USER")
-                    .targetId(studentUser.getUserId())
+                    .targetId(nguoi_dung_sinh_vien.getUserId())
                     .createdBy(actor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())
                     .build();
 
-            notification = notificationRepository.save(notification);
+            thong_bao = notificationRepository.save(thong_bao);
 
-            NotificationRecipient recipient = NotificationRecipient.builder()
-                    .notification(notification)
-                    .user(studentUser)
+            NotificationRecipient nguoi_nhan = NotificationRecipient.builder()
+                    .notification(thong_bao)
+                    .user(nguoi_dung_sinh_vien)
                     .isRead(false)
                     .readAt(null)
                     .build();
 
-            notificationRecipientRepository.save(recipient);
+            notificationRecipientRepository.save(nguoi_nhan);
             log.info("Đã gửi thông báo tới sinh viên {}: {}", student.getFullName(), title);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo tới sinh viên: {}", e.getMessage());

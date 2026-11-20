@@ -94,34 +94,34 @@ public class Visitor_Service {
 
     // Tra cứu phòng đón tiếp: sinh viên chỉ được đón khách tại phòng mình đang có hợp đồng ACTIVE
     private Room resolveRoom(String requestedRoomId, Student student) {
-        List<Contract> activeContracts = contractRepository.findByStudent_StudentIdAndStatus(student.getStudentId(),
+        List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStudent_StudentIdAndStatus(student.getStudentId(),
                 "ACTIVE");
-        if (activeContracts.isEmpty()) {
+        if (danh_sach_hop_dong_hieu_luc.isEmpty()) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Sinh viên đón tiếp hiện không có hợp đồng nội trú hiệu lực (ACTIVE)");
         }
 
-        Room studentRoom = null;
-        for (Contract c : activeContracts) {
-            if (c.getBed() != null && c.getBed().getRoom() != null) {
-                studentRoom = c.getBed().getRoom();
+        Room phong_sinh_vien = null;
+        for (Contract hop_dong : danh_sach_hop_dong_hieu_luc) {
+            if (hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+                phong_sinh_vien = hop_dong.getBed().getRoom();
                 break;
             }
         }
 
-        if (studentRoom == null) {
+        if (phong_sinh_vien == null) {
             throw new AppException(ErrorCode.ROOM_NOT_FOUND, "Không xác định được phòng ở hiện tại của sinh viên");
         }
 
         boolean isStaffOrAdmin = currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER")
                 || currentUserService.hasRole("STAFF");
         if (!isStaffOrAdmin && requestedRoomId != null && !requestedRoomId.isBlank()
-                && !requestedRoomId.equals(studentRoom.getRoomId())) {
+                && !requestedRoomId.equals(phong_sinh_vien.getRoomId())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Sinh viên chỉ được đón khách thăm tại đúng phòng mình đang ở");
         }
 
-        return studentRoom;
+        return phong_sinh_vien;
     }
 
     // Đăng ký và tiếp nhận khách vào thăm ký túc xá
@@ -135,8 +135,8 @@ public class Visitor_Service {
         }
         String cleanNid = request.getNationalId().trim();
 
-        Student hostStudent = resolveStudent(request.getHostStudentId());
-        Room room = resolveRoom(request.getRoomId(), hostStudent);
+        Student sinh_vien_don = resolveStudent(request.getHostStudentId());
+        Room phong = resolveRoom(request.getRoomId(), sinh_vien_don);
 
         // Kiểm tra khách cùng số CCCD hiện đang ở trong KTX chưa check-out
         if (visitorRepository.existsByNationalIdAndCheckOutTimeIsNull(cleanNid)) {
@@ -152,23 +152,23 @@ public class Visitor_Service {
                 ? systemSettingService.getIntSetting("MAX_CONCURRENT_VISITORS_PER_ROOM", 4)
                 : 4;
 
-        long currentForStudent = visitorRepository.countActiveVisitorsByStudentId(hostStudent.getStudentId());
+        long currentForStudent = visitorRepository.countActiveVisitorsByStudentId(sinh_vien_don.getStudentId());
         if (currentForStudent >= maxPerStudent) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Sinh viên đang đón tối đa " + maxPerStudent + " khách thăm cùng lúc");
         }
 
-        long currentForRoom = visitorRepository.countActiveVisitorsByRoomId(room.getRoomId());
+        long currentForRoom = visitorRepository.countActiveVisitorsByRoomId(phong.getRoomId());
         if (currentForRoom >= maxPerRoom) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Phòng " + room.getRoomNumber() + " đang đón tối đa " + maxPerRoom + " khách thăm cùng lúc");
+                    "Phòng " + phong.getRoomNumber() + " đang đón tối đa " + maxPerRoom + " khách thăm cùng lúc");
         }
 
         // Xác định thời gian và vai trò check-in
         boolean isStaffOrAdmin = currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER")
                 || currentUserService.hasRole("STAFF");
         LocalDateTime checkInTime;
-        Staff approver = null;
+        Staff nguoi_duyet = null;
         String purposePrefix = "";
 
         if (!isStaffOrAdmin) {
@@ -194,65 +194,65 @@ public class Visitor_Service {
             }
 
             if (request.getApprovedBy() != null && !request.getApprovedBy().isBlank()) {
-                approver = staffRepository.findById(request.getApprovedBy())
+                nguoi_duyet = staffRepository.findById(request.getApprovedBy())
                         .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
             } else {
-                approver = currentUserService.findStaffId()
+                nguoi_duyet = currentUserService.findStaffId()
                         .flatMap(staffRepository::findById)
                         .orElse(null);
             }
         }
 
-        Visitor visitor = visitorMapper.toEntity(request);
-        visitor.setHostStudent(hostStudent);
-        visitor.setRoom(room);
-        visitor.setCheckInTime(checkInTime);
-        visitor.setApprover(approver);
-        visitor.setNationalId(cleanNid);
+        Visitor khach_tham = visitorMapper.toEntity(request);
+        khach_tham.setHostStudent(sinh_vien_don);
+        khach_tham.setRoom(phong);
+        khach_tham.setCheckInTime(checkInTime);
+        khach_tham.setApprover(nguoi_duyet);
+        khach_tham.setNationalId(cleanNid);
 
         String rawPurpose = (request.getPurpose() != null) ? request.getPurpose().trim() : "";
         String fullPurpose = purposePrefix + rawPurpose;
         if (fullPurpose.length() > 255) {
             fullPurpose = fullPurpose.substring(0, 255);
         }
-        visitor.setPurpose(fullPurpose);
+        khach_tham.setPurpose(fullPurpose);
 
-        visitor = visitorRepository.save(visitor);
+        khach_tham = visitorRepository.save(khach_tham);
 
         // Bắn thông báo tự động cho Ban Quản trị / Bảo vệ / Nhân viên KTX nếu sinh viên đăng ký khách
-        if (notificationService != null && !isStaffOrAdmin && hostStudent != null) {
+        if (notificationService != null && !isStaffOrAdmin && sinh_vien_don != null) {
             try {
                 String maskedCccd = (cleanNid.length() > 6)
                         ? cleanNid.substring(0, 3) + "******" + cleanNid.substring(cleanNid.length() - 3)
                         : "******";
-                String title = "Đăng ký khách thăm mới: SV " + hostStudent.getFullName();
+                String title = "Đăng ký khách thăm mới: SV " + sinh_vien_don.getFullName();
                 String content = String.format("Sinh viên %s (MSSV: %s, Phòng: %s) vừa đăng ký tiếp khách: %s (CCCD: %s).",
-                        hostStudent.getFullName(),
-                        hostStudent.getStudentCode(),
-                        room.getRoomNumber(),
+                        sinh_vien_don.getFullName(),
+                        sinh_vien_don.getStudentCode(),
+                        phong.getRoomNumber(),
                         request.getVisitorName(),
                         maskedCccd);
-                notificationService.notifyStaffAndAdmins(title, content, hostStudent.getUser(), visitor.getVisitorId());
+                notificationService.notifyStaffAndAdmins(title, content, sinh_vien_don.getUser(), khach_tham.getVisitorId());
             } catch (Exception ex) {
                 log.warn("Không thể gửi thông báo đăng ký khách thăm: {}", ex.getMessage());
             }
         }
 
-        return toSanitizedResponse(visitor);
+        return toSanitizedResponse(khach_tham);
     }
 
     // Phê duyệt đăng ký khách thăm (chuyển PENDING sang IN_DORM và ghi nhận thời điểm vào cổng thực tế)
     @Transactional
     public Visitor_Response approve(String visitorId) {
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
-        if (visitor.getCheckOutTime() != null) {
+        if (khach_tham.getCheckOutTime() != null) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Khách thăm đã check-out ra về, không thể duyệt lại");
         }
 
-        String currentPurpose = visitor.getPurpose() != null ? visitor.getPurpose() : "";
+        String currentPurpose = khach_tham.getPurpose() != null ? khach_tham.getPurpose() : "";
         if (!currentPurpose.startsWith("[PENDING]")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Khách thăm đã được phê duyệt vào cổng trước đó hoặc không ở trạng thái chờ duyệt");
@@ -267,38 +267,38 @@ public class Visitor_Service {
         }
 
         // Lấy thông tin cán bộ phê duyệt; nếu là tài khoản ADMIN chưa có hồ sơ nhân viên thì cho phép approver = null
-        Staff currentStaff = null;
+        Staff nhan_vien_hien_tai = null;
         if (currentUserService != null) {
-            currentStaff = currentUserService.findStaffId()
+            nhan_vien_hien_tai = currentUserService.findStaffId()
                     .flatMap(staffRepository::findById)
                     .orElse(null);
-            if (currentStaff == null && !currentUserService.hasRole("ADMIN")) {
+            if (nhan_vien_hien_tai == null && !currentUserService.hasRole("ADMIN")) {
                 throw new AppException(ErrorCode.STAFF_NOT_FOUND, "Không tìm thấy hồ sơ nhân viên của cán bộ phê duyệt");
             }
         }
 
         // Xóa tiền tố [PENDING] để đánh dấu đã vào cổng thực tế
         String cleanedPurpose = currentPurpose.replace("[PENDING] ", "").replace("[PENDING]", "").trim();
-        visitor.setPurpose(cleanedPurpose);
-        visitor.setApprover(currentStaff);
-        visitor.setCheckInTime(now);
-        visitor = visitorRepository.save(visitor);
+        khach_tham.setPurpose(cleanedPurpose);
+        khach_tham.setApprover(nhan_vien_hien_tai);
+        khach_tham.setCheckInTime(now);
+        khach_tham = visitorRepository.save(khach_tham);
 
         // Bắn thông báo cho sinh viên khi khách được duyệt vào cổng
-        if (notificationService != null && visitor.getHostStudent() != null) {
+        if (notificationService != null && khach_tham.getHostStudent() != null) {
             try {
                 String title = "Khách thăm của bạn đã được duyệt vào cổng";
                 String content = String.format("Khách thăm %s đã được Ban Quản lý / Bảo vệ duyệt vào KTX lúc %s.",
-                        visitor.getVisitorName(),
-                        visitor.getCheckInTime());
-                notificationService.notifyStudent(visitor.getHostStudent(), title, content,
-                        currentStaff != null ? currentStaff.getUser() : null);
+                        khach_tham.getVisitorName(),
+                        khach_tham.getCheckInTime());
+                notificationService.notifyStudent(khach_tham.getHostStudent(), title, content,
+                        nhan_vien_hien_tai != null ? nhan_vien_hien_tai.getUser() : null);
             } catch (Exception ex) {
                 log.warn("Không thể gửi thông báo duyệt khách thăm cho sinh viên: {}", ex.getMessage());
             }
         }
 
-        return toSanitizedResponse(visitor);
+        return toSanitizedResponse(khach_tham);
     }
 
     // Từ chối đơn đăng ký khách thăm (chỉ dành cho cán bộ/bảo vệ/admin)
@@ -310,21 +310,21 @@ public class Visitor_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ cán bộ hoặc quản trị viên mới có quyền từ chối khách thăm");
         }
 
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
-        if (visitor.getCheckOutTime() != null) {
+        if (khach_tham.getCheckOutTime() != null) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Khách thăm đã check-out ra về hoặc đơn đã đóng");
         }
 
-        String currentPurpose = visitor.getPurpose() != null ? visitor.getPurpose() : "";
+        String currentPurpose = khach_tham.getPurpose() != null ? khach_tham.getPurpose() : "";
         if (!currentPurpose.startsWith("[PENDING]")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Khách thăm đã vào ký túc xá, không thể từ chối. Vui lòng thực hiện Check-out khi khách rời KTX");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        visitor.setCheckOutTime(now); // Đóng đơn để giải phóng hạn mức khách cùng lúc
+        khach_tham.setCheckOutTime(now); // Đóng đơn để giải phóng hạn mức khách cùng lúc
 
         String rawPurpose = currentPurpose.replace("[PENDING] ", "").replace("[PENDING]", "").trim();
         String rejectNote = (reason != null && !reason.isBlank()) ? reason.trim() : "Từ chối tiếp nhận";
@@ -332,32 +332,32 @@ public class Visitor_Service {
         if (fullPurpose.length() > 255) {
             fullPurpose = fullPurpose.substring(0, 255);
         }
-        visitor.setPurpose(fullPurpose);
+        khach_tham.setPurpose(fullPurpose);
 
-        visitor = visitorRepository.save(visitor);
+        khach_tham = visitorRepository.save(khach_tham);
 
         // Bắn thông báo từ chối cho sinh viên
-        if (notificationService != null && visitor.getHostStudent() != null) {
+        if (notificationService != null && khach_tham.getHostStudent() != null) {
             try {
                 String title = "Đăng ký khách thăm bị từ chối";
                 String content = String.format("Đăng ký đón khách thăm %s của bạn đã bị từ chối. Lý do: %s",
-                        visitor.getVisitorName(), rejectNote);
-                notificationService.notifyStudent(visitor.getHostStudent(), title, content, null);
+                        khach_tham.getVisitorName(), rejectNote);
+                notificationService.notifyStudent(khach_tham.getHostStudent(), title, content, null);
             } catch (Exception ex) {
                 log.warn("Không thể gửi thông báo từ chối khách thăm: {}", ex.getMessage());
             }
         }
 
-        return toSanitizedResponse(visitor);
+        return toSanitizedResponse(khach_tham);
     }
 
     // Sinh viên hủy đơn đăng ký khách thăm khi chưa được duyệt
     @Transactional
     public Visitor_Response cancel(String visitorId) {
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
-        String currentPurpose = visitor.getPurpose() != null ? visitor.getPurpose() : "";
+        String currentPurpose = khach_tham.getPurpose() != null ? khach_tham.getPurpose() : "";
         if (!currentPurpose.startsWith("[PENDING]")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Đăng ký khách thăm đã được phê duyệt hoặc đã kết thúc, không thể hủy");
@@ -368,41 +368,41 @@ public class Visitor_Service {
                 || currentUserService.hasRole("STAFF");
         if (!isStaffOrAdmin) {
             String currentStudentId = currentUserService.findStudentId().orElse("");
-            if (visitor.getHostStudent() == null || !visitor.getHostStudent().getStudentId().equals(currentStudentId)) {
+            if (khach_tham.getHostStudent() == null || !khach_tham.getHostStudent().getStudentId().equals(currentStudentId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED, "Bạn không có quyền hủy đăng ký khách của sinh viên khác");
             }
         }
 
         LocalDateTime now = LocalDateTime.now();
-        visitor.setCheckOutTime(now); // Đóng đơn để giải phóng hạn mức
+        khach_tham.setCheckOutTime(now); // Đóng đơn để giải phóng hạn mức
 
         String rawPurpose = currentPurpose.replace("[PENDING] ", "").replace("[PENDING]", "").trim();
         String fullPurpose = "[CANCELLED] " + (rawPurpose.isEmpty() ? "Sinh viên đã hủy yêu cầu" : rawPurpose);
         if (fullPurpose.length() > 255) {
             fullPurpose = fullPurpose.substring(0, 255);
         }
-        visitor.setPurpose(fullPurpose);
+        khach_tham.setPurpose(fullPurpose);
 
-        visitor = visitorRepository.save(visitor);
-        return toSanitizedResponse(visitor);
+        khach_tham = visitorRepository.save(khach_tham);
+        return toSanitizedResponse(khach_tham);
     }
 
     // Xác nhận khách ra về (Check-out)
     @Transactional
     public Visitor_Response checkOut(String visitorId) {
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
-        String purpose = visitor.getPurpose() != null ? visitor.getPurpose() : "";
+        String purpose = khach_tham.getPurpose() != null ? khach_tham.getPurpose() : "";
         if (purpose.startsWith("[PENDING]")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Khách thăm chưa được phê duyệt vào cổng, không thể thực hiện check-out. Vui lòng chọn Hủy hoặc Từ chối đăng ký");
         }
 
-        if (visitor.getCheckOutTime() != null) {
+        if (khach_tham.getCheckOutTime() != null) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Khách thăm này đã check-out lúc " + visitor.getCheckOutTime());
+                    "Khách thăm này đã check-out lúc " + khach_tham.getCheckOutTime());
         }
 
         // Kiểm tra quyền: chỉ nhân viên/bảo vệ hoặc chính sinh viên đón tiếp mới được check-out
@@ -410,37 +410,37 @@ public class Visitor_Service {
                 || currentUserService.hasRole("STAFF");
         if (!isStaffOrAdmin) {
             String currentStudentId = currentUserService.findStudentId().orElse("");
-            if (visitor.getHostStudent() == null || !visitor.getHostStudent().getStudentId().equals(currentStudentId)) {
+            if (khach_tham.getHostStudent() == null || !khach_tham.getHostStudent().getStudentId().equals(currentStudentId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED, "Bạn không có quyền thực hiện check-out cho khách của sinh viên khác");
             }
         }
 
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(visitor.getCheckInTime())) {
-            now = visitor.getCheckInTime();
+        if (now.isBefore(khach_tham.getCheckInTime())) {
+            now = khach_tham.getCheckInTime();
         }
 
-        visitor.setCheckOutTime(now);
+        khach_tham.setCheckOutTime(now);
         warnedOverdueVisitorIds.remove(visitorId);
-        visitor = visitorRepository.save(visitor);
-        return toSanitizedResponse(visitor);
+        khach_tham = visitorRepository.save(khach_tham);
+        return toSanitizedResponse(khach_tham);
     }
 
     @Transactional(readOnly = true)
     public Visitor_Response getById(String visitorId) {
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
         if (currentUserService != null && currentUserService.hasRole("STUDENT")) {
             String currentStudentId = currentUserService.findStudentId().orElse("");
-            if (visitor.getHostStudent() == null || !visitor.getHostStudent().getStudentId().equals(currentStudentId)) {
+            if (khach_tham.getHostStudent() == null || !khach_tham.getHostStudent().getStudentId().equals(currentStudentId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED,
                         "Bạn không có quyền truy cập thông tin khách của sinh viên khác");
             }
         }
 
-        return toSanitizedResponse(visitor);
+        return toSanitizedResponse(khach_tham);
     }
 
     @Transactional(readOnly = true)
@@ -457,8 +457,8 @@ public class Visitor_Service {
             throw new AppException(ErrorCode.STUDENT_NOT_FOUND);
         }
 
-        List<Visitor> list = visitorRepository.findByHostStudent_StudentId(studentId);
-        return toSanitizedResponseList(list);
+        List<Visitor> danh_sach_khach = visitorRepository.findByHostStudent_StudentId(studentId);
+        return toSanitizedResponseList(danh_sach_khach);
     }
 
     // Tìm kiếm khách thăm có phân trang
@@ -489,7 +489,7 @@ public class Visitor_Service {
         Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Visitor> pageResult = visitorRepository.searchVisitors(
+        Page<Visitor> trang_khach = visitorRepository.searchVisitors(
                 (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
                 (hostStudentId != null && !hostStudentId.isBlank()) ? hostStudentId.trim() : null,
                 (roomId != null && !roomId.isBlank()) ? roomId.trim() : null,
@@ -499,18 +499,18 @@ public class Visitor_Service {
                 toDate,
                 pageable);
 
-        List<Visitor_Response> data = toSanitizedResponseList(pageResult.getContent());
+        List<Visitor_Response> danh_sach_ket_qua = toSanitizedResponseList(trang_khach.getContent());
 
         return Page_Response.<Visitor_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
-                .pageSize(pageResult.getSize())
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .currentPage(trang_khach.getNumber() + 1)
+                .pageSize(trang_khach.getSize())
+                .totalPages(trang_khach.getTotalPages())
+                .totalElements(trang_khach.getTotalElements())
+                .hasPrevious(trang_khach.hasPrevious())
+                .hasNext(trang_khach.hasNext())
+                .isFirst(trang_khach.isFirst())
+                .isLast(trang_khach.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
@@ -535,14 +535,14 @@ public class Visitor_Service {
         LocalTime now = LocalTime.now();
         boolean isPastMaxHour = now.isAfter(maxVisit) || now.isBefore(LocalTime.of(5, 0));
 
-        List<Visitor> inDormVisitors = visitorRepository.findActiveVisitorsInDorm();
+        List<Visitor> danh_sach_khach_trong_ktx = visitorRepository.findActiveVisitorsInDorm();
         int overdueCount = 0;
 
-        for (Visitor v : inDormVisitors) {
+        for (Visitor khach : danh_sach_khach_trong_ktx) {
             boolean isOverdue = isPastMaxHour;
             // Nếu khách vào thăm liên tục quá 4 giờ cũng tính là quá hạn
-            if (!isOverdue && v.getCheckInTime() != null) {
-                if (v.getCheckInTime().plusHours(4).isBefore(LocalDateTime.now())) {
+            if (!isOverdue && khach.getCheckInTime() != null) {
+                if (khach.getCheckInTime().plusHours(4).isBefore(LocalDateTime.now())) {
                     isOverdue = true;
                 }
             }
@@ -550,19 +550,19 @@ public class Visitor_Service {
             if (isOverdue) {
                 overdueCount++;
                 // Chống lặp thông báo mỗi 30 phút cho cùng một khách thăm
-                if (notificationService != null && !warnedOverdueVisitorIds.contains(v.getVisitorId())) {
+                if (notificationService != null && !warnedOverdueVisitorIds.contains(khach.getVisitorId())) {
                     try {
-                        String title = "Cảnh báo khách thăm quá giờ: " + v.getVisitorName();
+                        String title = "Cảnh báo khách thăm quá giờ: " + khach.getVisitorName();
                         String content = String.format("Khách thăm %s (CCCD: %s) tại phòng %s (SV đón: %s) hiện chưa check-out dù đã quá giờ tiếp khách quy định (%s).",
-                                v.getVisitorName(),
-                                v.getNationalId() != null ? v.getNationalId() : "",
-                                v.getRoom() != null ? v.getRoom().getRoomNumber() : "",
-                                v.getHostStudent() != null ? v.getHostStudent().getFullName() : "",
+                                khach.getVisitorName(),
+                                khach.getNationalId() != null ? khach.getNationalId() : "",
+                                khach.getRoom() != null ? khach.getRoom().getRoomNumber() : "",
+                                khach.getHostStudent() != null ? khach.getHostStudent().getFullName() : "",
                                 maxVisitHourStr);
                         notificationService.notifyStaffAndAdmins(title, content,
-                                v.getHostStudent() != null ? v.getHostStudent().getUser() : null,
-                                v.getVisitorId());
-                        warnedOverdueVisitorIds.add(v.getVisitorId());
+                                khach.getHostStudent() != null ? khach.getHostStudent().getUser() : null,
+                                khach.getVisitorId());
+                        warnedOverdueVisitorIds.add(khach.getVisitorId());
                     } catch (Exception ex) {
                         log.warn("Lỗi gửi thông báo khách quá giờ: {}", ex.getMessage());
                     }
@@ -576,15 +576,15 @@ public class Visitor_Service {
     // Tự động đóng các đơn đăng ký khách thăm PENDING tồn đọng vào cuối ngày
     @Transactional
     public int autoCloseStalePendingVisitors() {
-        List<Visitor> allVisitors = visitorRepository.findAll();
+        List<Visitor> tat_ca_khach = visitorRepository.findAll();
         int count = 0;
-        for (Visitor v : allVisitors) {
-            String purpose = v.getPurpose() != null ? v.getPurpose() : "";
-            if (purpose.startsWith("[PENDING]") && v.getCheckInTime() == null && v.getCheckOutTime() == null) {
+        for (Visitor khach : tat_ca_khach) {
+            String purpose = khach.getPurpose() != null ? khach.getPurpose() : "";
+            if (purpose.startsWith("[PENDING]") && khach.getCheckInTime() == null && khach.getCheckOutTime() == null) {
                 String raw = purpose.replace("[PENDING]", "").trim();
-                v.setPurpose("[CANCELLED] " + raw + " (Hệ thống tự động hủy do hết ngày chưa duyệt vào cổng)");
-                v.setCheckOutTime(LocalDateTime.now());
-                visitorRepository.save(v);
+                khach.setPurpose("[CANCELLED] " + raw + " (Hệ thống tự động hủy do hết ngày chưa duyệt vào cổng)");
+                khach.setCheckOutTime(LocalDateTime.now());
+                visitorRepository.save(khach);
                 count++;
             }
         }
@@ -597,47 +597,47 @@ public class Visitor_Service {
 
     // Bảo vệ dữ liệu cá nhân (che số CCCD và SĐT đối với người dùng không phải cán bộ hoặc sinh viên đón tiếp)
     private Visitor_Response toSanitizedResponse(Visitor visitor, boolean isStaffOrAdmin, String currentStudentId) {
-        Visitor_Response response = visitorMapper.toResponse(visitor);
+        Visitor_Response ket_qua = visitorMapper.toResponse(visitor);
 
         String purpose = visitor.getPurpose() != null ? visitor.getPurpose() : "";
         if (purpose.startsWith("[CANCELLED]")) {
-            response.setStatus("CANCELLED");
-            response.setPurpose(purpose.replace("[CANCELLED] ", "").replace("[CANCELLED]", "").trim());
+            ket_qua.setStatus("CANCELLED");
+            ket_qua.setPurpose(purpose.replace("[CANCELLED] ", "").replace("[CANCELLED]", "").trim());
         } else if (purpose.startsWith("[REJECTED]")) {
-            response.setStatus("REJECTED");
-            response.setPurpose(purpose.replace("[REJECTED] ", "").replace("[REJECTED]", "").trim());
+            ket_qua.setStatus("REJECTED");
+            ket_qua.setPurpose(purpose.replace("[REJECTED] ", "").replace("[REJECTED]", "").trim());
         } else if (purpose.startsWith("[PENDING]")) {
-            response.setStatus("PENDING");
-            response.setPurpose(purpose.replace("[PENDING] ", "").replace("[PENDING]", "").trim());
+            ket_qua.setStatus("PENDING");
+            ket_qua.setPurpose(purpose.replace("[PENDING] ", "").replace("[PENDING]", "").trim());
         } else if (visitor.getCheckOutTime() != null) {
-            response.setStatus("CHECKED_OUT");
+            ket_qua.setStatus("CHECKED_OUT");
         } else {
             // Đã vào cổng thực tế trong KTX (kể cả trường hợp ADMIN duyệt nhưng approver = null)
-            response.setStatus("IN_DORM");
+            ket_qua.setStatus("IN_DORM");
         }
 
         boolean isHost = visitor.getHostStudent() != null
                 && visitor.getHostStudent().getStudentId().equals(currentStudentId);
 
         if (!isStaffOrAdmin && !isHost) {
-            if (response.getNationalId() != null && response.getNationalId().length() > 6) {
-                String nid = response.getNationalId();
-                response.setNationalId(nid.substring(0, 3) + "******" + nid.substring(nid.length() - 3));
+            if (ket_qua.getNationalId() != null && ket_qua.getNationalId().length() > 6) {
+                String nid = ket_qua.getNationalId();
+                ket_qua.setNationalId(nid.substring(0, 3) + "******" + nid.substring(nid.length() - 3));
             } else {
-                response.setNationalId("******");
+                ket_qua.setNationalId("******");
             }
 
-            if (response.getPhone() != null && response.getPhone().length() > 5) {
-                String ph = response.getPhone();
-                response.setPhone(ph.substring(0, 3) + "****" + ph.substring(ph.length() - 2));
+            if (ket_qua.getPhone() != null && ket_qua.getPhone().length() > 5) {
+                String ph = ket_qua.getPhone();
+                ket_qua.setPhone(ph.substring(0, 3) + "****" + ph.substring(ph.length() - 2));
             } else {
-                response.setPhone("******");
+                ket_qua.setPhone("******");
             }
 
-            response.setIdCardImageUrl(null);
+            ket_qua.setIdCardImageUrl(null);
         }
 
-        return response;
+        return ket_qua;
     }
 
     private Visitor_Response toSanitizedResponse(Visitor visitor) {
@@ -661,7 +661,7 @@ public class Visitor_Service {
     // Xóa bản ghi khách thăm: chỉ ADMIN hoặc MANAGER mới có quyền xóa để đảm bảo toàn vẹn nhật ký ra vào
     @Transactional
     public void delete(String visitorId) {
-        Visitor visitor = visitorRepository.findById(visitorId)
+        Visitor khach_tham = visitorRepository.findById(visitorId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin khách thăm"));
 
@@ -671,6 +671,6 @@ public class Visitor_Service {
                     "Chỉ quản lý ký túc xá mới có quyền xóa dữ liệu nhật ký khách thăm");
         }
 
-        visitorRepository.delete(visitor);
+        visitorRepository.delete(khach_tham);
     }
 }

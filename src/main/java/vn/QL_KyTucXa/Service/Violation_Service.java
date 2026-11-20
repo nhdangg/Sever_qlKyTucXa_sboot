@@ -90,8 +90,8 @@ public class Violation_Service {
         log.info("Lập biên bản vi phạm cho sinh viên ID: {}, Loại vi phạm ID: {}", request.getStudentId(),
                 request.getViolationTypeId());
 
-        Student student = resolveStudent(request.getStudentId());
-        ViolationType violationType = resolveViolationType(request.getViolationTypeId());
+        Student sinh_vien = resolveStudent(request.getStudentId());
+        ViolationType loai_vi_pham = resolveViolationType(request.getViolationTypeId());
 
         LocalDate violationDate = request.getViolationDate() != null ? request.getViolationDate() : LocalDate.now();
         if (violationDate.isAfter(LocalDate.now())) {
@@ -101,79 +101,79 @@ public class Violation_Service {
         // Điểm trừ và tiền phạt: chỉ lấy mặc định từ loại vi phạm khi request không truyền (null)
         Integer penaltyPoints = request.getPenaltyPointsApplied() != null
                 ? request.getPenaltyPointsApplied()
-                : (violationType.getPenaltyPoints() != null ? violationType.getPenaltyPoints() : 0);
+                : (loai_vi_pham.getPenaltyPoints() != null ? loai_vi_pham.getPenaltyPoints() : 0);
         if (penaltyPoints < 0) {
             throw new AppException(ErrorCode.PENALTY_POINTS_INVALID, "Điểm trừ áp dụng không thể âm");
         }
 
         BigDecimal fineAmount = request.getFineAmount() != null
                 ? request.getFineAmount()
-                : (violationType.getFineAmount() != null ? violationType.getFineAmount() : BigDecimal.ZERO);
+                : (loai_vi_pham.getFineAmount() != null ? loai_vi_pham.getFineAmount() : BigDecimal.ZERO);
         if (fineAmount.compareTo(BigDecimal.ZERO) < 0) {
             throw new AppException(ErrorCode.PRICE_INVALID, "Tiền phạt không thể âm");
         }
 
         // Người xử lý: ưu tiên lấy từ JWT cán bộ đăng nhập, chỉ ADMIN mới được chỉ định người khác
-        Staff handler = null;
+        Staff nguoi_xu_ly = null;
         if (currentUserService != null && currentUserService.hasRole("ADMIN")
                 && request.getHandledBy() != null && !request.getHandledBy().isBlank()) {
-            handler = staffRepository.findById(request.getHandledBy().trim())
+            nguoi_xu_ly = staffRepository.findById(request.getHandledBy().trim())
                     .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
         } else if (currentUserService != null) {
-            handler = currentUserService.findStaffId()
+            nguoi_xu_ly = currentUserService.findStaffId()
                     .flatMap(staffRepository::findById)
                     .orElse(null);
         }
 
-        Violation violation = Violation.builder()
-                .student(student)
-                .violationType(violationType)
+        Violation vi_pham = Violation.builder()
+                .student(sinh_vien)
+                .violationType(loai_vi_pham)
                 .violationDate(violationDate)
                 .description(request.getDescription())
                 .actionTaken(request.getActionTaken())
                 .fineAmount(fineAmount)
                 .penaltyPointsApplied(penaltyPoints)
-                .handledBy(handler)
+                .handledBy(nguoi_xu_ly)
                 .status("RECORDED")
                 .build();
 
-        violation = violationRepository.save(violation);
+        vi_pham = violationRepository.save(vi_pham);
 
         // Kết nối khoản thu tiền phạt vào hóa đơn DRAFT tháng này nếu có tiền phạt
-        attachFineToInvoiceIfApplicable(violation, student, violationDate, fineAmount,
-                violationType.getViolationName());
+        attachFineToInvoiceIfApplicable(vi_pham, sinh_vien, violationDate, fineAmount,
+                loai_vi_pham.getViolationName());
 
         // Gửi thông báo cho sinh viên khi bị lập biên bản kỷ luật
-        if (notificationService != null && student.getUser() != null) {
+        if (notificationService != null && sinh_vien.getUser() != null) {
             try {
-                String title = "Biên bản vi phạm kỷ luật mới: " + violationType.getViolationName();
+                String title = "Biên bản vi phạm kỷ luật mới: " + loai_vi_pham.getViolationName();
                 String content = String.format("Ban Quản lý KTX đã lập biên bản vi phạm ngày %s. Điểm trừ: -%d điểm, Tiền phạt: %,.0f VNĐ. Lý do: %s",
                         violationDate,
                         penaltyPoints,
                         fineAmount,
-                        violation.getDescription() != null ? violation.getDescription() : violationType.getViolationName());
-                notificationService.notifyStudent(student, title, content, handler != null ? handler.getUser() : null);
+                        vi_pham.getDescription() != null ? vi_pham.getDescription() : loai_vi_pham.getViolationName());
+                notificationService.notifyStudent(sinh_vien, title, content, nguoi_xu_ly != null ? nguoi_xu_ly.getUser() : null);
             } catch (Exception ex) {
                 log.warn("Không thể gửi thông báo lập biên bản vi phạm cho sinh viên: {}", ex.getMessage());
             }
         }
 
         // Kiểm tra ngưỡng tổng điểm trừ để cảnh báo xử lý kỷ luật (chỉ cảnh báo khi mới vượt ngưỡng)
-        int totalPenaltyPoints = violationRepository.sumPenaltyPointsByStudent(student.getStudentId());
+        int totalPenaltyPoints = violationRepository.sumPenaltyPointsByStudent(sinh_vien.getStudentId());
         int previousPoints = totalPenaltyPoints - penaltyPoints;
         int threshold = systemSettingService != null ? systemSettingService.getIntSetting("VIOLATION_PENALTY_THRESHOLD", 10) : 10;
         if (previousPoints < threshold && totalPenaltyPoints >= threshold && notificationService != null) {
             try {
-                String warnTitle = "Cảnh báo kỷ luật: SV " + student.getFullName() + " tích lũy " + totalPenaltyPoints + " điểm trừ";
+                String warnTitle = "Cảnh báo kỷ luật: SV " + sinh_vien.getFullName() + " tích lũy " + totalPenaltyPoints + " điểm trừ";
                 String warnContent = String.format("Sinh viên %s (MSSV: %s) đã tích lũy %d điểm trừ vi phạm, đạt ngưỡng xử lý kỷ luật quy định.",
-                        student.getFullName(), student.getStudentCode(), totalPenaltyPoints);
-                notificationService.notifyStaffAndAdmins(warnTitle, warnContent, student.getUser(), violation.getViolationId());
+                        sinh_vien.getFullName(), sinh_vien.getStudentCode(), totalPenaltyPoints);
+                notificationService.notifyStaffAndAdmins(warnTitle, warnContent, sinh_vien.getUser(), vi_pham.getViolationId());
             } catch (Exception ex) {
                 log.warn("Không thể gửi cảnh báo ngưỡng điểm vi phạm cho cán bộ: {}", ex.getMessage());
             }
         }
 
-        return violationMapper.toResponse(violation);
+        return violationMapper.toResponse(vi_pham);
     }
 
     // Tự động gắn tiền phạt vào hóa đơn chưa thanh toán (DRAFT / ISSUED / OVERDUE) của sinh viên
@@ -187,37 +187,37 @@ public class Violation_Service {
             return;
         }
 
-        List<Contract> activeContracts = contractRepository.findByStudent_StudentIdAndStatus(student.getStudentId(),
+        List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStudent_StudentIdAndStatus(student.getStudentId(),
                 "ACTIVE");
-        if (activeContracts.isEmpty()) {
+        if (danh_sach_hop_dong_hieu_luc.isEmpty()) {
             return;
         }
 
-        Contract contract = activeContracts.get(0);
+        Contract hop_dong = danh_sach_hop_dong_hieu_luc.get(0);
         LocalDate invoiceMonth = violationDate.withDayOfMonth(1);
-        List<Invoice> invoices = invoiceRepository.findByContract_ContractIdAndInvoiceMonth(contract.getContractId(), invoiceMonth);
+        List<Invoice> danh_sach_hoa_don = invoiceRepository.findByContract_ContractIdAndInvoiceMonth(hop_dong.getContractId(), invoiceMonth);
 
         // Nếu tháng vi phạm chưa có hóa đơn mở, tìm hóa đơn chưa thanh toán gần nhất của hợp đồng
-        Invoice targetInv = null;
-        for (Invoice inv : invoices) {
-            if (isInvoiceOpenForFine(inv)) {
-                targetInv = inv;
+        Invoice hoa_don_dich = null;
+        for (Invoice hoa_don : danh_sach_hoa_don) {
+            if (isInvoiceOpenForFine(hoa_don)) {
+                hoa_don_dich = hoa_don;
                 break;
             }
         }
-        if (targetInv == null) {
-            List<Invoice> allContractInvoices = invoiceRepository.findByContract_ContractId(contract.getContractId());
-            for (Invoice inv : allContractInvoices) {
-                if (isInvoiceOpenForFine(inv)) {
-                    targetInv = inv;
+        if (hoa_don_dich == null) {
+            List<Invoice> tat_ca_hoa_don_hop_dong = invoiceRepository.findByContract_ContractId(hop_dong.getContractId());
+            for (Invoice hoa_don : tat_ca_hoa_don_hop_dong) {
+                if (isInvoiceOpenForFine(hoa_don)) {
+                    hoa_don_dich = hoa_don;
                     break;
                 }
             }
         }
 
-        if (targetInv != null) {
-            InvoiceItem fineItem = InvoiceItem.builder()
-                    .invoice(targetInv)
+        if (hoa_don_dich != null) {
+            InvoiceItem khoan_thu_tien_phat = InvoiceItem.builder()
+                    .invoice(hoa_don_dich)
                     .itemType("FINE")
                     .description("Tiền phạt vi phạm: " + violationName)
                     .quantity(BigDecimal.ONE)
@@ -226,12 +226,12 @@ public class Violation_Service {
                     .referenceId(violation.getViolationId())
                     .build();
 
-            targetInv.getInvoiceItems().add(fineItem);
-            BigDecimal newSubtotal = (targetInv.getSubtotalAmount() != null ? targetInv.getSubtotalAmount() : BigDecimal.ZERO)
+            hoa_don_dich.getInvoiceItems().add(khoan_thu_tien_phat);
+            BigDecimal newSubtotal = (hoa_don_dich.getSubtotalAmount() != null ? hoa_don_dich.getSubtotalAmount() : BigDecimal.ZERO)
                     .add(fineAmount);
-            targetInv.setSubtotalAmount(newSubtotal);
-            targetInv.calculateTotalAmount();
-            invoiceRepository.save(targetInv);
+            hoa_don_dich.setSubtotalAmount(newSubtotal);
+            hoa_don_dich.calculateTotalAmount();
+            invoiceRepository.save(hoa_don_dich);
         }
     }
 
@@ -261,14 +261,14 @@ public class Violation_Service {
 
     @Transactional(readOnly = true)
     public Violation_Response getById(String violationId) {
-        Violation violation = violationRepository.findById(violationId)
+        Violation vi_pham = violationRepository.findById(violationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy biên bản vi phạm"));
 
-        if (violation.getStudent() != null) {
-            checkStudentAccessOwnership(violation.getStudent().getStudentId());
+        if (vi_pham.getStudent() != null) {
+            checkStudentAccessOwnership(vi_pham.getStudent().getStudentId());
         }
 
-        return violationMapper.toResponse(violation);
+        return violationMapper.toResponse(vi_pham);
     }
 
     @Transactional(readOnly = true)
@@ -278,8 +278,8 @@ public class Violation_Service {
             throw new AppException(ErrorCode.STUDENT_NOT_FOUND);
         }
 
-        List<Violation> list = violationRepository.findByStudent_StudentId(studentId);
-        return violationMapper.toResponseList(list);
+        List<Violation> danh_sach_vi_pham = violationRepository.findByStudent_StudentId(studentId);
+        return violationMapper.toResponseList(danh_sach_vi_pham);
     }
 
     // Tìm kiếm biên bản vi phạm có phân trang theo sinh viên, loại vi phạm, mức độ nghiêm trọng, trạng thái và khoảng thời gian
@@ -310,7 +310,7 @@ public class Violation_Service {
         Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Violation> pageResult = violationRepository.searchViolations(
+        Page<Violation> trang_vi_pham = violationRepository.searchViolations(
                 (studentId != null && !studentId.isBlank()) ? studentId.trim() : null,
                 (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
                 (violationTypeId != null && !violationTypeId.isBlank()) ? violationTypeId.trim() : null,
@@ -320,18 +320,18 @@ public class Violation_Service {
                 toDate,
                 pageable);
 
-        List<Violation_Response> data = violationMapper.toResponseList(pageResult.getContent());
+        List<Violation_Response> danh_sach_ket_qua = violationMapper.toResponseList(trang_vi_pham.getContent());
 
         return Page_Response.<Violation_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
-                .pageSize(pageResult.getSize())
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .currentPage(trang_vi_pham.getNumber() + 1)
+                .pageSize(trang_vi_pham.getSize())
+                .totalPages(trang_vi_pham.getTotalPages())
+                .totalElements(trang_vi_pham.getTotalElements())
+                .hasPrevious(trang_vi_pham.hasPrevious())
+                .hasNext(trang_vi_pham.hasNext())
+                .isFirst(trang_vi_pham.isFirst())
+                .isLast(trang_vi_pham.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
@@ -345,13 +345,13 @@ public class Violation_Service {
     public Violation_Response update(String violationId, Violation_Request request) {
         checkStaffOrAdminRole();
 
-        Violation violation = violationRepository.findById(violationId)
+        Violation vi_pham = violationRepository.findById(violationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy biên bản vi phạm"));
 
-        if ("CANCELLED".equalsIgnoreCase(violation.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(vi_pham.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Biên bản vi phạm đã bị hủy, không thể chỉnh sửa");
         }
-        if ("PAID".equalsIgnoreCase(violation.getStatus())) {
+        if ("PAID".equalsIgnoreCase(vi_pham.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Biên bản vi phạm đã thanh toán hoàn tất (PAID), không thể chỉnh sửa");
         }
 
@@ -360,52 +360,52 @@ public class Violation_Service {
                 && invoiceItemRepository.existsByItemTypeAndReferenceId("FINE", violationId);
 
         if (request.getStudentId() != null && !request.getStudentId().isBlank()) {
-            if (fineInInvoice && !request.getStudentId().equals(violation.getStudent().getStudentId())) {
+            if (fineInInvoice && !request.getStudentId().equals(vi_pham.getStudent().getStudentId())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Khoản phạt đã được đưa vào hóa đơn, không thể thay đổi sinh viên vi phạm");
             }
-            violation.setStudent(resolveStudent(request.getStudentId()));
+            vi_pham.setStudent(resolveStudent(request.getStudentId()));
         }
 
         if (request.getViolationTypeId() != null && !request.getViolationTypeId().isBlank()) {
-            if (fineInInvoice && !request.getViolationTypeId().equals(violation.getViolationType().getViolationTypeId())) {
+            if (fineInInvoice && !request.getViolationTypeId().equals(vi_pham.getViolationType().getViolationTypeId())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Khoản phạt đã được đưa vào hóa đơn, không thể thay đổi loại vi phạm");
             }
-            violation.setViolationType(resolveViolationType(request.getViolationTypeId()));
+            vi_pham.setViolationType(resolveViolationType(request.getViolationTypeId()));
         }
 
         if (request.getViolationDate() != null) {
             if (request.getViolationDate().isAfter(LocalDate.now())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Ngày vi phạm không thể ở tương lai");
             }
-            violation.setViolationDate(request.getViolationDate());
+            vi_pham.setViolationDate(request.getViolationDate());
         }
 
         if (request.getDescription() != null) {
-            violation.setDescription(request.getDescription());
+            vi_pham.setDescription(request.getDescription());
         }
 
         if (request.getActionTaken() != null) {
-            violation.setActionTaken(request.getActionTaken());
+            vi_pham.setActionTaken(request.getActionTaken());
         }
 
         if (request.getFineAmount() != null) {
             if (request.getFineAmount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppException(ErrorCode.PRICE_INVALID, "Tiền phạt không thể âm");
             }
-            if (fineInInvoice && request.getFineAmount().compareTo(violation.getFineAmount()) != 0) {
+            if (fineInInvoice && request.getFineAmount().compareTo(vi_pham.getFineAmount()) != 0) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Khoản phạt đã được đưa vào hóa đơn, không thể thay đổi số tiền phạt");
             }
-            violation.setFineAmount(request.getFineAmount());
+            vi_pham.setFineAmount(request.getFineAmount());
         }
 
         if (request.getPenaltyPointsApplied() != null) {
             if (request.getPenaltyPointsApplied() < 0) {
                 throw new AppException(ErrorCode.PENALTY_POINTS_INVALID, "Điểm trừ áp dụng không thể âm");
             }
-            violation.setPenaltyPointsApplied(request.getPenaltyPointsApplied());
+            vi_pham.setPenaltyPointsApplied(request.getPenaltyPointsApplied());
         }
 
         // Giới hạn status trong RECORDED, PROCESSED, RESOLVED (chặn tự ý đặt PAID hoặc CANCELLED qua update)
@@ -415,11 +415,11 @@ public class Violation_Service {
                 throw new AppException(ErrorCode.STATUS_INVALID,
                         "Trạng thái cập nhật chỉ được là RECORDED, PROCESSED hoặc RESOLVED. Hủy biên bản vui lòng thực hiện qua chức năng xóa, thanh toán thực hiện qua hóa đơn.");
             }
-            violation.setStatus(updatedStatus);
+            vi_pham.setStatus(updatedStatus);
         }
 
-        violation = violationRepository.save(violation);
-        return violationMapper.toResponse(violation);
+        vi_pham = violationRepository.save(vi_pham);
+        return violationMapper.toResponse(vi_pham);
     }
 
     // Đổi trạng thái biên bản khi tiền phạt đã được thanh toán (chỉ ADMIN hoặc MANAGER, dùng cho thu tiền mặt ngoài hóa đơn)
@@ -427,33 +427,33 @@ public class Violation_Service {
     public Violation_Response markAsPaid(String violationId) {
         checkAdminOrManagerRole("Chỉ Quản trị viên hoặc Quản lý KTX mới có quyền xác nhận thu tiền phạt trực tiếp");
 
-        Violation violation = violationRepository.findById(violationId)
+        Violation vi_pham = violationRepository.findById(violationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy biên bản vi phạm"));
 
-        if ("CANCELLED".equalsIgnoreCase(violation.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(vi_pham.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Biên bản vi phạm đã bị hủy, không thể đánh dấu thanh toán");
         }
 
-        if ("PAID".equalsIgnoreCase(violation.getStatus())) {
-            return violationMapper.toResponse(violation);
+        if ("PAID".equalsIgnoreCase(vi_pham.getStatus())) {
+            return violationMapper.toResponse(vi_pham);
         }
 
         // Chặn khi dòng FINE đang nằm trong hóa đơn chưa thanh toán
         if (invoiceItemRepository != null) {
-            List<InvoiceItem> fineItems = invoiceItemRepository.findByItemTypeAndReferenceId("FINE", violationId);
-            for (InvoiceItem item : fineItems) {
-                Invoice inv = item.getInvoice();
-                if (inv != null && !"PAID".equalsIgnoreCase(inv.getStatus())) {
+            List<InvoiceItem> danh_sach_khoan_phat = invoiceItemRepository.findByItemTypeAndReferenceId("FINE", violationId);
+            for (InvoiceItem muc_phat : danh_sach_khoan_phat) {
+                Invoice hoa_don = muc_phat.getInvoice();
+                if (hoa_don != null && !"PAID".equalsIgnoreCase(hoa_don.getStatus())) {
                     throw new AppException(ErrorCode.OPERATION_FAILED,
-                            "Khoản phạt đang nằm trong hóa đơn " + inv.getInvoiceCode() + " (" + inv.getStatus()
+                            "Khoản phạt đang nằm trong hóa đơn " + hoa_don.getInvoiceCode() + " (" + hoa_don.getStatus()
                                     + "). Vui lòng thanh toán qua hóa đơn hoặc gỡ khỏi hóa đơn trước khi thu tiền mặt trực tiếp.");
                 }
             }
         }
 
-        violation.setStatus("PAID");
-        violation = violationRepository.save(violation);
-        return violationMapper.toResponse(violation);
+        vi_pham.setStatus("PAID");
+        vi_pham = violationRepository.save(vi_pham);
+        return violationMapper.toResponse(vi_pham);
     }
 
     // Xóa mềm biên bản: chuyển trạng thái thành CANCELLED và gỡ khoản phạt khỏi hóa đơn chưa thanh toán
@@ -461,35 +461,35 @@ public class Violation_Service {
     public void delete(String violationId) {
         checkAdminOrManagerRole("Chỉ Quản trị viên hoặc Quản lý KTX mới có quyền hủy biên bản vi phạm");
 
-        Violation violation = violationRepository.findById(violationId)
+        Violation vi_pham = violationRepository.findById(violationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy biên bản vi phạm"));
 
         // Kiểm tra xem biên bản đã được đưa vào hóa đơn nào chưa
         if (invoiceItemRepository != null) {
-            List<InvoiceItem> fineItems = invoiceItemRepository.findByItemTypeAndReferenceId("FINE", violationId);
-            for (InvoiceItem item : fineItems) {
-                Invoice invoice = item.getInvoice();
-                if (invoice != null) {
-                    if ("PAID".equalsIgnoreCase(invoice.getStatus())
-                            || "PARTIALLY_PAID".equalsIgnoreCase(invoice.getStatus())
-                            || (invoice.getPaidAmount() != null && invoice.getPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
+            List<InvoiceItem> danh_sach_khoan_phat = invoiceItemRepository.findByItemTypeAndReferenceId("FINE", violationId);
+            for (InvoiceItem muc_phat : danh_sach_khoan_phat) {
+                Invoice hoa_don = muc_phat.getInvoice();
+                if (hoa_don != null) {
+                    if ("PAID".equalsIgnoreCase(hoa_don.getStatus())
+                            || "PARTIALLY_PAID".equalsIgnoreCase(hoa_don.getStatus())
+                            || (hoa_don.getPaidAmount() != null && hoa_don.getPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
                         throw new AppException(ErrorCode.OPERATION_FAILED,
-                                "Không thể xóa biên bản vi phạm đã thanh toán hoặc đang thanh toán trong hóa đơn " + invoice.getInvoiceCode());
+                                "Không thể xóa biên bản vi phạm đã thanh toán hoặc đang thanh toán trong hóa đơn " + hoa_don.getInvoiceCode());
                     }
-                    if (invoice.getInvoiceItems() != null) {
-                        invoice.getInvoiceItems().remove(item);
-                        BigDecimal newSubtotal = (invoice.getSubtotalAmount() != null ? invoice.getSubtotalAmount() : BigDecimal.ZERO)
-                                .subtract(item.getAmount() != null ? item.getAmount() : BigDecimal.ZERO);
-                        invoice.setSubtotalAmount(newSubtotal.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : newSubtotal);
-                        invoice.calculateTotalAmount();
-                        invoiceRepository.save(invoice);
+                    if (hoa_don.getInvoiceItems() != null) {
+                        hoa_don.getInvoiceItems().remove(muc_phat);
+                        BigDecimal newSubtotal = (hoa_don.getSubtotalAmount() != null ? hoa_don.getSubtotalAmount() : BigDecimal.ZERO)
+                                .subtract(muc_phat.getAmount() != null ? muc_phat.getAmount() : BigDecimal.ZERO);
+                        hoa_don.setSubtotalAmount(newSubtotal.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : newSubtotal);
+                        hoa_don.calculateTotalAmount();
+                        invoiceRepository.save(hoa_don);
                     }
                 }
             }
         }
 
-        violation.setStatus("CANCELLED");
-        violationRepository.save(violation);
+        vi_pham.setStatus("CANCELLED");
+        violationRepository.save(vi_pham);
     }
 
     // Lấy tổng hợp điểm trừ, số tiền phạt và cảnh báo kỷ luật theo sinh viên
@@ -497,26 +497,26 @@ public class Violation_Service {
     public StudentViolationSummary_Response getStudentViolationSummary(String studentId) {
         checkStudentAccessOwnership(studentId);
 
-        Student student = resolveStudent(studentId);
-        List<Violation> violations = violationRepository.findByStudent_StudentId(studentId);
+        Student sinh_vien = resolveStudent(studentId);
+        List<Violation> danh_sach_vi_pham = violationRepository.findByStudent_StudentId(studentId);
 
         int totalPenaltyPoints = 0;
         BigDecimal totalFineAmount = BigDecimal.ZERO;
         BigDecimal unpaidFineAmount = BigDecimal.ZERO;
         int violationCount = 0;
 
-        for (Violation v : violations) {
-            if ("CANCELLED".equalsIgnoreCase(v.getStatus())) {
+        for (Violation vi_pham : danh_sach_vi_pham) {
+            if ("CANCELLED".equalsIgnoreCase(vi_pham.getStatus())) {
                 continue;
             }
             violationCount++;
-            if (v.getPenaltyPointsApplied() != null) {
-                totalPenaltyPoints += v.getPenaltyPointsApplied();
+            if (vi_pham.getPenaltyPointsApplied() != null) {
+                totalPenaltyPoints += vi_pham.getPenaltyPointsApplied();
             }
-            if (v.getFineAmount() != null) {
-                totalFineAmount = totalFineAmount.add(v.getFineAmount());
-                if (!"PAID".equalsIgnoreCase(v.getStatus())) {
-                    unpaidFineAmount = unpaidFineAmount.add(v.getFineAmount());
+            if (vi_pham.getFineAmount() != null) {
+                totalFineAmount = totalFineAmount.add(vi_pham.getFineAmount());
+                if (!"PAID".equalsIgnoreCase(vi_pham.getStatus())) {
+                    unpaidFineAmount = unpaidFineAmount.add(vi_pham.getFineAmount());
                 }
             }
         }
@@ -539,15 +539,15 @@ public class Violation_Service {
 
         // Lấy phòng ở hiện tại nếu có
         String roomNumber = "";
-        List<Contract> activeContracts = contractRepository.findByStudent_StudentIdAndStatus(studentId, "ACTIVE");
-        if (!activeContracts.isEmpty() && activeContracts.get(0).getBed() != null && activeContracts.get(0).getBed().getRoom() != null) {
-            roomNumber = activeContracts.get(0).getBed().getRoom().getRoomNumber();
+        List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStudent_StudentIdAndStatus(studentId, "ACTIVE");
+        if (!danh_sach_hop_dong_hieu_luc.isEmpty() && danh_sach_hop_dong_hieu_luc.get(0).getBed() != null && danh_sach_hop_dong_hieu_luc.get(0).getBed().getRoom() != null) {
+            roomNumber = danh_sach_hop_dong_hieu_luc.get(0).getBed().getRoom().getRoomNumber();
         }
 
         return StudentViolationSummary_Response.builder()
-                .studentId(student.getStudentId())
-                .studentCode(student.getStudentCode())
-                .fullName(student.getFullName())
+                .studentId(sinh_vien.getStudentId())
+                .studentCode(sinh_vien.getStudentCode())
+                .fullName(sinh_vien.getFullName())
                 .roomNumber(roomNumber)
                 .totalPenaltyPoints(totalPenaltyPoints)
                 .totalFineAmount(totalFineAmount)

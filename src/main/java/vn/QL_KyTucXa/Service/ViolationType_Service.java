@@ -74,26 +74,26 @@ public class ViolationType_Service {
             throw new AppException(ErrorCode.PENALTY_POINTS_INVALID, "Điểm trừ không thể âm");
         }
 
-        ViolationType violationType = violationTypeMapper.toEntity(request);
-        violationType.setViolationName(name);
-        violationType.setSeverityLevel(normalizeSeverityLevel(request.getSeverityLevel()));
+        ViolationType loai_vi_pham = violationTypeMapper.toEntity(request);
+        loai_vi_pham.setViolationName(name);
+        loai_vi_pham.setSeverityLevel(normalizeSeverityLevel(request.getSeverityLevel()));
 
-        violationType = violationTypeRepository.save(violationType);
-        return violationTypeMapper.toResponse(violationType);
+        loai_vi_pham = violationTypeRepository.save(loai_vi_pham);
+        return violationTypeMapper.toResponse(loai_vi_pham);
     }
 
     @Transactional(readOnly = true)
     public ViolationType_Response getById(String violationTypeId) {
-        ViolationType violationType = violationTypeRepository.findById(violationTypeId)
+        ViolationType loai_vi_pham = violationTypeRepository.findById(violationTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại vi phạm"));
 
-        return violationTypeMapper.toResponse(violationType);
+        return violationTypeMapper.toResponse(loai_vi_pham);
     }
 
     @Transactional(readOnly = true)
     public List<ViolationType_Response> getAll() {
-        List<ViolationType> list = violationTypeRepository.findAll();
-        return violationTypeMapper.toResponseList(list);
+        List<ViolationType> danh_sach_loai_vi_pham = violationTypeRepository.findAll();
+        return violationTypeMapper.toResponseList(danh_sach_loai_vi_pham);
     }
 
     @Transactional(readOnly = true)
@@ -103,15 +103,15 @@ public class ViolationType_Service {
             return getAll();
         }
         String normalized = normalizeSeverityLevel(severityLevel);
-        List<ViolationType> list = violationTypeRepository.findBySeverityLevel(normalized);
-        return violationTypeMapper.toResponseList(list);
+        List<ViolationType> danh_sach_loai_vi_pham = violationTypeRepository.findBySeverityLevel(normalized);
+        return violationTypeMapper.toResponseList(danh_sach_loai_vi_pham);
     }
 
     @Transactional
     public ViolationType_Response update(String violationTypeId, ViolationType_Request request) {
         checkAdminOrManager();
 
-        ViolationType violationType = violationTypeRepository.findById(violationTypeId)
+        ViolationType loai_vi_pham = violationTypeRepository.findById(violationTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại vi phạm"));
 
         if (request.getViolationName() != null && !request.getViolationName().isBlank()) {
@@ -119,11 +119,11 @@ public class ViolationType_Service {
             if (violationTypeRepository.existsByViolationNameAndViolationTypeIdNot(name, violationTypeId)) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Tên loại vi phạm '" + name + "' đã tồn tại");
             }
-            violationType.setViolationName(name);
+            loai_vi_pham.setViolationName(name);
         }
 
         if (request.getSeverityLevel() != null && !request.getSeverityLevel().isBlank()) {
-            violationType.setSeverityLevel(normalizeSeverityLevel(request.getSeverityLevel()));
+            loai_vi_pham.setSeverityLevel(normalizeSeverityLevel(request.getSeverityLevel()));
         }
 
         // Chặn tiền phạt và điểm trừ âm
@@ -131,27 +131,27 @@ public class ViolationType_Service {
             if (request.getPenaltyPoints() < 0) {
                 throw new AppException(ErrorCode.PENALTY_POINTS_INVALID, "Điểm trừ không thể âm");
             }
-            violationType.setPenaltyPoints(request.getPenaltyPoints());
+            loai_vi_pham.setPenaltyPoints(request.getPenaltyPoints());
         }
         if (request.getFineAmount() != null) {
             if (request.getFineAmount().compareTo(java.math.BigDecimal.ZERO) < 0) {
                 throw new AppException(ErrorCode.PRICE_INVALID, "Tiền phạt không thể âm");
             }
-            violationType.setFineAmount(request.getFineAmount());
+            loai_vi_pham.setFineAmount(request.getFineAmount());
         }
         if (request.getDescription() != null) {
-            violationType.setDescription(request.getDescription());
+            loai_vi_pham.setDescription(request.getDescription());
         }
 
-        violationType = violationTypeRepository.save(violationType);
-        return violationTypeMapper.toResponse(violationType);
+        loai_vi_pham = violationTypeRepository.save(loai_vi_pham);
+        return violationTypeMapper.toResponse(loai_vi_pham);
     }
 
     @Transactional
     public void delete(String violationTypeId) {
         checkAdminOrManager();
 
-        ViolationType violationType = violationTypeRepository.findById(violationTypeId)
+        ViolationType loai_vi_pham = violationTypeRepository.findById(violationTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại vi phạm"));
 
         // Chặn xóa nếu loại vi phạm đã được sử dụng trong các biên bản kỷ luật để tránh lỗi ràng buộc khóa ngoại
@@ -159,6 +159,6 @@ public class ViolationType_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa loại vi phạm vì đã có biên bản kỷ luật áp dụng loại này");
         }
 
-        violationTypeRepository.delete(violationType);
+        violationTypeRepository.delete(loai_vi_pham);
     }
 }

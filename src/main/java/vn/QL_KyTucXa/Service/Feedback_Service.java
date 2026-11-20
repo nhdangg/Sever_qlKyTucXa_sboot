@@ -53,31 +53,31 @@ public class Feedback_Service {
     public Feedback_Response create(Feedback_Request request) {
         log.info("Gửi phản hồi mới từ người dùng");
 
-        Student student = resolveStudent(request.getStudentId());
+        Student sinh_vien = resolveStudent(request.getStudentId());
 
-        Feedback feedback = feedbackMapper.toEntity(request);
-        feedback.setStudent(student);
-        feedback.setStatus("SUBMITTED");
-        feedback.setResponse(null);
-        feedback.setRespondedBy(null);
-        feedback.setRespondedAt(null);
+        Feedback phan_hoi = feedbackMapper.toEntity(request);
+        phan_hoi.setStudent(sinh_vien);
+        phan_hoi.setStatus("SUBMITTED");
+        phan_hoi.setResponse(null);
+        phan_hoi.setRespondedBy(null);
+        phan_hoi.setRespondedAt(null);
 
-        feedback = feedbackRepository.save(feedback);
+        phan_hoi = feedbackRepository.save(phan_hoi);
 
         // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX
-        if (notificationService != null && student != null) {
-            String studentName = (student.getFullName() != null && !student.getFullName().isBlank())
-                    ? student.getFullName() : "Sinh viên";
+        if (notificationService != null && sinh_vien != null) {
+            String studentName = (sinh_vien.getFullName() != null && !sinh_vien.getFullName().isBlank())
+                    ? sinh_vien.getFullName() : "Sinh viên";
             String title = "Ý kiến phản ánh mới từ SV " + studentName;
             String content = String.format("Sinh viên %s vừa gửi phản ánh/đánh giá. Danh mục: %s. Đánh giá: %s sao. Nội dung: %s",
                     studentName,
-                    feedback.getCategory() != null ? feedback.getCategory() : "Góp ý chung",
-                    feedback.getRating() != null ? feedback.getRating() : 5,
-                    feedback.getContent() != null ? feedback.getContent() : "");
-            notificationService.notifyStaffAndAdmins(title, content, student.getUser(), feedback.getFeedbackId());
+                    phan_hoi.getCategory() != null ? phan_hoi.getCategory() : "Góp ý chung",
+                    phan_hoi.getRating() != null ? phan_hoi.getRating() : 5,
+                    phan_hoi.getContent() != null ? phan_hoi.getContent() : "");
+            notificationService.notifyStaffAndAdmins(title, content, sinh_vien.getUser(), phan_hoi.getFeedbackId());
         }
 
-        return feedbackMapper.toResponse(feedback);
+        return feedbackMapper.toResponse(phan_hoi);
     }
 
     // Xác định sinh viên gửi phản hồi ưu tiên lấy từ JWT đăng nhập
@@ -99,12 +99,12 @@ public class Feedback_Service {
     // Lấy chi tiết phản hồi theo ID có kiểm tra quyền sở hữu đối với sinh viên
     @Transactional(readOnly = true)
     public Feedback_Response getById(String feedbackId) {
-        Feedback feedback = feedbackRepository.findById(feedbackId)
+        Feedback phan_hoi = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy phản hồi"));
 
-        checkOwnership(feedback);
+        checkOwnership(phan_hoi);
 
-        return feedbackMapper.toResponse(feedback);
+        return feedbackMapper.toResponse(phan_hoi);
     }
 
     // Lấy danh sách phản hồi của sinh viên có kiểm tra quyền sở hữu
@@ -122,8 +122,8 @@ public class Feedback_Service {
             }
         }
 
-        List<Feedback> list = feedbackRepository.findByStudent_StudentId(studentId);
-        return feedbackMapper.toResponseList(list);
+        List<Feedback> danh_sach_phan_hoi = feedbackRepository.findByStudent_StudentId(studentId);
+        return feedbackMapper.toResponseList(danh_sach_phan_hoi);
     }
 
     // Kiểm tra quyền sở hữu phản hồi: sinh viên chỉ được xem phản hồi của chính
@@ -168,30 +168,30 @@ public class Feedback_Service {
         String st = (status != null && !status.isBlank()) ? status.trim() : null;
         String cat = (category != null && !category.isBlank()) ? category.trim() : null;
 
-        Page<Feedback> pageResult = feedbackRepository.searchFeedbacks(kw, st, cat, pageable);
-        List<Feedback_Response> data = feedbackMapper.toResponseList(pageResult.getContent());
+        Page<Feedback> trang_phan_hoi = feedbackRepository.searchFeedbacks(kw, st, cat, pageable);
+        List<Feedback_Response> danh_sach_ket_qua = feedbackMapper.toResponseList(trang_phan_hoi.getContent());
 
         return Page_Response.<Feedback_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_phan_hoi.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .totalPages(trang_phan_hoi.getTotalPages())
+                .totalElements(trang_phan_hoi.getTotalElements())
+                .hasPrevious(trang_phan_hoi.hasPrevious())
+                .hasNext(trang_phan_hoi.hasNext())
+                .isFirst(trang_phan_hoi.isFirst())
+                .isLast(trang_phan_hoi.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
     // Trả lời phản hồi của sinh viên và chuyển trạng thái sang RESOLVED
     @Transactional
     public Feedback_Response respond(String feedbackId, String staffId, String responseText) {
-        Feedback feedback = feedbackRepository.findById(feedbackId)
+        Feedback phan_hoi = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy phản hồi"));
 
         // Chặn trả lời lại nếu phản hồi đã được xử lý
-        if ("RESOLVED".equalsIgnoreCase(feedback.getStatus()) || feedback.getResponse() != null) {
+        if ("RESOLVED".equalsIgnoreCase(phan_hoi.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Phản hồi này đã được trả lời trước đó");
         }
 
@@ -200,27 +200,27 @@ public class Feedback_Service {
         }
 
         // Lấy nhân viên trả lời ưu tiên từ JWT
-        Staff staff = resolveStaff(staffId);
+        Staff nhan_vien = resolveStaff(staffId);
 
-        feedback.setResponse(responseText.trim());
-        if (staff != null) {
-            feedback.setRespondedBy(staff);
+        phan_hoi.setResponse(responseText.trim());
+        if (nhan_vien != null) {
+            phan_hoi.setRespondedBy(nhan_vien);
         }
-        feedback.setRespondedAt(LocalDateTime.now());
-        feedback.setStatus("RESOLVED");
+        phan_hoi.setRespondedAt(LocalDateTime.now());
+        phan_hoi.setStatus("RESOLVED");
 
-        feedback = feedbackRepository.save(feedback);
+        phan_hoi = feedbackRepository.save(phan_hoi);
 
         // Bắn thông báo cho sinh viên khi phản ánh được trả lời
-        if (notificationService != null && feedback.getStudent() != null) {
+        if (notificationService != null && phan_hoi.getStudent() != null) {
             String title = "Phản ánh của bạn đã được phản hồi";
             String content = String.format("Ban Quản lý đã trả lời phản ánh '%s' của bạn: %s",
-                    feedback.getCategory() != null ? feedback.getCategory() : "Ý kiến KTX",
-                    feedback.getResponse());
-            notificationService.notifyStudent(feedback.getStudent(), title, content, staff != null ? staff.getUser() : null);
+                    phan_hoi.getCategory() != null ? phan_hoi.getCategory() : "Ý kiến KTX",
+                    phan_hoi.getResponse());
+            notificationService.notifyStudent(phan_hoi.getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
         }
 
-        return feedbackMapper.toResponse(feedback);
+        return feedbackMapper.toResponse(phan_hoi);
     }
 
     // Xác định nhân viên trả lời phản hồi: lấy từ JWT, chỉ ADMIN mới được chỉ định
@@ -247,19 +247,19 @@ public class Feedback_Service {
     // Xóa phản hồi theo ID có kiểm tra quyền sở hữu đối với tài khoản sinh viên
     @Transactional
     public void delete(String feedbackId) {
-        Feedback feedback = feedbackRepository.findById(feedbackId)
+        Feedback phan_hoi = feedbackRepository.findById(feedbackId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy phản hồi"));
 
         boolean isStaffOrAdmin = currentUserService != null
                 && (currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER")
                         || currentUserService.hasRole("STAFF"));
         if (!isStaffOrAdmin) {
-            checkOwnership(feedback);
-            if ("RESOLVED".equalsIgnoreCase(feedback.getStatus()) || feedback.getResponse() != null) {
+            checkOwnership(phan_hoi);
+            if ("RESOLVED".equalsIgnoreCase(phan_hoi.getStatus()) || phan_hoi.getResponse() != null) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa phản hồi đã được xử lý");
             }
         }
 
-        feedbackRepository.delete(feedback);
+        feedbackRepository.delete(phan_hoi);
     }
 }

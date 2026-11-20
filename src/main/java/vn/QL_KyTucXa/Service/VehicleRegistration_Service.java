@@ -110,11 +110,11 @@ public class VehicleRegistration_Service {
     // Đăng ký gửi phương tiện mới
     @Transactional
     public VehicleRegistration_Response create(VehicleRegistration_Request request) {
-        Student student = resolveStudent(request.getStudentId());
-        log.info("Đăng ký gửi xe cho sinh viên: {}, Mã SV: {}", student.getFullName(), student.getStudentCode());
+        Student sinh_vien = resolveStudent(request.getStudentId());
+        log.info("Đăng ký gửi xe cho sinh viên: {}, Mã SV: {}", sinh_vien.getFullName(), sinh_vien.getStudentCode());
 
         // Kiểm tra sinh viên có hợp đồng nội trú đang hiệu lực hay không
-        boolean hasActiveContract = contractRepository.existsByStudent_StudentIdAndStatus(student.getStudentId(),
+        boolean hasActiveContract = contractRepository.existsByStudent_StudentIdAndStatus(sinh_vien.getStudentId(),
                 "ACTIVE");
         if (!hasActiveContract) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
@@ -126,7 +126,7 @@ public class VehicleRegistration_Service {
                 ? systemSettingService.getIntSetting("MAX_VEHICLES_PER_STUDENT", 1)
                 : 1;
         long currentActiveCount = vehicleRepository.countByStudent_StudentIdAndStatusIn(
-                student.getStudentId(), List.of("ACTIVE", "PENDING"));
+                sinh_vien.getStudentId(), List.of("ACTIVE", "PENDING"));
         if (currentActiveCount >= maxVehicles) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Mỗi sinh viên chỉ được đăng ký tối đa " + maxVehicles
                     + " phương tiện đang hoạt động hoặc chờ duyệt");
@@ -158,7 +158,7 @@ public class VehicleRegistration_Service {
 
         // Hạn đăng ký: lấy theo ngày kết thúc hợp đồng nội trú ACTIVE gần nhất của sinh
         // viên
-        LocalDate expiryDate = contractRepository.findByStudent_StudentIdAndStatus(student.getStudentId(), "ACTIVE")
+        LocalDate expiryDate = contractRepository.findByStudent_StudentIdAndStatus(sinh_vien.getStudentId(), "ACTIVE")
                 .stream()
                 .map(Contract::getEndDate)
                 .max(LocalDate::compareTo)
@@ -174,8 +174,8 @@ public class VehicleRegistration_Service {
                 ? request.getRegistrationDate()
                 : LocalDate.now();
 
-        VehicleRegistration vehicle = VehicleRegistration.builder()
-                .student(student)
+        VehicleRegistration dang_ky_xe = VehicleRegistration.builder()
+                .student(sinh_vien)
                 .vehicleType(normalizedType)
                 .licensePlate(cleanPlate)
                 .brandModel(request.getBrandModel())
@@ -185,64 +185,64 @@ public class VehicleRegistration_Service {
                 .status(initialStatus)
                 .build();
 
-        vehicle = vehicleRepository.save(vehicle);
+        dang_ky_xe = vehicleRepository.save(dang_ky_xe);
 
         // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX nếu sinh viên đăng ký
-        if (notificationService != null && student != null) {
-            String title = "Đăng ký gửi xe mới từ SV " + student.getFullName();
+        if (notificationService != null && sinh_vien != null) {
+            String title = "Đăng ký gửi xe mới từ SV " + sinh_vien.getFullName();
             String content = String.format(
                     "Sinh viên %s (MSSV: %s) vừa đăng ký gửi phương tiện %s - Biển số: %s. Trạng thái: %s.",
-                    student.getFullName(),
-                    student.getStudentCode(),
+                    sinh_vien.getFullName(),
+                    sinh_vien.getStudentCode(),
                     normalizedType,
                     cleanPlate != null ? cleanPlate : "Không có",
                     initialStatus);
-            notificationService.notifyStaffAndAdmins(title, content, student.getUser(), cleanPlate);
+            notificationService.notifyStaffAndAdmins(title, content, sinh_vien.getUser(), cleanPlate);
         }
 
-        return vehicleMapper.toResponse(vehicle);
+        return vehicleMapper.toResponse(dang_ky_xe);
     }
 
     // Duyệt hoặc từ chối đơn đăng ký gửi xe
     @Transactional
     public VehicleRegistration_Response approve(String vehicleId, boolean approved) {
-        VehicleRegistration vehicle = vehicleRepository.findById(vehicleId)
+        VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin gửi xe"));
 
-        if (!"PENDING".equalsIgnoreCase(vehicle.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(dang_ky_xe.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Chỉ có thể duyệt bản đăng ký ở trạng thái PENDING (Hiện tại: " + vehicle.getStatus() + ")");
+                    "Chỉ có thể duyệt bản đăng ký ở trạng thái PENDING (Hiện tại: " + dang_ky_xe.getStatus() + ")");
         }
 
         if (approved) {
-            vehicle.setStatus("ACTIVE");
-            vehicle.setRegistrationDate(LocalDate.now());
+            dang_ky_xe.setStatus("ACTIVE");
+            dang_ky_xe.setRegistrationDate(LocalDate.now());
         } else {
-            vehicle.setStatus("REJECTED");
+            dang_ky_xe.setStatus("REJECTED");
         }
 
-        vehicle = vehicleRepository.save(vehicle);
+        dang_ky_xe = vehicleRepository.save(dang_ky_xe);
 
         // Bắn thông báo cho sinh viên khi được duyệt hoặc từ chối gửi xe
-        if (notificationService != null && vehicle.getStudent() != null) {
+        if (notificationService != null && dang_ky_xe.getStudent() != null) {
             String title = approved ? "Đăng ký xe của bạn đã được duyệt!" : "Đăng ký xe không được duyệt";
             String content = String.format("Phương tiện biển số %s (%s) của bạn đã %s.",
-                    vehicle.getLicensePlate() != null ? vehicle.getLicensePlate() : "",
-                    vehicle.getVehicleType(),
+                    dang_ky_xe.getLicensePlate() != null ? dang_ky_xe.getLicensePlate() : "",
+                    dang_ky_xe.getVehicleType(),
                     approved ? "được kích hoạt thành công" : "bị từ chối duyệt");
-            notificationService.notifyStudent(vehicle.getStudent(), title, content, null);
+            notificationService.notifyStudent(dang_ky_xe.getStudent(), title, content, null);
         }
 
-        return vehicleMapper.toResponse(vehicle);
+        return vehicleMapper.toResponse(dang_ky_xe);
     }
 
     @Transactional(readOnly = true)
     public VehicleRegistration_Response getById(String vehicleId) {
-        VehicleRegistration vehicle = vehicleRepository.findById(vehicleId)
+        VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin gửi xe"));
 
-        checkAccessOwnership(vehicle);
-        return vehicleMapper.toResponse(vehicle);
+        checkAccessOwnership(dang_ky_xe);
+        return vehicleMapper.toResponse(dang_ky_xe);
     }
 
     @Transactional(readOnly = true)
@@ -260,8 +260,8 @@ public class VehicleRegistration_Service {
             throw new AppException(ErrorCode.STUDENT_NOT_FOUND);
         }
 
-        List<VehicleRegistration> list = vehicleRepository.findByStudent_StudentId(studentId);
-        return vehicleMapper.toResponseList(list);
+        List<VehicleRegistration> danh_sach_xe = vehicleRepository.findByStudent_StudentId(studentId);
+        return vehicleMapper.toResponseList(danh_sach_xe);
     }
 
     // Kiểm tra quyền truy cập: sinh viên chỉ được xem/sửa phương tiện của chính
@@ -303,7 +303,7 @@ public class VehicleRegistration_Service {
                 : null;
         LocalDate expiringBefore = Boolean.TRUE.equals(expiringSoon) ? LocalDate.now().plusDays(30) : null;
 
-        Page<VehicleRegistration> pageResult = vehicleRepository.searchVehicles(
+        Page<VehicleRegistration> trang_xe = vehicleRepository.searchVehicles(
                 cleanPlate,
                 (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
                 (vehicleType != null && !vehicleType.isBlank()) ? vehicleType.trim() : null,
@@ -311,18 +311,18 @@ public class VehicleRegistration_Service {
                 expiringBefore,
                 pageable);
 
-        List<VehicleRegistration_Response> data = vehicleMapper.toResponseList(pageResult.getContent());
+        List<VehicleRegistration_Response> danh_sach_ket_qua = vehicleMapper.toResponseList(trang_xe.getContent());
 
         return Page_Response.<VehicleRegistration_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_xe.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .totalPages(trang_xe.getTotalPages())
+                .totalElements(trang_xe.getTotalElements())
+                .hasPrevious(trang_xe.hasPrevious())
+                .hasNext(trang_xe.hasNext())
+                .isFirst(trang_xe.isFirst())
+                .isLast(trang_xe.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
@@ -334,18 +334,18 @@ public class VehicleRegistration_Service {
     // Cập nhật thông tin gửi xe
     @Transactional
     public VehicleRegistration_Response update(String vehicleId, VehicleRegistration_Request request) {
-        VehicleRegistration vehicle = vehicleRepository.findById(vehicleId)
+        VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin gửi xe"));
 
         boolean isStaffOrAdmin = currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER")
                 || currentUserService.hasRole("STAFF");
         if (!isStaffOrAdmin) {
             String currentStudentId = currentUserService.findStudentId().orElse("");
-            if (vehicle.getStudent() == null || !vehicle.getStudent().getStudentId().equals(currentStudentId)) {
+            if (dang_ky_xe.getStudent() == null || !dang_ky_xe.getStudent().getStudentId().equals(currentStudentId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
             // Sinh viên chỉ được sửa dòng xe hoặc biển số khi còn đang chờ duyệt PENDING
-            if (!"PENDING".equalsIgnoreCase(vehicle.getStatus())) {
+            if (!"PENDING".equalsIgnoreCase(dang_ky_xe.getStatus())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Không thể chỉnh sửa thông tin xe đã được duyệt hoạt động");
             }
@@ -353,20 +353,20 @@ public class VehicleRegistration_Service {
 
         if (request.getLicensePlate() != null && !request.getLicensePlate().isBlank()) {
             String cleanPlate = normalizeLicensePlate(request.getLicensePlate());
-            if (!cleanPlate.equals(vehicle.getLicensePlate())) {
+            if (!cleanPlate.equals(dang_ky_xe.getLicensePlate())) {
                 boolean duplicate = vehicleRepository.findByLicensePlate(cleanPlate).stream()
-                        .anyMatch(v -> !v.getVehicleId().equals(vehicleId)
-                                && List.of("ACTIVE", "PENDING").contains(v.getStatus()));
+                    .anyMatch(v -> !v.getVehicleId().equals(vehicleId)
+                            && List.of("ACTIVE", "PENDING").contains(v.getStatus()));
                 if (duplicate) {
                     throw new AppException(ErrorCode.OPERATION_FAILED,
                             "Biển số xe '" + cleanPlate + "' đã được đăng ký cho phương tiện khác");
                 }
-                vehicle.setLicensePlate(cleanPlate);
+                dang_ky_xe.setLicensePlate(cleanPlate);
             }
         }
 
         if (request.getBrandModel() != null) {
-            vehicle.setBrandModel(request.getBrandModel());
+            dang_ky_xe.setBrandModel(request.getBrandModel());
         }
 
         // Chỉ cán bộ quản lý mới được thay đổi trạng thái, loại xe, đơn giá và ngày hết
@@ -374,8 +374,8 @@ public class VehicleRegistration_Service {
         if (isStaffOrAdmin) {
             if (request.getVehicleType() != null && !request.getVehicleType().isBlank()) {
                 String normalizedType = normalizeVehicleType(request.getVehicleType());
-                vehicle.setVehicleType(normalizedType);
-                vehicle.setMonthlyFee(resolveMonthlyFee(normalizedType));
+                dang_ky_xe.setVehicleType(normalizedType);
+                dang_ky_xe.setMonthlyFee(resolveMonthlyFee(normalizedType));
             }
             if (request.getStatus() != null && !request.getStatus().isBlank()) {
                 String normalizedStatus = request.getStatus().trim().toUpperCase();
@@ -384,30 +384,30 @@ public class VehicleRegistration_Service {
                             "Trạng thái đăng ký xe '" + request.getStatus() + "' không hợp lệ. Cho phép: "
                                     + ALLOWED_STATUSES);
                 }
-                vehicle.setStatus(normalizedStatus);
+                dang_ky_xe.setStatus(normalizedStatus);
             }
             if (request.getExpiryDate() != null) {
-                vehicle.setExpiryDate(request.getExpiryDate());
+                dang_ky_xe.setExpiryDate(request.getExpiryDate());
             }
             if (request.getMonthlyFee() != null) {
-                vehicle.setMonthlyFee(request.getMonthlyFee());
+                dang_ky_xe.setMonthlyFee(request.getMonthlyFee());
             }
         }
 
-        vehicle = vehicleRepository.save(vehicle);
-        return vehicleMapper.toResponse(vehicle);
+        dang_ky_xe = vehicleRepository.save(dang_ky_xe);
+        return vehicleMapper.toResponse(dang_ky_xe);
     }
 
     // Xóa mềm phương tiện: chuyển trạng thái thành CANCELLED để lưu vết tính phí
     @Transactional
     public void delete(String vehicleId) {
-        VehicleRegistration vehicle = vehicleRepository.findById(vehicleId)
+        VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin gửi xe"));
 
-        checkAccessOwnership(vehicle);
+        checkAccessOwnership(dang_ky_xe);
 
-        vehicle.setStatus("CANCELLED");
-        vehicleRepository.save(vehicle);
+        dang_ky_xe.setStatus("CANCELLED");
+        vehicleRepository.save(dang_ky_xe);
     }
 
     // Tác vụ định kỳ quét và cập nhật trạng thái EXPIRED cho các phương tiện quá
@@ -416,15 +416,15 @@ public class VehicleRegistration_Service {
     @Transactional
     public int autoExpireVehicles() {
         LocalDate today = LocalDate.now();
-        List<VehicleRegistration> expiredVehicles = vehicleRepository.findByStatusAndExpiryDateBefore("ACTIVE", today);
-        if (expiredVehicles.isEmpty()) {
+        List<VehicleRegistration> danh_sach_xe_het_han = vehicleRepository.findByStatusAndExpiryDateBefore("ACTIVE", today);
+        if (danh_sach_xe_het_han.isEmpty()) {
             return 0;
         }
-        for (VehicleRegistration v : expiredVehicles) {
-            v.setStatus("EXPIRED");
+        for (VehicleRegistration xe : danh_sach_xe_het_han) {
+            xe.setStatus("EXPIRED");
         }
-        vehicleRepository.saveAll(expiredVehicles);
-        log.info("Đã tự động chuyển trạng thái EXPIRED cho {} phương tiện hết hạn", expiredVehicles.size());
-        return expiredVehicles.size();
+        vehicleRepository.saveAll(danh_sach_xe_het_han);
+        log.info("Đã tự động chuyển trạng thái EXPIRED cho {} phương tiện hết hạn", danh_sach_xe_het_han.size());
+        return danh_sach_xe_het_han.size();
     }
 }
