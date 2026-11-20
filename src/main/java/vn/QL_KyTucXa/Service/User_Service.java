@@ -123,26 +123,26 @@ public class User_Service {
             throw new AppException(ErrorCode.PASSWORD_BLANK);
         }
 
-        Role studentRole = roleRepository.findByRoleCode("STUDENT")
+        Role vai_tro_sinh_vien = roleRepository.findByRoleCode("STUDENT")
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, "Không tìm thấy vai trò Sinh viên"));
 
-        User user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRole(studentRole);
+        User nguoi_dung = userMapper.toEntity(request);
+        nguoi_dung.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        nguoi_dung.setRole(vai_tro_sinh_vien);
         // Ghi đè trạng thái và xóa telegramChatId để đảm bảo an toàn
-        user.setStatus("ACTIVE");
-        user.setTelegramChatId(null);
-        user.setIsEmailVerified(false);
-        user.setFailedLoginAttempts(0);
+        nguoi_dung.setStatus("ACTIVE");
+        nguoi_dung.setTelegramChatId(null);
+        nguoi_dung.setIsEmailVerified(false);
+        nguoi_dung.setFailedLoginAttempts(0);
 
-        user = userRepository.save(user);
+        nguoi_dung = userRepository.save(nguoi_dung);
 
         if (auditLogService != null) {
-            auditLogService.recordAction("CREATE_USER", "nguoiDung", user.getUserId(), null,
-                    "Username: " + user.getUsername() + ", Role: STUDENT");
+            auditLogService.recordAction("CREATE_USER", "nguoiDung", nguoi_dung.getUserId(), null,
+                    "Username: " + nguoi_dung.getUsername() + ", Role: STUDENT");
         }
 
-        return sanitizeUserResponse(userMapper.toResponse(user), user.getUserId());
+        return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
     /**
@@ -152,10 +152,10 @@ public class User_Service {
     public User_Response getById(String userId) {
         log.info("Lấy thông tin người dùng theo ID: {}", userId);
 
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return sanitizeUserResponse(userMapper.toResponse(user), user.getUserId());
+        return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
     /**
@@ -165,8 +165,8 @@ public class User_Service {
     public List<User_Response> getAll() {
         log.info("Lấy danh sách tất cả người dùng");
 
-        List<User> users = userRepository.findAll();
-        return users.stream()
+        List<User> danh_sach_nguoi_dung = userRepository.findAll();
+        return danh_sach_nguoi_dung.stream()
                 .map(userMapper::toResponse)
                 .map(r -> sanitizeUserResponse(r, r.getUserId()))
                 .toList();
@@ -185,21 +185,21 @@ public class User_Service {
         String cleanRoleId = (roleId != null && !roleId.isBlank()) ? roleId.trim() : null;
         String cleanStatus = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
 
-        Page<User> userPage = userRepository.searchUsers(cleanKeyword, cleanRoleId, cleanStatus, pageable);
-        List<User_Response> content = userPage.getContent().stream()
+        Page<User> trang_nguoi_dung = userRepository.searchUsers(cleanKeyword, cleanRoleId, cleanStatus, pageable);
+        List<User_Response> content = trang_nguoi_dung.getContent().stream()
                 .map(userMapper::toResponse)
                 .map(r -> sanitizeUserResponse(r, r.getUserId()))
                 .toList();
 
         return Page_Response.<User_Response>builder()
-                .currentPage(userPage.getNumber() + 1)
+                .currentPage(trang_nguoi_dung.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(userPage.getTotalPages())
-                .totalElements(userPage.getTotalElements())
-                .hasPrevious(userPage.hasPrevious())
-                .hasNext(userPage.hasNext())
-                .isFirst(userPage.isFirst())
-                .isLast(userPage.isLast())
+                .totalPages(trang_nguoi_dung.getTotalPages())
+                .totalElements(trang_nguoi_dung.getTotalElements())
+                .hasPrevious(trang_nguoi_dung.hasPrevious())
+                .hasNext(trang_nguoi_dung.hasNext())
+                .isFirst(trang_nguoi_dung.isFirst())
+                .isLast(trang_nguoi_dung.isLast())
                 .data(content)
                 .build();
     }
@@ -212,10 +212,10 @@ public class User_Service {
     public User_Response update(String userId, User_Request request) {
         log.info("Cập nhật thông tin người dùng: {}", userId);
 
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
 
         // Chặn người không phải ADMIN sửa tài khoản ADMIN
@@ -224,30 +224,30 @@ public class User_Service {
                     "Chỉ Quản trị viên cấp cao mới có quyền chỉnh sửa tài khoản ADMIN");
         }
 
-        if (!user.getUsername().equalsIgnoreCase(request.getUsername())
+        if (!nguoi_dung.getUsername().equalsIgnoreCase(request.getUsername())
                 && userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        if (!user.getEmail().equalsIgnoreCase(request.getEmail())) {
+        if (!nguoi_dung.getEmail().equalsIgnoreCase(request.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Email đã được sử dụng bởi tài khoản khác");
             }
-            user.setEmail(request.getEmail());
-            user.setIsEmailVerified(false);
+            nguoi_dung.setEmail(request.getEmail());
+            nguoi_dung.setIsEmailVerified(false);
         }
 
         // Kiểm tra và xử lý khi đổi vai trò
-        if (request.getRoleId() != null && !user.getRole().getRoleId().equals(request.getRoleId())) {
-            Role newRole = roleRepository.findById(request.getRoleId())
+        if (request.getRoleId() != null && !nguoi_dung.getRole().getRoleId().equals(request.getRoleId())) {
+            Role vai_tro_moi = roleRepository.findById(request.getRoleId())
                     .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-            String newRoleCode = newRole.getRoleCode() != null ? newRole.getRoleCode().trim().toUpperCase() : "";
+            String newRoleCode = vai_tro_moi.getRoleCode() != null ? vai_tro_moi.getRoleCode().trim().toUpperCase() : "";
 
             // Chặn người không phải ADMIN nâng quyền thành ADMIN hoặc MANAGER
             if (("ADMIN".equals(newRoleCode) || "MANAGER".equals(newRoleCode)) && !callerIsAdmin) {
                 throw new AppException(ErrorCode.UNAUTHORIZED,
-                        "Chỉ Quản trị viên cấp cao (ADMIN) mới có quyền gán vai trò Quản lý (MANAGER) hoặc Quản trị viên (ADMIN)");
+                    "Chỉ Quản trị viên cấp cao (ADMIN) mới có quyền gán vai trò Quản lý (MANAGER) hoặc Quản trị viên (ADMIN)");
             }
 
             // Chặn hạ quyền ADMIN cuối cùng hoặc tự hạ quyền ADMIN của chính mình
@@ -264,7 +264,7 @@ public class User_Service {
                 }
             }
 
-            user.setRole(newRole);
+            nguoi_dung.setRole(vai_tro_moi);
 
             // Thu hồi toàn bộ Refresh Token của user khi đổi vai trò vì vai trò gắn liền
             // với token
@@ -273,12 +273,12 @@ public class User_Service {
             }
         }
 
-        userMapper.updateEntityFromRequest(user, request);
+        userMapper.updateEntityFromRequest(nguoi_dung, request);
 
         // Đổi mật khẩu
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-            user.setMustChangePassword(false);
+            nguoi_dung.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            nguoi_dung.setMustChangePassword(false);
             if (refreshTokenService != null) {
                 refreshTokenService.revokeAllActiveByUserId(userId);
             }
@@ -287,7 +287,7 @@ public class User_Service {
         // Kiểm tra trạng thái nếu gửi kèm trong update (không cho đi vòng updateStatus)
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             String normalizedStatus = request.getStatus().trim().toUpperCase();
-            if (!normalizedStatus.equals(user.getStatus())) {
+            if (!normalizedStatus.equals(nguoi_dung.getStatus())) {
                 if (!normalizedStatus.equals("ACTIVE") && !normalizedStatus.equals("BANNED")
                         && !normalizedStatus.equals("LOCKED") && !normalizedStatus.equals("INACTIVE")) {
                     throw new AppException(ErrorCode.OPERATION_FAILED,
@@ -310,14 +310,14 @@ public class User_Service {
                         refreshTokenService.revokeAllActiveByUserId(userId);
                     }
                 } else {
-                    user.setFailedLoginAttempts(0);
+                    nguoi_dung.setFailedLoginAttempts(0);
                 }
-                user.setStatus(normalizedStatus);
+                nguoi_dung.setStatus(normalizedStatus);
             }
         }
 
-        user = userRepository.save(user);
-        return sanitizeUserResponse(userMapper.toResponse(user), user.getUserId());
+        nguoi_dung = userRepository.save(nguoi_dung);
+        return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
     /**
@@ -332,10 +332,10 @@ public class User_Service {
                     "Trạng thái chỉ nhận ACTIVE (mở khóa) hoặc BANNED / LOCKED / INACTIVE (khóa)");
         }
 
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         if (targetIsAdmin && !callerIsAdmin) {
             throw new AppException(ErrorCode.UNAUTHORIZED,
                     "Chỉ Quản trị viên cấp cao mới có quyền thay đổi trạng thái tài khoản ADMIN");
@@ -362,17 +362,17 @@ public class User_Service {
                 refreshTokenService.revokeAllActiveByUserId(userId);
             }
         } else {
-            user.setFailedLoginAttempts(0);
+            nguoi_dung.setFailedLoginAttempts(0);
         }
 
-        user.setStatus(normalized);
-        User savedUser = userRepository.save(user);
+        nguoi_dung.setStatus(normalized);
+        User nguoi_dung_da_luu = userRepository.save(nguoi_dung);
 
         if (auditLogService != null) {
             auditLogService.recordAction("UPDATE_USER_STATUS", "nguoiDung", userId, null, "Status: " + normalized);
         }
 
-        return sanitizeUserResponse(userMapper.toResponse(savedUser), user.getUserId());
+        return sanitizeUserResponse(userMapper.toResponse(nguoi_dung_da_luu), nguoi_dung.getUserId());
     }
 
     /**
@@ -380,21 +380,21 @@ public class User_Service {
      */
     @Transactional
     public User_Response updateSelf(String userId, UserSelfUpdate_Request request) {
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         if (request.getEmail() != null && !request.getEmail().isBlank()
-                && !user.getEmail().equalsIgnoreCase(request.getEmail())) {
+                && !nguoi_dung.getEmail().equalsIgnoreCase(request.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Email đã được sử dụng bởi tài khoản khác");
             }
-            user.setEmail(request.getEmail());
+            nguoi_dung.setEmail(request.getEmail());
             // Đặt lại isEmailVerified = false khi đổi email
-            user.setIsEmailVerified(false);
+            nguoi_dung.setIsEmailVerified(false);
         }
 
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
-            user.setPhone(request.getPhone());
+            nguoi_dung.setPhone(request.getPhone());
         }
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
@@ -402,7 +402,7 @@ public class User_Service {
                     "Không thể đổi mật khẩu qua cập nhật thông tin cá nhân. Vui lòng sử dụng chức năng đổi mật khẩu chuyên biệt (/api/users/me/change-password) có xác thực mật khẩu hiện tại");
         }
 
-        return sanitizeUserResponse(userMapper.toResponse(userRepository.save(user)), user.getUserId());
+        return sanitizeUserResponse(userMapper.toResponse(userRepository.save(nguoi_dung)), nguoi_dung.getUserId());
     }
 
     /**
@@ -410,16 +410,16 @@ public class User_Service {
      */
     @Transactional
     public void changePassword(String userId, vn.QL_KyTucXa.DTO.Request.ChangePassword_Request request) {
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), nguoi_dung.getPasswordHash())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Mật khẩu hiện tại không chính xác");
         }
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        user.setMustChangePassword(false);
-        userRepository.save(user);
+        nguoi_dung.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        nguoi_dung.setMustChangePassword(false);
+        userRepository.save(nguoi_dung);
 
         if (refreshTokenService != null) {
             refreshTokenService.revokeAllActiveByUserId(userId);
@@ -434,7 +434,7 @@ public class User_Service {
      */
     @Transactional
     public User_Response updateTelegram2FA(String userId, String telegramChatId, String confirmPassword) {
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         String currentUserId = resolveCurrentUserId();
@@ -442,7 +442,7 @@ public class User_Service {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        User currentUser = userRepository.findById(currentUserId)
+        User nguoi_dung_hien_tai = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
@@ -453,7 +453,7 @@ public class User_Service {
                     "Chỉ chính chủ tài khoản hoặc Quản trị viên mới được phép cập nhật Telegram Chat ID");
         }
 
-        boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
 
         // Nếu cập nhật Telegram 2FA cho tài khoản ADMIN, bắt buộc xác nhận lại mật khẩu
         // của người đang thao tác
@@ -462,7 +462,7 @@ public class User_Service {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Vui lòng nhập mật khẩu xác nhận để cập nhật cấu hình Telegram 2FA cho Quản trị viên");
             }
-            if (!passwordEncoder.matches(confirmPassword, currentUser.getPasswordHash())) {
+            if (!passwordEncoder.matches(confirmPassword, nguoi_dung_hien_tai.getPasswordHash())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Mật khẩu xác nhận không chính xác");
             }
         }
@@ -471,8 +471,8 @@ public class User_Service {
                 ? telegramChatId.trim()
                 : null;
 
-        user.setTelegramChatId(cleanChatId);
-        return sanitizeUserResponse(userMapper.toResponse(userRepository.save(user)), user.getUserId());
+        nguoi_dung.setTelegramChatId(cleanChatId);
+        return sanitizeUserResponse(userMapper.toResponse(userRepository.save(nguoi_dung)), nguoi_dung.getUserId());
     }
 
     @Transactional
@@ -488,10 +488,10 @@ public class User_Service {
     public void delete(String userId) {
         log.info("Xóa người dùng có ID: {}", userId);
 
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
 
         // 1. Kiểm tra quyền bảo vệ ADMIN
@@ -526,11 +526,11 @@ public class User_Service {
         // Token thay vì xóa cứng
         // (để bảo toàn toàn vẹn dữ liệu và tránh lỗi Foreign Key với nhật ký, thông
         // báo, yêu cầu sửa chữa, refresh token)
-        user.setStatus("INACTIVE");
-        userRepository.save(user);
+        nguoi_dung.setStatus("INACTIVE");
+        userRepository.save(nguoi_dung);
 
         if (auditLogService != null) {
-            auditLogService.recordAction("DELETE_USER", "nguoiDung", userId, Map.of("username", user.getUsername()),
+            auditLogService.recordAction("DELETE_USER", "nguoiDung", userId, Map.of("username", nguoi_dung.getUsername()),
                     null);
         }
 
