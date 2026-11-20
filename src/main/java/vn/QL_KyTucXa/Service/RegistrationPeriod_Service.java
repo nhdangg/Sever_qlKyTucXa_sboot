@@ -48,19 +48,19 @@ public class RegistrationPeriod_Service {
 
         validatePeriodRequest(request, null, null);
 
-        RegistrationPeriod period = periodMapper.toEntity(request);
-        period = periodRepository.save(period);
+        RegistrationPeriod dot_dang_ky = periodMapper.toEntity(request);
+        dot_dang_ky = periodRepository.save(dot_dang_ky);
 
-        return periodMapper.toResponse(period);
+        return periodMapper.toResponse(dot_dang_ky);
     }
 
     // Lấy chi tiết đợt đăng ký theo ID
     @Transactional(readOnly = true)
     public RegistrationPeriod_Response getById(String periodId) {
-        RegistrationPeriod period = periodRepository.findById(periodId)
+        RegistrationPeriod dot_dang_ky = periodRepository.findById(periodId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy đợt đăng ký"));
 
-        return periodMapper.toResponse(period);
+        return periodMapper.toResponse(dot_dang_ky);
     }
 
     // Lấy danh sách đợt đăng ký không phân trang có hỗ trợ lọc theo năm học và trạng thái
@@ -69,18 +69,18 @@ public class RegistrationPeriod_Service {
         String yearFilter = (academicYear != null && !academicYear.isBlank()) ? academicYear.trim() : null;
         String statusFilter = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
 
-        List<RegistrationPeriod> list;
+        List<RegistrationPeriod> danh_sach_dot_dang_ky;
         if (yearFilter != null && statusFilter != null) {
-            list = periodRepository.findByAcademicYearAndStatus(yearFilter, statusFilter);
+            danh_sach_dot_dang_ky = periodRepository.findByAcademicYearAndStatus(yearFilter, statusFilter);
         } else if (yearFilter != null) {
-            list = periodRepository.findByAcademicYear(yearFilter);
+            danh_sach_dot_dang_ky = periodRepository.findByAcademicYear(yearFilter);
         } else if (statusFilter != null) {
-            list = periodRepository.findByStatus(statusFilter);
+            danh_sach_dot_dang_ky = periodRepository.findByStatus(statusFilter);
         } else {
-            list = periodRepository.findAll();
+            danh_sach_dot_dang_ky = periodRepository.findAll();
         }
 
-        return periodMapper.toResponseList(list);
+        return periodMapper.toResponseList(danh_sach_dot_dang_ky);
     }
 
     // Lấy toàn bộ danh sách đợt đăng ký không phân trang
@@ -107,18 +107,18 @@ public class RegistrationPeriod_Service {
         String yearFilter = (academicYear != null && !academicYear.isBlank()) ? academicYear.trim() : null;
         String statusFilter = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
 
-        Page<RegistrationPeriod> pageResult = periodRepository.searchPeriods(yearFilter, statusFilter, pageable);
-        List<RegistrationPeriod_Response> data = periodMapper.toResponseList(pageResult.getContent());
+        Page<RegistrationPeriod> trang_dot_dang_ky = periodRepository.searchPeriods(yearFilter, statusFilter, pageable);
+        List<RegistrationPeriod_Response> data = periodMapper.toResponseList(trang_dot_dang_ky.getContent());
 
         return Page_Response.<RegistrationPeriod_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_dot_dang_ky.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_dot_dang_ky.getTotalPages())
+                .totalElements(trang_dot_dang_ky.getTotalElements())
+                .hasPrevious(trang_dot_dang_ky.hasPrevious())
+                .hasNext(trang_dot_dang_ky.hasNext())
+                .isFirst(trang_dot_dang_ky.isFirst())
+                .isLast(trang_dot_dang_ky.isLast())
                 .data(data)
                 .build();
     }
@@ -132,21 +132,21 @@ public class RegistrationPeriod_Service {
     // Cập nhật thông tin đợt đăng ký
     @Transactional
     public RegistrationPeriod_Response update(String periodId, RegistrationPeriod_Request request) {
-        RegistrationPeriod period = periodRepository.findById(periodId)
+        RegistrationPeriod dot_dang_ky = periodRepository.findById(periodId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy đợt đăng ký"));
 
-        validatePeriodRequest(request, periodId, period.getStatus());
+        validatePeriodRequest(request, periodId, dot_dang_ky.getStatus());
 
-        periodMapper.updateEntityFromRequest(period, request);
-        period = periodRepository.save(period);
+        periodMapper.updateEntityFromRequest(dot_dang_ky, request);
+        dot_dang_ky = periodRepository.save(dot_dang_ky);
 
-        return periodMapper.toResponse(period);
+        return periodMapper.toResponse(dot_dang_ky);
     }
 
     // Xóa đợt đăng ký có kiểm tra ràng buộc hợp đồng để tránh lỗi khóa ngoại FK
     @Transactional
     public void delete(String periodId) {
-        RegistrationPeriod period = periodRepository.findById(periodId)
+        RegistrationPeriod dot_dang_ky = periodRepository.findById(periodId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy đợt đăng ký"));
 
         // Kiểm tra ràng buộc hợp đồng đã phát sinh để tránh lỗi khóa ngoại FK
@@ -154,31 +154,31 @@ public class RegistrationPeriod_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa đợt đăng ký đã phát sinh hợp đồng sinh viên");
         }
 
-        periodRepository.delete(period);
+        periodRepository.delete(dot_dang_ky);
     }
 
     // Tự động quét và cập nhật trạng thái đợt đăng ký theo ngày (UPCOMING, OPEN, CLOSED)
     @Transactional
     public int autoUpdatePeriodStatuses() {
         log.info("Bắt đầu tác vụ tự động quét và cập nhật trạng thái các đợt đăng ký");
-        List<RegistrationPeriod> periods = periodRepository.findAll();
+        List<RegistrationPeriod> danh_sach_dot_dang_ky = periodRepository.findAll();
         int updatedCount = 0;
 
-        for (RegistrationPeriod period : periods) {
+        for (RegistrationPeriod dot_dang_ky : danh_sach_dot_dang_ky) {
             // Không tự động đổi trạng thái nếu đợt đăng ký đã bị CANCELLED
-            if ("CANCELLED".equalsIgnoreCase(period.getStatus())) {
+            if ("CANCELLED".equalsIgnoreCase(dot_dang_ky.getStatus())) {
                 continue;
             }
 
-            String currentStatus = period.getStatus();
+            String currentStatus = dot_dang_ky.getStatus();
             String expectedStatus = computeStatusByDate(
-                    period.getStartDate(), period.getEndDate(), period.getRegistrationDeadline());
+                    dot_dang_ky.getStartDate(), dot_dang_ky.getEndDate(), dot_dang_ky.getRegistrationDeadline());
 
             if (!expectedStatus.equalsIgnoreCase(currentStatus)) {
                 log.info("Chuyển trạng thái đợt đăng ký {}: {} -> {}",
-                        period.getPeriodName(), currentStatus, expectedStatus);
-                period.setStatus(expectedStatus);
-                periodRepository.save(period);
+                        dot_dang_ky.getPeriodName(), currentStatus, expectedStatus);
+                dot_dang_ky.setStatus(expectedStatus);
+                periodRepository.save(dot_dang_ky);
                 updatedCount++;
             }
         }

@@ -54,15 +54,15 @@ public class RoomTransfer_Service {
     public RoomTransfer_Response create(RoomTransfer_Request request) {
         log.info("Tạo yêu cầu chuyển phòng cho hợp đồng ID: {}", request.getContractId());
 
-        Contract contract = resolveContract(request.getContractId(), null);
+        Contract hop_dong = resolveContract(request.getContractId(), null);
 
-        if (roomTransferRepository.existsByContract_ContractIdAndStatus(contract.getContractId(), "PENDING")) {
+        if (roomTransferRepository.existsByContract_ContractIdAndStatus(hop_dong.getContractId(), "PENDING")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Hợp đồng này đang có yêu cầu chuyển phòng chờ xử lý (PENDING). Vui lòng đợi kết quả hoặc hủy yêu cầu cũ");
         }
 
-        Bed oldBed = contract.getBed();
-        Bed newBed = resolveNewBed(request.getNewBedId(), request.getTargetRoomId(), oldBed, contract.getStudent());
+        Bed giuong_cu = hop_dong.getBed();
+        Bed giuong_moi = resolveNewBed(request.getNewBedId(), request.getTargetRoomId(), giuong_cu, hop_dong.getStudent());
 
         LocalDate transferDate = request.getTransferDate() != null ? request.getTransferDate() : LocalDate.now();
         if (transferDate.isBefore(LocalDate.now())) {
@@ -70,15 +70,15 @@ public class RoomTransfer_Service {
         }
         request.setTransferDate(transferDate);
 
-        RoomTransfer transfer = roomTransferMapper.toEntity(request);
-        transfer.setContract(contract);
-        transfer.setOldBed(oldBed);
-        transfer.setNewBed(newBed);
-        transfer.setTransferDate(transferDate);
-        transfer.setStatus("PENDING");
+        RoomTransfer chuyen_phong = roomTransferMapper.toEntity(request);
+        chuyen_phong.setContract(hop_dong);
+        chuyen_phong.setOldBed(giuong_cu);
+        chuyen_phong.setNewBed(giuong_moi);
+        chuyen_phong.setTransferDate(transferDate);
+        chuyen_phong.setStatus("PENDING");
 
-        transfer = roomTransferRepository.save(transfer);
-        return roomTransferMapper.toResponse(transfer);
+        chuyen_phong = roomTransferRepository.save(chuyen_phong);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Tạo yêu cầu chuyển phòng cho sinh viên: xác minh quyền sở hữu hợp đồng chống IDOR và kiểm tra hợp đồng ACTIVE
@@ -86,15 +86,15 @@ public class RoomTransfer_Service {
     public RoomTransfer_Response createForStudent(String studentId, RoomTransfer_Request request) {
         log.info("Sinh viên ID: {} gửi yêu cầu chuyển phòng", studentId);
 
-        Contract contract = resolveContract(request.getContractId(), studentId);
+        Contract hop_dong = resolveContract(request.getContractId(), studentId);
 
-        if (roomTransferRepository.existsByContract_ContractIdAndStatus(contract.getContractId(), "PENDING")) {
+        if (roomTransferRepository.existsByContract_ContractIdAndStatus(hop_dong.getContractId(), "PENDING")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Bạn đang có một yêu cầu chuyển phòng chờ duyệt (PENDING). Không thể tạo thêm yêu cầu mới");
         }
 
-        Bed oldBed = contract.getBed();
-        Bed newBed = resolveNewBed(request.getNewBedId(), request.getTargetRoomId(), oldBed, contract.getStudent());
+        Bed giuong_cu = hop_dong.getBed();
+        Bed giuong_moi = resolveNewBed(request.getNewBedId(), request.getTargetRoomId(), giuong_cu, hop_dong.getStudent());
 
         LocalDate transferDate = request.getTransferDate() != null ? request.getTransferDate() : LocalDate.now();
         if (transferDate.isBefore(LocalDate.now())) {
@@ -102,38 +102,38 @@ public class RoomTransfer_Service {
         }
         request.setTransferDate(transferDate);
 
-        RoomTransfer transfer = roomTransferMapper.toEntity(request);
-        transfer.setContract(contract);
-        transfer.setOldBed(oldBed);
-        transfer.setNewBed(newBed);
-        transfer.setTransferDate(transferDate);
-        transfer.setStatus("PENDING");
+        RoomTransfer chuyen_phong = roomTransferMapper.toEntity(request);
+        chuyen_phong.setContract(hop_dong);
+        chuyen_phong.setOldBed(giuong_cu);
+        chuyen_phong.setNewBed(giuong_moi);
+        chuyen_phong.setTransferDate(transferDate);
+        chuyen_phong.setStatus("PENDING");
 
-        transfer = roomTransferRepository.save(transfer);
+        chuyen_phong = roomTransferRepository.save(chuyen_phong);
 
         // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX
-        if (notificationService != null && contract.getStudent() != null) {
-            String fromRoom = (oldBed != null && oldBed.getRoom() != null) ? oldBed.getRoom().getRoomNumber() : "Phòng cũ";
-            String toRoom = (newBed != null && newBed.getRoom() != null) ? newBed.getRoom().getRoomNumber() : "Phòng mới";
-            String title = "Đơn xin chuyển phòng từ SV " + contract.getStudent().getFullName();
+        if (notificationService != null && hop_dong.getStudent() != null) {
+            String fromRoom = (giuong_cu != null && giuong_cu.getRoom() != null) ? giuong_cu.getRoom().getRoomNumber() : "Phòng cũ";
+            String toRoom = (giuong_moi != null && giuong_moi.getRoom() != null) ? giuong_moi.getRoom().getRoomNumber() : "Phòng mới";
+            String title = "Đơn xin chuyển phòng từ SV " + hop_dong.getStudent().getFullName();
             String content = String.format("Sinh viên %s (MSSV: %s) vừa gửi đơn xin chuyển từ phòng %s sang phòng %s. Lý do: %s",
-                    contract.getStudent().getFullName(),
-                    contract.getStudent().getStudentCode(),
+                    hop_dong.getStudent().getFullName(),
+                    hop_dong.getStudent().getStudentCode(),
                     fromRoom,
                     toRoom,
                     request.getReason() != null ? request.getReason() : "Nguyện vọng cá nhân");
-            notificationService.notifyStaffAndAdmins(title, content, contract.getStudent().getUser(), transfer.getTransferId());
+            notificationService.notifyStaffAndAdmins(title, content, hop_dong.getStudent().getUser(), chuyen_phong.getTransferId());
         }
 
-        return roomTransferMapper.toResponse(transfer);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Lấy danh sách yêu cầu chuyển phòng của sinh viên bằng một câu truy vấn trực tiếp tránh lỗi N+1
     @Transactional(readOnly = true)
     public List<RoomTransfer_Response> getByStudentId(String studentId) {
         checkStudentAccessOwnership(studentId);
-        List<RoomTransfer> list = roomTransferRepository.findByContract_Student_StudentId(studentId);
-        return roomTransferMapper.toResponseList(list);
+        List<RoomTransfer> danh_sach_chuyen_phong = roomTransferRepository.findByContract_Student_StudentId(studentId);
+        return roomTransferMapper.toResponseList(danh_sach_chuyen_phong);
     }
 
     // Lấy danh sách yêu cầu chuyển phòng của sinh viên có phân trang
@@ -146,133 +146,133 @@ public class RoomTransfer_Service {
         Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<RoomTransfer> pageResult = roomTransferRepository.findByContract_Student_StudentId(studentId, pageable);
-        List<RoomTransfer_Response> data = roomTransferMapper.toResponseList(pageResult.getContent());
+        Page<RoomTransfer> trang_chuyen_phong = roomTransferRepository.findByContract_Student_StudentId(studentId, pageable);
+        List<RoomTransfer_Response> data = roomTransferMapper.toResponseList(trang_chuyen_phong.getContent());
 
         return Page_Response.<RoomTransfer_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_chuyen_phong.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_chuyen_phong.getTotalPages())
+                .totalElements(trang_chuyen_phong.getTotalElements())
+                .hasPrevious(trang_chuyen_phong.hasPrevious())
+                .hasNext(trang_chuyen_phong.hasNext())
+                .isFirst(trang_chuyen_phong.isFirst())
+                .isLast(trang_chuyen_phong.isLast())
                 .data(data)
                 .build();
     }
 
     // Xác thực hợp đồng chuyển phòng: kiểm tra bắt buộc hợp đồng ACTIVE và quyền sở hữu của sinh viên
     private Contract resolveContract(String contractId, String studentId) {
-        Contract contract;
+        Contract hop_dong;
         if (studentId != null && !studentId.isBlank()) {
             if (contractId != null && !contractId.isBlank()) {
-                contract = contractRepository.findById(contractId)
+                hop_dong = contractRepository.findById(contractId)
                         .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
-                if (contract.getStudent() == null || !contract.getStudent().getStudentId().equals(studentId)) {
+                if (hop_dong.getStudent() == null || !hop_dong.getStudent().getStudentId().equals(studentId)) {
                     throw new AppException(ErrorCode.OPERATION_FAILED, "Hợp đồng không thuộc quyền sở hữu của sinh viên");
                 }
             } else {
-                List<Contract> activeContracts = contractRepository.findByStudent_StudentIdAndStatus(studentId, "ACTIVE");
-                if (activeContracts.isEmpty()) {
+                List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStudent_StudentIdAndStatus(studentId, "ACTIVE");
+                if (danh_sach_hop_dong_hieu_luc.isEmpty()) {
                     throw new AppException(ErrorCode.OPERATION_FAILED, "Sinh viên không có hợp đồng lưu trú đang hoạt động (ACTIVE)");
                 }
-                contract = activeContracts.get(0);
+                hop_dong = danh_sach_hop_dong_hieu_luc.get(0);
             }
         } else {
             if (contractId == null || contractId.isBlank()) {
                 throw new AppException(ErrorCode.CONTRACT_NOT_FOUND, "Mã hợp đồng không được để trống");
             }
-            contract = contractRepository.findById(contractId)
+            hop_dong = contractRepository.findById(contractId)
                     .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
         }
 
-        if (!"ACTIVE".equalsIgnoreCase(contract.getStatus())) {
+        if (!"ACTIVE".equalsIgnoreCase(hop_dong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ có thể tạo yêu cầu chuyển phòng cho hợp đồng đang hoạt động (ACTIVE)");
         }
 
-        if (contract.getBed() == null) {
+        if (hop_dong.getBed() == null) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hợp đồng hiện chưa có giường lưu trú");
         }
 
-        return contract;
+        return hop_dong;
     }
 
     // Xác định giường mới: chỉ nhận giường AVAILABLE, chặn trùng giường cũ và kiểm tra giới tính tòa nhà
-    private Bed resolveNewBed(String newBedId, String targetRoomId, Bed oldBed, Student student) {
-        Bed newBed;
+    private Bed resolveNewBed(String newBedId, String targetRoomId, Bed giuong_cu, Student student) {
+        Bed giuong_moi;
         if (newBedId != null && !newBedId.isBlank()) {
-            newBed = bedRepository.findById(newBedId)
+            giuong_moi = bedRepository.findById(newBedId)
                     .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
-            if (!"AVAILABLE".equalsIgnoreCase(newBed.getStatus())) {
-                throw new AppException(ErrorCode.OPERATION_FAILED, "Giường mới được chọn không khả dụng (trạng thái: " + newBed.getStatus() + ")");
+            if (!"AVAILABLE".equalsIgnoreCase(giuong_moi.getStatus())) {
+                throw new AppException(ErrorCode.OPERATION_FAILED, "Giường mới được chọn không khả dụng (trạng thái: " + giuong_moi.getStatus() + ")");
             }
         } else if (targetRoomId != null && !targetRoomId.isBlank()) {
-            List<Bed> availableBeds = bedRepository.findByRoom_RoomIdAndStatus(targetRoomId, "AVAILABLE");
-            newBed = availableBeds.stream()
-                    .filter(b -> oldBed == null || !b.getBedId().equals(oldBed.getBedId()))
+            List<Bed> danh_sach_giuong_trong = bedRepository.findByRoom_RoomIdAndStatus(targetRoomId, "AVAILABLE");
+            giuong_moi = danh_sach_giuong_trong.stream()
+                    .filter(b -> giuong_cu == null || !b.getBedId().equals(giuong_cu.getBedId()))
                     .findFirst()
                     .orElseThrow(() -> new AppException(ErrorCode.OPERATION_FAILED, "Phòng đích không còn giường trống (AVAILABLE)"));
         } else {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Vui lòng chọn giường mới hoặc phòng đích muốn chuyển đến");
         }
 
-        if (oldBed != null && newBed.getBedId().equals(oldBed.getBedId())) {
+        if (giuong_cu != null && giuong_moi.getBedId().equals(giuong_cu.getBedId())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Giường mới không được trùng với giường hiện tại");
         }
 
         // Kiểm tra phòng đích không ở trạng thái bảo trì hoặc tạm đóng
-        if (newBed.getRoom() != null && ("MAINTENANCE".equalsIgnoreCase(newBed.getRoom().getStatus())
-                || "CLOSED".equalsIgnoreCase(newBed.getRoom().getStatus()))) {
+        if (giuong_moi.getRoom() != null && ("MAINTENANCE".equalsIgnoreCase(giuong_moi.getRoom().getStatus())
+                || "CLOSED".equalsIgnoreCase(giuong_moi.getRoom().getStatus()))) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Phòng đích đang ở trạng thái bảo trì hoặc tạm đóng, không thể chuyển phòng");
         }
 
         // Kiểm tra loại giới tính của tòa nhà có phù hợp với giới tính của sinh viên không
-        if (student != null && newBed.getRoom() != null && newBed.getRoom().getFloor() != null
-                && newBed.getRoom().getFloor().getBuilding() != null) {
-            Building building = newBed.getRoom().getFloor().getBuilding();
-            String buildingGender = building.getGenderType() != null ? building.getGenderType().toUpperCase() : "MIXED";
+        if (student != null && giuong_moi.getRoom() != null && giuong_moi.getRoom().getFloor() != null
+                && giuong_moi.getRoom().getFloor().getBuilding() != null) {
+            Building toa_nha = giuong_moi.getRoom().getFloor().getBuilding();
+            String buildingGender = toa_nha.getGenderType() != null ? toa_nha.getGenderType().toUpperCase() : "MIXED";
             String studentGender = student.getGender() != null ? student.getGender().toUpperCase() : "";
 
             if ("MALE".equals(buildingGender) && !("MALE".equals(studentGender) || "NAM".equals(studentGender))) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
-                        "Tòa nhà " + building.getBuildingName() + " chỉ dành cho sinh viên Nam");
+                        "Tòa nhà " + toa_nha.getBuildingName() + " chỉ dành cho sinh viên Nam");
             }
             if ("FEMALE".equals(buildingGender) && !("FEMALE".equals(studentGender) || "NU".equals(studentGender))) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
-                        "Tòa nhà " + building.getBuildingName() + " chỉ dành cho sinh viên Nữ");
+                        "Tòa nhà " + toa_nha.getBuildingName() + " chỉ dành cho sinh viên Nữ");
             }
         }
 
-        return newBed;
+        return giuong_moi;
     }
 
     // Lấy thông tin chi tiết yêu cầu chuyển phòng theo ID
     @Transactional(readOnly = true)
     public RoomTransfer_Response getById(String transferId) {
-        RoomTransfer transfer = roomTransferRepository.findById(transferId)
+        RoomTransfer chuyen_phong = roomTransferRepository.findById(transferId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu chuyển phòng"));
 
-        if (transfer.getContract() != null && transfer.getContract().getStudent() != null) {
-            checkStudentAccessOwnership(transfer.getContract().getStudent().getStudentId());
+        if (chuyen_phong.getContract() != null && chuyen_phong.getContract().getStudent() != null) {
+            checkStudentAccessOwnership(chuyen_phong.getContract().getStudent().getStudentId());
         }
 
-        return roomTransferMapper.toResponse(transfer);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Lấy danh sách yêu cầu chuyển phòng theo mã hợp đồng
     @Transactional(readOnly = true)
     public List<RoomTransfer_Response> getByContractId(String contractId) {
-        Contract contract = contractRepository.findById(contractId)
+        Contract hop_dong = contractRepository.findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
 
-        if (contract.getStudent() != null) {
-            checkStudentAccessOwnership(contract.getStudent().getStudentId());
+        if (hop_dong.getStudent() != null) {
+            checkStudentAccessOwnership(hop_dong.getStudent().getStudentId());
         }
 
-        List<RoomTransfer> list = roomTransferRepository.findByContract_ContractId(contractId);
-        return roomTransferMapper.toResponseList(list);
+        List<RoomTransfer> danh_sach_chuyen_phong = roomTransferRepository.findByContract_ContractId(contractId);
+        return roomTransferMapper.toResponseList(danh_sach_chuyen_phong);
     }
 
     // Lấy danh sách yêu cầu chuyển phòng có phân trang cơ bản
@@ -305,24 +305,24 @@ public class RoomTransfer_Service {
         String cleanStatus = (status != null && !status.isBlank()) ? status.trim().toUpperCase() : null;
         String cleanStudent = (studentKeyword != null && !studentKeyword.isBlank()) ? studentKeyword.trim() : null;
 
-        Page<RoomTransfer> pageResult = roomTransferRepository.searchRoomTransfers(
+        Page<RoomTransfer> trang_chuyen_phong = roomTransferRepository.searchRoomTransfers(
                 cleanStatus,
                 cleanStudent,
                 fromDate,
                 toDate,
                 pageable
         );
-        List<RoomTransfer_Response> data = roomTransferMapper.toResponseList(pageResult.getContent());
+        List<RoomTransfer_Response> data = roomTransferMapper.toResponseList(trang_chuyen_phong.getContent());
 
         return Page_Response.<RoomTransfer_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_chuyen_phong.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_chuyen_phong.getTotalPages())
+                .totalElements(trang_chuyen_phong.getTotalElements())
+                .hasPrevious(trang_chuyen_phong.hasPrevious())
+                .hasNext(trang_chuyen_phong.hasNext())
+                .isFirst(trang_chuyen_phong.isFirst())
+                .isLast(trang_chuyen_phong.isLast())
                 .data(data)
                 .build();
     }
@@ -330,121 +330,121 @@ public class RoomTransfer_Service {
     // Phê duyệt chuyển phòng: khóa giường bi quan PESSIMISTIC_WRITE, kiểm tra ngày chuyển và cập nhật giá thuê
     @Transactional
     public RoomTransfer_Response approve(String transferId, String staffId) {
-        RoomTransfer transfer = roomTransferRepository.findById(transferId)
+        RoomTransfer chuyen_phong = roomTransferRepository.findById(transferId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu chuyển phòng"));
 
-        if (!"PENDING".equalsIgnoreCase(transfer.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(chuyen_phong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Chỉ có thể phê duyệt yêu cầu chuyển phòng khi đang ở trạng thái PENDING (trạng thái hiện tại: " + transfer.getStatus() + ")");
+                    "Chỉ có thể phê duyệt yêu cầu chuyển phòng khi đang ở trạng thái PENDING (trạng thái hiện tại: " + chuyen_phong.getStatus() + ")");
         }
 
-        if (transfer.getTransferDate().isAfter(LocalDate.now())) {
+        if (chuyen_phong.getTransferDate().isAfter(LocalDate.now())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Chưa đến ngày chuyển phòng (" + transfer.getTransferDate() + "). Chỉ có thể thực hiện chuyển giường từ ngày chuyển phòng");
+                    "Chưa đến ngày chuyển phòng (" + chuyen_phong.getTransferDate() + "). Chỉ có thể thực hiện chuyển giường từ ngày chuyển phòng");
         }
 
         // Kiểm tra tính toàn vẹn: giường cũ trên hợp đồng phải khớp với giường cũ trên đơn
-        Contract contract = transfer.getContract();
-        Bed oldBed = transfer.getOldBed();
-        if (contract != null && contract.getBed() != null && oldBed != null
-                && !contract.getBed().getBedId().equals(oldBed.getBedId())) {
+        Contract hop_dong = chuyen_phong.getContract();
+        Bed giuong_cu = chuyen_phong.getOldBed();
+        if (hop_dong != null && hop_dong.getBed() != null && giuong_cu != null
+                && !hop_dong.getBed().getBedId().equals(giuong_cu.getBedId())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Giường hiện tại của sinh viên không khớp với giường cũ trên đơn chuyển phòng");
         }
 
         // Khóa giường mới bằng PESSIMISTIC_WRITE để chống xung đột tranh chấp đồng thời
-        Bed newBed = bedRepository.findByIdForUpdate(transfer.getNewBed().getBedId())
+        Bed giuong_moi = bedRepository.findByIdForUpdate(chuyen_phong.getNewBed().getBedId())
                 .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
 
-        if (!"AVAILABLE".equalsIgnoreCase(newBed.getStatus())) {
+        if (!"AVAILABLE".equalsIgnoreCase(giuong_moi.getStatus())) {
             throw new AppException(ErrorCode.BED_ALREADY_OCCUPIED,
-                    "Giường đích không còn khả dụng hoặc đã có người ở (trạng thái: " + newBed.getStatus() + ")");
+                    "Giường đích không còn khả dụng hoặc đã có người ở (trạng thái: " + giuong_moi.getStatus() + ")");
         }
 
         // Kiểm tra phòng đích không ở trạng thái bảo trì hoặc tạm đóng
-        if (newBed.getRoom() != null && ("MAINTENANCE".equalsIgnoreCase(newBed.getRoom().getStatus())
-                || "CLOSED".equalsIgnoreCase(newBed.getRoom().getStatus()))) {
+        if (giuong_moi.getRoom() != null && ("MAINTENANCE".equalsIgnoreCase(giuong_moi.getRoom().getStatus())
+                || "CLOSED".equalsIgnoreCase(giuong_moi.getRoom().getStatus()))) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Phòng đích đang ở trạng thái bảo trì hoặc tạm đóng, không thể chuyển phòng");
         }
 
-        if (oldBed != null) {
-            oldBed.setStatus("AVAILABLE");
-            bedRepository.save(oldBed);
-            syncRoomOccupancyStatus(oldBed.getRoom());
+        if (giuong_cu != null) {
+            giuong_cu.setStatus("AVAILABLE");
+            bedRepository.save(giuong_cu);
+            syncRoomOccupancyStatus(giuong_cu.getRoom());
         }
 
-        newBed.setStatus("OCCUPIED");
-        bedRepository.save(newBed);
-        syncRoomOccupancyStatus(newBed.getRoom());
+        giuong_moi.setStatus("OCCUPIED");
+        bedRepository.save(giuong_moi);
+        syncRoomOccupancyStatus(giuong_moi.getRoom());
 
         // Cập nhật hợp đồng với giường mới và điều chỉnh tiền thuê theo loại phòng mới
-        contract.setBed(newBed);
-        RoomType newRoomType = (newBed.getRoom() != null) ? newBed.getRoom().getRoomType() : null;
-        if (newRoomType != null && newRoomType.getPricePerMonth() != null) {
-            contract.setMonthlyFee(newRoomType.getPricePerMonth());
+        hop_dong.setBed(giuong_moi);
+        RoomType loai_phong_moi = (giuong_moi.getRoom() != null) ? giuong_moi.getRoom().getRoomType() : null;
+        if (loai_phong_moi != null && loai_phong_moi.getPricePerMonth() != null) {
+            hop_dong.setMonthlyFee(loai_phong_moi.getPricePerMonth());
         }
-        contractRepository.save(contract);
+        contractRepository.save(hop_dong);
 
-        Staff staff = resolveStaff(staffId);
-        if (staff != null) {
-            transfer.setApprover(staff);
+        Staff nhan_vien = resolveStaff(staffId);
+        if (nhan_vien != null) {
+            chuyen_phong.setApprover(nhan_vien);
         }
-        transfer.setStatus("APPROVED");
-        transfer = roomTransferRepository.save(transfer);
+        chuyen_phong.setStatus("APPROVED");
+        chuyen_phong = roomTransferRepository.save(chuyen_phong);
 
         // Bắn thông báo cho sinh viên khi được duyệt chuyển phòng
-        if (notificationService != null && contract.getStudent() != null) {
-            String fromRoom = (oldBed != null && oldBed.getRoom() != null) ? oldBed.getRoom().getRoomNumber() : "";
-            String toRoom = (newBed != null && newBed.getRoom() != null) ? newBed.getRoom().getRoomNumber() : "";
+        if (notificationService != null && hop_dong.getStudent() != null) {
+            String fromRoom = (giuong_cu != null && giuong_cu.getRoom() != null) ? giuong_cu.getRoom().getRoomNumber() : "";
+            String toRoom = (giuong_moi != null && giuong_moi.getRoom() != null) ? giuong_moi.getRoom().getRoomNumber() : "";
             String title = "Đơn xin chuyển phòng của bạn đã được duyệt!";
             String content = String.format("Yêu cầu chuyển từ phòng %s sang phòng %s đã được Ban Quản lý phê duyệt thành công. Vui lòng liên hệ BQL KTX để nhận phòng mới.",
                     fromRoom, toRoom);
-            notificationService.notifyStudent(contract.getStudent(), title, content, staff != null ? staff.getUser() : null);
+            notificationService.notifyStudent(hop_dong.getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
         }
 
-        return roomTransferMapper.toResponse(transfer);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Tự động đồng bộ trạng thái phòng (AVAILABLE <-> FULL) theo số giường trống thực tế
-    private void syncRoomOccupancyStatus(Room room) {
-        if (room == null || "MAINTENANCE".equalsIgnoreCase(room.getStatus())
-                || "CLOSED".equalsIgnoreCase(room.getStatus())) {
+    private void syncRoomOccupancyStatus(Room phong) {
+        if (phong == null || "MAINTENANCE".equalsIgnoreCase(phong.getStatus())
+                || "CLOSED".equalsIgnoreCase(phong.getStatus())) {
             return;
         }
-        List<Bed> beds = bedRepository.findByRoom_RoomId(room.getRoomId());
-        if (beds == null || beds.isEmpty()) {
+        List<Bed> danh_sach_giuong = bedRepository.findByRoom_RoomId(phong.getRoomId());
+        if (danh_sach_giuong == null || danh_sach_giuong.isEmpty()) {
             return;
         }
-        boolean hasAvailableBed = beds.stream().anyMatch(b -> "AVAILABLE".equalsIgnoreCase(b.getStatus()));
+        boolean hasAvailableBed = danh_sach_giuong.stream().anyMatch(b -> "AVAILABLE".equalsIgnoreCase(b.getStatus()));
         String targetStatus = hasAvailableBed ? "AVAILABLE" : "FULL";
-        if (!targetStatus.equalsIgnoreCase(room.getStatus())) {
-            room.setStatus(targetStatus);
+        if (!targetStatus.equalsIgnoreCase(phong.getStatus())) {
+            phong.setStatus(targetStatus);
             if (roomRepository != null) {
-                roomRepository.save(room);
+                roomRepository.save(phong);
             }
-            log.info("Tự động đồng bộ trạng thái phòng {}: {}", room.getRoomNumber(), targetStatus);
+            log.info("Tự động đồng bộ trạng thái phòng {}: {}", phong.getRoomNumber(), targetStatus);
         }
     }
 
     // Từ chối chuyển phòng: chỉ cho phép khi PENDING và nối chuỗi lý do để bảo toàn lý do ban đầu của sinh viên
     @Transactional
     public RoomTransfer_Response reject(String transferId, String staffId, String reason) {
-        RoomTransfer transfer = roomTransferRepository.findById(transferId)
+        RoomTransfer chuyen_phong = roomTransferRepository.findById(transferId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu chuyển phòng"));
 
-        if (!"PENDING".equalsIgnoreCase(transfer.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(chuyen_phong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Chỉ có thể từ chối yêu cầu chuyển phòng khi đang ở trạng thái PENDING (trạng thái hiện tại: " + transfer.getStatus() + ")");
+                    "Chỉ có thể từ chối yêu cầu chuyển phòng khi đang ở trạng thái PENDING (trạng thái hiện tại: " + chuyen_phong.getStatus() + ")");
         }
 
-        Staff staff = resolveStaff(staffId);
-        if (staff != null) {
-            transfer.setApprover(staff);
+        Staff nhan_vien = resolveStaff(staffId);
+        if (nhan_vien != null) {
+            chuyen_phong.setApprover(nhan_vien);
         }
-        transfer.setStatus("REJECTED");
+        chuyen_phong.setStatus("REJECTED");
 
-        String originalReason = transfer.getReason();
+        String originalReason = chuyen_phong.getReason();
         String rejectNote = (reason != null && !reason.isBlank()) ? reason.trim() : "Không đáp ứng yêu cầu chuyển phòng";
         String combinedReason = (originalReason != null && !originalReason.isBlank())
                 ? originalReason.trim() + " | Lý do từ chối: " + rejectNote
@@ -452,54 +452,54 @@ public class RoomTransfer_Service {
         if (combinedReason.length() > 255) {
             combinedReason = combinedReason.substring(0, 255);
         }
-        transfer.setReason(combinedReason);
+        chuyen_phong.setReason(combinedReason);
 
-        transfer = roomTransferRepository.save(transfer);
+        chuyen_phong = roomTransferRepository.save(chuyen_phong);
 
         // Bắn thông báo cho sinh viên khi bị từ chối chuyển phòng
-        if (notificationService != null && transfer.getContract() != null && transfer.getContract().getStudent() != null) {
+        if (notificationService != null && chuyen_phong.getContract() != null && chuyen_phong.getContract().getStudent() != null) {
             String title = "Đơn xin chuyển phòng không được phê duyệt";
             String content = String.format("Yêu cầu chuyển phòng của bạn đã bị từ chối. Lý do: %s", rejectNote);
-            notificationService.notifyStudent(transfer.getContract().getStudent(), title, content, staff != null ? staff.getUser() : null);
+            notificationService.notifyStudent(chuyen_phong.getContract().getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
         }
 
-        return roomTransferMapper.toResponse(transfer);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Hủy yêu cầu chuyển phòng: sinh viên hủy đơn của chính mình khi đơn còn PENDING
     @Transactional
     public RoomTransfer_Response cancel(String transferId, String studentId) {
-        RoomTransfer transfer = roomTransferRepository.findById(transferId)
+        RoomTransfer chuyen_phong = roomTransferRepository.findById(transferId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu chuyển phòng"));
 
         if (studentId != null && !studentId.isBlank()) {
-            Contract contract = transfer.getContract();
-            if (contract == null || contract.getStudent() == null || !contract.getStudent().getStudentId().equals(studentId)) {
+            Contract hop_dong = chuyen_phong.getContract();
+            if (hop_dong == null || hop_dong.getStudent() == null || !hop_dong.getStudent().getStudentId().equals(studentId)) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Bạn chỉ có thể hủy yêu cầu chuyển phòng của chính mình");
             }
         }
 
-        if (!"PENDING".equalsIgnoreCase(transfer.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(chuyen_phong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ có thể hủy yêu cầu chuyển phòng khi đơn đang ở trạng thái PENDING");
         }
 
-        transfer.setStatus("CANCELLED");
-        transfer = roomTransferRepository.save(transfer);
-        return roomTransferMapper.toResponse(transfer);
+        chuyen_phong.setStatus("CANCELLED");
+        chuyen_phong = roomTransferRepository.save(chuyen_phong);
+        return roomTransferMapper.toResponse(chuyen_phong);
     }
 
     // Xóa yêu cầu chuyển phòng: chỉ cho phép khi đơn còn PENDING hoặc CANCELLED
     @Transactional
     public void delete(String transferId) {
-        RoomTransfer transfer = roomTransferRepository.findById(transferId)
+        RoomTransfer chuyen_phong = roomTransferRepository.findById(transferId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu chuyển phòng"));
 
-        if (!"PENDING".equalsIgnoreCase(transfer.getStatus()) && !"CANCELLED".equalsIgnoreCase(transfer.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(chuyen_phong.getStatus()) && !"CANCELLED".equalsIgnoreCase(chuyen_phong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Chỉ được phép xóa yêu cầu chuyển phòng khi đang ở trạng thái PENDING hoặc CANCELLED");
         }
 
-        roomTransferRepository.delete(transfer);
+        roomTransferRepository.delete(chuyen_phong);
     }
 
     // Xác định nhân viên duyệt: ưu tiên staffId truyền vào hoặc người dùng nhân viên hiện tại từ JWT
