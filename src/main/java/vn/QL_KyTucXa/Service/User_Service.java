@@ -26,6 +26,7 @@ import vn.QL_KyTucXa.Repository.Student_Repository;
 import vn.QL_KyTucXa.Repository.User_Repository;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -41,6 +42,7 @@ public class User_Service {
     CurrentUser_Service currentUserService;
     Student_Repository studentRepository;
     Staff_Repository staffRepository;
+    AuditLog_Service auditLogService;
 
     /**
      * Tạo mới tài khoản người dùng từ trang Quản lý Người dùng
@@ -61,10 +63,10 @@ public class User_Service {
             throw new AppException(ErrorCode.PASSWORD_BLANK);
         }
 
-        Role role = roleRepository.findById(request.getRoleId())
+        Role vai_tro = roleRepository.findById(request.getRoleId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-        String roleCode = role.getRoleCode() != null ? role.getRoleCode().trim().toUpperCase() : "";
+        String roleCode = vai_tro.getRoleCode() != null ? vai_tro.getRoleCode().trim().toUpperCase() : "";
 
         // Chặn người không phải ADMIN tạo tài khoản ADMIN hoặc MANAGER
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
@@ -82,20 +84,28 @@ public class User_Service {
                     "Không thể tạo tài khoản nhân viên trực tiếp tại đây. Vui lòng tạo tại mục Quản lý Nhân viên để đồng bộ hồ sơ nhân viên.");
         }
 
-        User user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRole(role);
-        user.setStatus(request.getStatus() != null && !request.getStatus().isBlank() ? request.getStatus().trim().toUpperCase() : "ACTIVE");
-        user.setIsEmailVerified(false);
-        user.setFailedLoginAttempts(0);
+        User nguoi_dung = userMapper.toEntity(request);
+        nguoi_dung.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        nguoi_dung.setRole(vai_tro);
+        nguoi_dung.setStatus(
+                request.getStatus() != null && !request.getStatus().isBlank() ? request.getStatus().trim().toUpperCase()
+                        : "ACTIVE");
+        nguoi_dung.setIsEmailVerified(false);
+        nguoi_dung.setFailedLoginAttempts(0);
 
-        user = userRepository.save(user);
+        nguoi_dung = userRepository.save(nguoi_dung);
 
-        return sanitizeUserResponse(userMapper.toResponse(user), user.getUserId());
+        if (auditLogService != null) {
+            auditLogService.recordAction("CREATE_USER", "nguoiDung", nguoi_dung.getUserId(), null,
+                    "Username: " + nguoi_dung.getUsername() + ", Role: STUDENT");
+        }
+
+        return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
     /**
-     * Tạo tài khoản từ luồng Đăng ký công khai (ghi đè role STUDENT, status ACTIVE, cấm gán telegramChatId)
+     * Tạo tài khoản từ luồng Đăng ký công khai (ghi đè role STUDENT, status ACTIVE,
+     * cấm gán telegramChatId)
      */
     @Transactional
     public User_Response createFromRegistration(User_Request request) {
@@ -126,6 +136,11 @@ public class User_Service {
         user.setFailedLoginAttempts(0);
 
         user = userRepository.save(user);
+
+        if (auditLogService != null) {
+            auditLogService.recordAction("CREATE_USER", "nguoiDung", user.getUserId(), null,
+                    "Username: " + user.getUsername() + ", Role: STUDENT");
+        }
 
         return sanitizeUserResponse(userMapper.toResponse(user), user.getUserId());
     }
@@ -190,7 +205,8 @@ public class User_Service {
     }
 
     /**
-     * Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu hồi token khi đổi vai trò)
+     * Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu
+     * hồi token khi đổi vai trò)
      */
     @Transactional
     public User_Response update(String userId, User_Request request) {
@@ -204,7 +220,8 @@ public class User_Service {
 
         // Chặn người không phải ADMIN sửa tài khoản ADMIN
         if (targetIsAdmin && !callerIsAdmin) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ Quản trị viên cấp cao mới có quyền chỉnh sửa tài khoản ADMIN");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ Quản trị viên cấp cao mới có quyền chỉnh sửa tài khoản ADMIN");
         }
 
         if (!user.getUsername().equalsIgnoreCase(request.getUsername())
@@ -237,17 +254,20 @@ public class User_Service {
             if (targetIsAdmin && !"ADMIN".equalsIgnoreCase(newRoleCode)) {
                 String currentUserId = resolveCurrentUserId();
                 if (userId.equals(currentUserId)) {
-                    throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể tự hạ vai trò Quản trị viên của chính mình");
+                    throw new AppException(ErrorCode.OPERATION_FAILED,
+                            "Không thể tự hạ vai trò Quản trị viên của chính mình");
                 }
                 long activeAdminCount = userRepository.countByRole_RoleCodeAndStatus("ADMIN", "ACTIVE");
                 if (activeAdminCount <= 1) {
-                    throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể hạ vai trò của Quản trị viên (ADMIN) cuối cùng của hệ thống");
+                    throw new AppException(ErrorCode.OPERATION_FAILED,
+                            "Không thể hạ vai trò của Quản trị viên (ADMIN) cuối cùng của hệ thống");
                 }
             }
 
             user.setRole(newRole);
 
-            // Thu hồi toàn bộ Refresh Token của user khi đổi vai trò vì vai trò gắn liền với token
+            // Thu hồi toàn bộ Refresh Token của user khi đổi vai trò vì vai trò gắn liền
+            // với token
             if (refreshTokenService != null) {
                 refreshTokenService.revokeAllActiveByUserId(userId);
             }
@@ -270,17 +290,20 @@ public class User_Service {
             if (!normalizedStatus.equals(user.getStatus())) {
                 if (!normalizedStatus.equals("ACTIVE") && !normalizedStatus.equals("BANNED")
                         && !normalizedStatus.equals("LOCKED") && !normalizedStatus.equals("INACTIVE")) {
-                    throw new AppException(ErrorCode.OPERATION_FAILED, "Trạng thái chỉ nhận ACTIVE, BANNED, LOCKED hoặc INACTIVE");
+                    throw new AppException(ErrorCode.OPERATION_FAILED,
+                            "Trạng thái chỉ nhận ACTIVE, BANNED, LOCKED hoặc INACTIVE");
                 }
                 if (!"ACTIVE".equals(normalizedStatus)) {
                     String currentUserId = resolveCurrentUserId();
                     if (userId.equals(currentUserId)) {
-                        throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể tự khóa tài khoản của chính mình");
+                        throw new AppException(ErrorCode.OPERATION_FAILED,
+                                "Không thể tự khóa tài khoản của chính mình");
                     }
                     if (targetIsAdmin) {
                         long activeAdminCount = userRepository.countByRole_RoleCodeAndStatus("ADMIN", "ACTIVE");
                         if (activeAdminCount <= 1) {
-                            throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể khóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
+                            throw new AppException(ErrorCode.OPERATION_FAILED,
+                                    "Không thể khóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
                         }
                     }
                     if (refreshTokenService != null) {
@@ -305,7 +328,8 @@ public class User_Service {
         String normalized = status == null ? "" : status.trim().toUpperCase();
         if (!normalized.equals("ACTIVE") && !normalized.equals("BANNED")
                 && !normalized.equals("LOCKED") && !normalized.equals("INACTIVE")) {
-            throw new AppException(ErrorCode.OPERATION_FAILED, "Trạng thái chỉ nhận ACTIVE (mở khóa) hoặc BANNED / LOCKED / INACTIVE (khóa)");
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Trạng thái chỉ nhận ACTIVE (mở khóa) hoặc BANNED / LOCKED / INACTIVE (khóa)");
         }
 
         User user = userRepository.findById(userId)
@@ -313,7 +337,8 @@ public class User_Service {
 
         boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
         if (targetIsAdmin && !callerIsAdmin) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ Quản trị viên cấp cao mới có quyền thay đổi trạng thái tài khoản ADMIN");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ Quản trị viên cấp cao mới có quyền thay đổi trạng thái tài khoản ADMIN");
         }
 
         if (!"ACTIVE".equals(normalized)) {
@@ -327,7 +352,8 @@ public class User_Service {
             if (targetIsAdmin) {
                 long activeAdminCount = userRepository.countByRole_RoleCodeAndStatus("ADMIN", "ACTIVE");
                 if (activeAdminCount <= 1) {
-                    throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể khóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
+                    throw new AppException(ErrorCode.OPERATION_FAILED,
+                            "Không thể khóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
                 }
             }
 
@@ -340,7 +366,13 @@ public class User_Service {
         }
 
         user.setStatus(normalized);
-        return sanitizeUserResponse(userMapper.toResponse(userRepository.save(user)), user.getUserId());
+        User savedUser = userRepository.save(user);
+
+        if (auditLogService != null) {
+            auditLogService.recordAction("UPDATE_USER_STATUS", "nguoiDung", userId, null, "Status: " + normalized);
+        }
+
+        return sanitizeUserResponse(userMapper.toResponse(savedUser), user.getUserId());
     }
 
     /**
@@ -395,8 +427,10 @@ public class User_Service {
     }
 
     /**
-     * Cập nhật Telegram Chat ID phục vụ xác thực 2FA (Chỉ chính chủ hoặc Quản trị viên được đổi)
-     * Đối với tài khoản Quản trị viên (ADMIN), bắt buộc nhập lại mật khẩu hiện tại để xác thực bảo mật
+     * Cập nhật Telegram Chat ID phục vụ xác thực 2FA (Chỉ chính chủ hoặc Quản trị
+     * viên được đổi)
+     * Đối với tài khoản Quản trị viên (ADMIN), bắt buộc nhập lại mật khẩu hiện tại
+     * để xác thực bảo mật
      */
     @Transactional
     public User_Response updateTelegram2FA(String userId, String telegramChatId, String confirmPassword) {
@@ -415,15 +449,18 @@ public class User_Service {
         boolean isSelf = currentUserId.equals(userId);
 
         if (!isSelf && !callerIsAdmin) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ chính chủ tài khoản hoặc Quản trị viên mới được phép cập nhật Telegram Chat ID");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ chính chủ tài khoản hoặc Quản trị viên mới được phép cập nhật Telegram Chat ID");
         }
 
         boolean targetIsAdmin = user.getRole() != null && "ADMIN".equalsIgnoreCase(user.getRole().getRoleCode());
 
-        // Nếu cập nhật Telegram 2FA cho tài khoản ADMIN, bắt buộc xác nhận lại mật khẩu của người đang thao tác
+        // Nếu cập nhật Telegram 2FA cho tài khoản ADMIN, bắt buộc xác nhận lại mật khẩu
+        // của người đang thao tác
         if (targetIsAdmin) {
             if (confirmPassword == null || confirmPassword.isBlank()) {
-                throw new AppException(ErrorCode.OPERATION_FAILED, "Vui lòng nhập mật khẩu xác nhận để cập nhật cấu hình Telegram 2FA cho Quản trị viên");
+                throw new AppException(ErrorCode.OPERATION_FAILED,
+                        "Vui lòng nhập mật khẩu xác nhận để cập nhật cấu hình Telegram 2FA cho Quản trị viên");
             }
             if (!passwordEncoder.matches(confirmPassword, currentUser.getPasswordHash())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED, "Mật khẩu xác nhận không chính xác");
@@ -444,7 +481,8 @@ public class User_Service {
     }
 
     /**
-     * Xóa tài khoản người dùng theo ID (Kiểm tra ràng buộc sinh viên, nhân viên, quản trị viên)
+     * Xóa tài khoản người dùng theo ID (Kiểm tra ràng buộc sinh viên, nhân viên,
+     * quản trị viên)
      */
     @Transactional
     public void delete(String userId) {
@@ -459,7 +497,8 @@ public class User_Service {
         // 1. Kiểm tra quyền bảo vệ ADMIN
         if (targetIsAdmin) {
             if (!callerIsAdmin) {
-                throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ Quản trị viên cấp cao mới có quyền xóa tài khoản ADMIN");
+                throw new AppException(ErrorCode.UNAUTHORIZED,
+                        "Chỉ Quản trị viên cấp cao mới có quyền xóa tài khoản ADMIN");
             }
             String currentUserId = resolveCurrentUserId();
             if (userId.equals(currentUserId)) {
@@ -467,7 +506,8 @@ public class User_Service {
             }
             long adminCount = userRepository.countByRole_RoleCode("ADMIN");
             if (adminCount <= 1) {
-                throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
+                throw new AppException(ErrorCode.OPERATION_FAILED,
+                        "Không thể xóa tài khoản Quản trị viên (ADMIN) cuối cùng của hệ thống");
             }
         }
 
@@ -482,10 +522,17 @@ public class User_Service {
                     "Tài khoản đã liên kết với hồ sơ Nhân viên, không thể xóa trực tiếp. Vui lòng khóa tài khoản thay vì xóa.");
         }
 
-        // 3. Khóa tài khoản (soft-delete sang INACTIVE) và thu hồi toàn bộ Refresh Token thay vì xóa cứng
-        // (để bảo toàn toàn vẹn dữ liệu và tránh lỗi Foreign Key với nhật ký, thông báo, yêu cầu sửa chữa, refresh token)
+        // 3. Khóa tài khoản (soft-delete sang INACTIVE) và thu hồi toàn bộ Refresh
+        // Token thay vì xóa cứng
+        // (để bảo toàn toàn vẹn dữ liệu và tránh lỗi Foreign Key với nhật ký, thông
+        // báo, yêu cầu sửa chữa, refresh token)
         user.setStatus("INACTIVE");
         userRepository.save(user);
+
+        if (auditLogService != null) {
+            auditLogService.recordAction("DELETE_USER", "nguoiDung", userId, Map.of("username", user.getUsername()),
+                    null);
+        }
 
         if (refreshTokenService != null) {
             refreshTokenService.revokeAllActiveByUserId(userId);
@@ -493,10 +540,12 @@ public class User_Service {
     }
 
     /**
-     * Ẩn các trường nhạy cảm (failedLoginAttempts, telegramChatId) đối với người không có quyền quản trị
+     * Ẩn các trường nhạy cảm (failedLoginAttempts, telegramChatId) đối với người
+     * không có quyền quản trị
      */
     private User_Response sanitizeUserResponse(User_Response response, String targetUserId) {
-        if (response == null) return null;
+        if (response == null)
+            return null;
 
         boolean isAdminOrManager = currentUserService != null
                 && (currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER"));

@@ -43,6 +43,7 @@ public class Room_Service {
     UtilityReading_Repository utilityReadingRepository;
     MaintenanceRequest_Repository maintenanceRequestRepository;
     Room_Mapper roomMapper;
+    AuditLog_Service auditLogService;
 
     static Set<String> ALLOWED_STATUSES = Set.of("AVAILABLE", "FULL", "MAINTENANCE", "CLOSED");
     static Set<String> ALLOWED_SORT_FIELDS = Set.of("roomNumber", "capacity", "status", "createdAt", "updatedAt");
@@ -127,6 +128,10 @@ public class Room_Service {
                     .status("AVAILABLE")
                     .build();
             bedRepository.save(bed);
+        }
+
+        if (auditLogService != null) {
+            auditLogService.recordAction("CREATE_ROOM", "phong", room.getRoomId(), null, request);
         }
 
         return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
@@ -300,6 +305,9 @@ public class Room_Service {
         }
 
         room = roomRepository.save(room);
+        if (auditLogService != null) {
+            auditLogService.recordAction("UPDATE_ROOM", "phong", room.getRoomId(), null, request);
+        }
         return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
     }
 
@@ -329,8 +337,11 @@ public class Room_Service {
             }
         }
 
-        room.setStatus(normalizedStatus);
-        return enrichOccupancy(List.of(roomMapper.toResponse(roomRepository.save(room)))).get(0);
+        room = roomRepository.save(room);
+        if (auditLogService != null) {
+            auditLogService.recordAction("UPDATE_ROOM_STATUS", "phong", room.getRoomId(), null, Map.of("status", normalizedStatus));
+        }
+        return enrichOccupancy(List.of(roomMapper.toResponse(room))).get(0);
     }
 
     // Xóa phòng: kiểm tra toàn bộ các ràng buộc khóa ngoại (giường, hợp đồng, tài
@@ -361,5 +372,8 @@ public class Room_Service {
         }
 
         roomRepository.delete(room);
+        if (auditLogService != null) {
+            auditLogService.recordAction("DELETE_ROOM", "phong", roomId, Map.of("roomNumber", room.getRoomNumber()), null);
+        }
     }
 }

@@ -46,6 +46,7 @@ public class Contract_Service {
     VehicleRegistration_Repository vehicleRegistrationRepository;
     RoomTransfer_Repository roomTransferRepository;
     CurrentUser_Service currentUserService;
+    AuditLog_Service auditLogService;
 
     @Autowired(required = false)
     @lombok.experimental.NonFinal
@@ -139,6 +140,9 @@ public class Contract_Service {
         syncRoomOccupancyStatus(bed.getRoom());
 
         contract = contractRepository.save(contract);
+        if (auditLogService != null) {
+            auditLogService.recordAction("CREATE_CONTRACT", "hopDong", contract.getContractId(), null, "Created code: " + contract.getContractCode());
+        }
         return contractMapper.toResponse(contract);
     }
 
@@ -465,6 +469,9 @@ public class Contract_Service {
         contract.setSignedDate(LocalDate.now());
 
         contract = contractRepository.save(contract);
+        if (auditLogService != null) {
+            auditLogService.recordAction("APPROVE_CONTRACT", "hopDong", contract.getContractId(), null, "ACTIVE");
+        }
 
         // Tự động đồng bộ trạng thái hồ sơ sinh viên sang ACTIVE khi hợp đồng có hiệu lực
         if (contract.getStudent() != null) {
