@@ -83,13 +83,13 @@ public class Student_Service {
         }
 
         // 3. Xác định hoặc tự động tạo tài khoản User cho sinh viên
-        User user;
+        User nguoi_dung;
         if (request.getUserId() != null && !request.getUserId().isBlank()) {
-            user = userRepository.findById(request.getUserId())
+            nguoi_dung = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             // Kiểm tra vai trò tài khoản: phải là STUDENT
-            if (user.getRole() == null || !"STUDENT".equalsIgnoreCase(user.getRole().getRoleCode().trim())) {
+            if (nguoi_dung.getRole() == null || !"STUDENT".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode().trim())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Tài khoản người dùng phải có vai trò sinh viên (STUDENT)");
             }
@@ -115,24 +115,24 @@ public class Student_Service {
                         "Email '" + userEmail + "' đã được sử dụng bởi tài khoản khác");
             }
 
-            Role studentRole = roleRepository.findByRoleCode("STUDENT")
+            Role vai_tro_sinh_vien = roleRepository.findByRoleCode("STUDENT")
                     .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND,
                             "Không tìm thấy vai trò hệ thống STUDENT"));
 
-            user = User.builder()
+            nguoi_dung = User.builder()
                     .username(studentCode)
                     .passwordHash(passwordEncoder.encode(studentCode))
                     .email(userEmail)
                     .phone(request.getPhone() != null && !request.getPhone().isBlank() ? request.getPhone().trim()
                             : null)
-                    .role(studentRole)
+                    .role(vai_tro_sinh_vien)
                     .status("ACTIVE")
                     .failedLoginAttempts(0)
                     .isEmailVerified(false)
                     .mustChangePassword(true)
                     .build();
 
-            user = userRepository.save(user);
+            nguoi_dung = userRepository.save(nguoi_dung);
         }
 
         // 4. Chuẩn hóa số điện thoại: rỗng thành null
@@ -142,19 +142,19 @@ public class Student_Service {
             request.setPhone(request.getPhone().trim());
         }
 
-        Student student = studentMapper.toEntity(request);
-        student.setStudentCode(studentCode);
-        student.setNationalId(nationalId);
-        student.setUser(user);
+        Student sinh_vien = studentMapper.toEntity(request);
+        sinh_vien.setStudentCode(studentCode);
+        sinh_vien.setNationalId(nationalId);
+        sinh_vien.setUser(nguoi_dung);
         if (request.getAvatarUrl() != null) {
-            student.setAvatarUrl(request.getAvatarUrl().trim().isEmpty() ? null : request.getAvatarUrl().trim());
+            sinh_vien.setAvatarUrl(request.getAvatarUrl().trim().isEmpty() ? null : request.getAvatarUrl().trim());
         }
-        if (student.getStatus() == null || student.getStatus().isBlank()) {
-            student.setStatus("ACTIVE");
+        if (sinh_vien.getStatus() == null || sinh_vien.getStatus().isBlank()) {
+            sinh_vien.setStatus("ACTIVE");
         }
-        student = studentRepository.save(student);
+        sinh_vien = studentRepository.save(sinh_vien);
 
-        return studentMapper.toResponse(student);
+        return studentMapper.toResponse(sinh_vien);
     }
 
     /**
@@ -174,7 +174,7 @@ public class Student_Service {
                     .build();
         }
 
-        Role studentRole = roleRepository.findByRoleCode("STUDENT")
+        Role vai_tro_sinh_vien = roleRepository.findByRoleCode("STUDENT")
                 .orElseThrow(
                         () -> new AppException(ErrorCode.ROLE_NOT_FOUND, "Không tìm thấy vai trò hệ thống STUDENT"));
 
@@ -260,21 +260,21 @@ public class Student_Service {
 
             try {
                 // Khởi tạo tài khoản User
-                User user = User.builder()
+                User nguoi_dung = User.builder()
                         .username(studentCode)
                         .passwordHash(passwordEncoder.encode(studentCode))
                         .email(userEmail)
                         .phone(rawPhone)
-                        .role(studentRole)
+                        .role(vai_tro_sinh_vien)
                         .status("ACTIVE")
                         .failedLoginAttempts(0)
                         .isEmailVerified(false)
                         .mustChangePassword(true)
                         .build();
-                user = userRepository.save(user);
+                nguoi_dung = userRepository.save(nguoi_dung);
 
                 // Khởi tạo hồ sơ Sinh viên
-                Student student = Student.builder()
+                Student sinh_vien = Student.builder()
                         .studentCode(studentCode)
                         .fullName(fullName)
                         .gender(gender)
@@ -293,10 +293,10 @@ public class Student_Service {
                                 ? req.getPermanentAddress().trim()
                                 : null)
                         .status("ACTIVE")
-                        .user(user)
+                        .user(nguoi_dung)
                         .build();
 
-                studentRepository.save(student);
+                studentRepository.save(sinh_vien);
                 successCodes.add(studentCode);
             } catch (Exception ex) {
                 log.error("Lỗi khi thêm sinh viên dòng {}: {}", rowNumber, ex.getMessage());
@@ -316,37 +316,37 @@ public class Student_Service {
 
     @Transactional(readOnly = true)
     public Student_Response getById(String studentId) {
-        Student student = studentRepository.findById(studentId)
+        Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
-        checkViewPermission(student);
+        checkViewPermission(sinh_vien);
 
-        Student_Response res = studentMapper.toResponse(student);
+        Student_Response res = studentMapper.toResponse(sinh_vien);
         enrichResidentInfo(res);
         return res;
     }
 
     @Transactional(readOnly = true)
     public Student_Response getByStudentCode(String studentCode) {
-        Student student = studentRepository.findByStudentCode(studentCode)
+        Student sinh_vien = studentRepository.findByStudentCode(studentCode)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
-        checkViewPermission(student);
+        checkViewPermission(sinh_vien);
 
-        Student_Response res = studentMapper.toResponse(student);
+        Student_Response res = studentMapper.toResponse(sinh_vien);
         enrichResidentInfo(res);
         return res;
     }
 
     @Transactional(readOnly = true)
     public Student_Response getByUserId(String userId) {
-        Student student = studentRepository.findByUser_UserId(userId)
+        Student sinh_vien = studentRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND,
                         "Hồ sơ sinh viên chưa hoàn tất. Vui lòng cập nhật đầy đủ thông tin hồ sơ và giới tính"));
 
-        checkViewPermission(student);
+        checkViewPermission(sinh_vien);
 
-        Student_Response res = studentMapper.toResponse(student);
+        Student_Response res = studentMapper.toResponse(sinh_vien);
         enrichResidentInfo(res);
         return res;
     }
@@ -391,7 +391,7 @@ public class Student_Service {
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        Page<Student> pageResult = studentRepository.searchStudents(
+        Page<Student> trang_sinh_vien = studentRepository.searchStudents(
                 (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
                 (faculty != null && !faculty.isBlank()) ? faculty.trim() : null,
                 (className != null && !className.isBlank()) ? className.trim() : null,
@@ -400,18 +400,18 @@ public class Student_Service {
                 isResident,
                 pageable);
 
-        List<Student_Response> data = studentMapper.toResponseList(pageResult.getContent());
+        List<Student_Response> data = studentMapper.toResponseList(trang_sinh_vien.getContent());
         enrichResidentInfo(data);
 
         return Page_Response.<Student_Response>builder()
                 .currentPage(page)
                 .pageSize(pageSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_sinh_vien.getTotalPages())
+                .totalElements(trang_sinh_vien.getTotalElements())
+                .hasPrevious(trang_sinh_vien.hasPrevious())
+                .hasNext(trang_sinh_vien.hasNext())
+                .isFirst(trang_sinh_vien.isFirst())
+                .isLast(trang_sinh_vien.isLast())
                 .data(data)
                 .build();
     }
@@ -428,7 +428,7 @@ public class Student_Service {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        Student student = studentRepository.findByUser_UserId(currentUserId)
+        Student sinh_vien = studentRepository.findByUser_UserId(currentUserId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
         // Xử lý CCCD/Định danh: null = giữ nguyên, rỗng = xóa (set null), còn lại = cập
@@ -436,15 +436,15 @@ public class Student_Service {
         if (request.getNationalId() != null) {
             if (request.getNationalId().isBlank()) {
                 request.setNationalId(null);
-                student.setNationalId(null);
+                sinh_vien.setNationalId(null);
             } else {
                 String trimmedNationalId = request.getNationalId().trim();
-                if (studentRepository.existsByNationalIdAndStudentIdNot(trimmedNationalId, student.getStudentId())) {
+                if (studentRepository.existsByNationalIdAndStudentIdNot(trimmedNationalId, sinh_vien.getStudentId())) {
                     throw new AppException(ErrorCode.OPERATION_FAILED,
                             "Số CCCD/Định danh '" + trimmedNationalId + "' đã được đăng ký bởi sinh viên khác");
                 }
                 request.setNationalId(trimmedNationalId);
-                student.setNationalId(trimmedNationalId);
+                sinh_vien.setNationalId(trimmedNationalId);
             }
         }
 
@@ -453,67 +453,67 @@ public class Student_Service {
         if (request.getPhone() != null) {
             if (request.getPhone().isBlank()) {
                 request.setPhone(null);
-                student.setPhone(null);
+                sinh_vien.setPhone(null);
             } else {
                 String trimmedPhone = request.getPhone().trim();
                 request.setPhone(trimmedPhone);
-                student.setPhone(trimmedPhone);
+                sinh_vien.setPhone(trimmedPhone);
             }
         }
 
         if (request.getDob() != null) {
-            student.setDob(request.getDob());
+            sinh_vien.setDob(request.getDob());
         }
         if (request.getHometown() != null) {
-            student.setHometown(request.getHometown().isBlank() ? null : request.getHometown().trim());
+            sinh_vien.setHometown(request.getHometown().isBlank() ? null : request.getHometown().trim());
         }
         if (request.getPermanentAddress() != null) {
-            student.setPermanentAddress(
+            sinh_vien.setPermanentAddress(
                     request.getPermanentAddress().isBlank() ? null : request.getPermanentAddress().trim());
         }
         if (request.getEmail() != null) {
-            student.setEmail(request.getEmail().isBlank() ? null : request.getEmail().trim());
+            sinh_vien.setEmail(request.getEmail().isBlank() ? null : request.getEmail().trim());
         }
-        String oldAvatarUrl = student.getAvatarUrl();
+        String oldAvatarUrl = sinh_vien.getAvatarUrl();
         if (request.getAvatarUrl() != null) {
             String newAvatarUrl = request.getAvatarUrl().trim().isEmpty() ? null : request.getAvatarUrl().trim();
-            student.setAvatarUrl(newAvatarUrl);
+            sinh_vien.setAvatarUrl(newAvatarUrl);
             if (oldAvatarUrl != null && !oldAvatarUrl.equals(newAvatarUrl)) {
                 deleteOldAvatarFile(oldAvatarUrl);
             }
         }
         if (request.getEmergencyContactName() != null) {
-            student.setEmergencyContactName(
+            sinh_vien.setEmergencyContactName(
                     request.getEmergencyContactName().isBlank() ? null : request.getEmergencyContactName().trim());
         }
         if (request.getEmergencyContactPhone() != null) {
-            student.setEmergencyContactPhone(
+            sinh_vien.setEmergencyContactPhone(
                     request.getEmergencyContactPhone().isBlank() ? null : request.getEmergencyContactPhone().trim());
         }
         if (request.getEmergencyContactRelation() != null) {
-            student.setEmergencyContactRelation(request.getEmergencyContactRelation().isBlank() ? null
+            sinh_vien.setEmergencyContactRelation(request.getEmergencyContactRelation().isBlank() ? null
                     : request.getEmergencyContactRelation().trim());
         }
 
-        student = studentRepository.save(student);
+        sinh_vien = studentRepository.save(sinh_vien);
 
-        return studentMapper.toResponse(student);
+        return studentMapper.toResponse(sinh_vien);
     }
 
     @Transactional
     public Student_Response update(String studentId, Student_Request request) {
-        Student student = studentRepository.findById(studentId)
+        Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
         // 1. Kiểm tra MSSV nếu có cập nhật: không được trùng với sinh viên khác
         String trimmedStudentCode = request.getStudentCode() != null ? request.getStudentCode().trim() : null;
         if (trimmedStudentCode != null && !trimmedStudentCode.isEmpty()
-                && !trimmedStudentCode.equals(student.getStudentCode())) {
+                && !trimmedStudentCode.equals(sinh_vien.getStudentCode())) {
             if (studentRepository.existsByStudentCode(trimmedStudentCode)) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Mã số sinh viên '" + trimmedStudentCode + "' đã tồn tại trong hệ thống");
             }
-            student.setStudentCode(trimmedStudentCode);
+            sinh_vien.setStudentCode(trimmedStudentCode);
         }
 
         // 2. Kiểm tra CCCD/Định danh nếu có cập nhật: không được trùng với sinh viên
@@ -521,7 +521,7 @@ public class Student_Service {
         if (request.getNationalId() != null) {
             if (request.getNationalId().isBlank()) {
                 request.setNationalId(null);
-                student.setNationalId(null);
+                sinh_vien.setNationalId(null);
             } else {
                 String trimmedNationalId = request.getNationalId().trim();
                 if (studentRepository.existsByNationalIdAndStudentIdNot(trimmedNationalId, studentId)) {
@@ -529,7 +529,7 @@ public class Student_Service {
                             "Số CCCD/Định danh '" + trimmedNationalId + "' đã tồn tại ở hồ sơ sinh viên khác");
                 }
                 request.setNationalId(trimmedNationalId);
-                student.setNationalId(trimmedNationalId);
+                sinh_vien.setNationalId(trimmedNationalId);
             }
         }
 
@@ -550,17 +550,17 @@ public class Student_Service {
             } catch (Exception e) {
                 currentUserId = null;
             }
-            if (student.getUser() == null || !student.getUser().getUserId().equals(currentUserId)) {
+            if (sinh_vien.getUser() == null || !sinh_vien.getUser().getUserId().equals(currentUserId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED, "Bạn không có quyền chỉnh sửa hồ sơ sinh viên khác");
             }
             // Bỏ qua các field nhạy cảm khi sinh viên gọi
-            request.setStudentCode(student.getStudentCode());
-            request.setStatus(student.getStatus());
-            request.setClassName(student.getClassName());
-            request.setFaculty(student.getFaculty());
-            request.setGender(student.getGender());
-            if (student.getUser() != null) {
-                request.setUserId(student.getUser().getUserId());
+            request.setStudentCode(sinh_vien.getStudentCode());
+            request.setStatus(sinh_vien.getStatus());
+            request.setClassName(sinh_vien.getClassName());
+            request.setFaculty(sinh_vien.getFaculty());
+            request.setGender(sinh_vien.getGender());
+            if (sinh_vien.getUser() != null) {
+                request.setUserId(sinh_vien.getUser().getUserId());
             }
         }
 
@@ -569,19 +569,19 @@ public class Student_Service {
         if (request.getPhone() != null) {
             if (request.getPhone().isBlank()) {
                 request.setPhone(null);
-                student.setPhone(null);
+                sinh_vien.setPhone(null);
             } else {
                 String trimmedPhone = request.getPhone().trim();
                 request.setPhone(trimmedPhone);
-                student.setPhone(trimmedPhone);
+                sinh_vien.setPhone(trimmedPhone);
             }
         }
 
-        String oldAvatarUrl = student.getAvatarUrl();
-        studentMapper.updateEntityFromRequest(student, request);
+        String oldAvatarUrl = sinh_vien.getAvatarUrl();
+        studentMapper.updateEntityFromRequest(sinh_vien, request);
         if (request.getAvatarUrl() != null) {
             String newAvatarUrl = request.getAvatarUrl().trim().isEmpty() ? null : request.getAvatarUrl().trim();
-            student.setAvatarUrl(newAvatarUrl);
+            sinh_vien.setAvatarUrl(newAvatarUrl);
             if (oldAvatarUrl != null && !oldAvatarUrl.equals(newAvatarUrl)) {
                 deleteOldAvatarFile(oldAvatarUrl);
             }
@@ -591,7 +591,7 @@ public class Student_Service {
         // hợp đồng lưu trú ACTIVE
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             String newStatus = request.getStatus().trim().toUpperCase();
-            String currentStatus = student.getStatus() != null ? student.getStatus().trim().toUpperCase() : "ACTIVE";
+            String currentStatus = sinh_vien.getStatus() != null ? sinh_vien.getStatus().trim().toUpperCase() : "ACTIVE";
             if (!newStatus.equals(currentStatus)) {
                 if ("INACTIVE".equalsIgnoreCase(newStatus)) {
                     // Chặn ngừng hoạt động sinh viên nếu vẫn còn hợp đồng cư trú ACTIVE
@@ -599,12 +599,12 @@ public class Student_Service {
                         throw new AppException(ErrorCode.OPERATION_FAILED,
                                 "Không thể chuyển trạng thái ngừng hoạt động (INACTIVE) cho sinh viên đang có hợp đồng lưu trú ACTIVE");
                     }
-                    student.setStatus("INACTIVE");
-                    if (student.getUser() != null) {
-                        student.getUser().setStatus("INACTIVE");
-                        userRepository.save(student.getUser());
+                    sinh_vien.setStatus("INACTIVE");
+                    if (sinh_vien.getUser() != null) {
+                        sinh_vien.getUser().setStatus("INACTIVE");
+                        userRepository.save(sinh_vien.getUser());
                         if (refreshTokenService != null) {
-                            refreshTokenService.revokeAllActiveByUserId(student.getUser().getUserId());
+                            refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
                         }
                     }
                 } else if ("PENDING".equalsIgnoreCase(newStatus)) {
@@ -612,29 +612,29 @@ public class Student_Service {
                         throw new AppException(ErrorCode.OPERATION_FAILED,
                                 "Không thể chuyển sinh viên đang có hợp đồng lưu trú ACTIVE về trạng thái Chờ duyệt (PENDING)");
                     }
-                    student.setStatus("PENDING");
+                    sinh_vien.setStatus("PENDING");
                 } else if ("ACTIVE".equalsIgnoreCase(newStatus)) {
-                    student.setStatus("ACTIVE");
-                    if (student.getUser() != null && "INACTIVE".equalsIgnoreCase(student.getUser().getStatus())) {
-                        student.getUser().setStatus("ACTIVE");
-                        userRepository.save(student.getUser());
+                    sinh_vien.setStatus("ACTIVE");
+                    if (sinh_vien.getUser() != null && "INACTIVE".equalsIgnoreCase(sinh_vien.getUser().getStatus())) {
+                        sinh_vien.getUser().setStatus("ACTIVE");
+                        userRepository.save(sinh_vien.getUser());
                     }
                 } else {
-                    student.setStatus(newStatus);
+                    sinh_vien.setStatus(newStatus);
                 }
             }
         }
 
-        student = studentRepository.save(student);
+        sinh_vien = studentRepository.save(sinh_vien);
 
-        return studentMapper.toResponse(student);
+        return studentMapper.toResponse(sinh_vien);
     }
 
     /**
      * Ngừng hoạt động hồ sơ sinh viên (Soft delete: INACTIVE)
      */
     public void delete(String studentId) {
-        Student student = studentRepository.findById(studentId)
+        Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
         // Kiểm tra hợp đồng ACTIVE
@@ -644,14 +644,14 @@ public class Student_Service {
         }
 
         // Chuyển trạng thái sang INACTIVE và khóa tài khoản đăng nhập
-        student.setStatus("INACTIVE");
-        studentRepository.save(student);
+        sinh_vien.setStatus("INACTIVE");
+        studentRepository.save(sinh_vien);
 
-        if (student.getUser() != null) {
-            student.getUser().setStatus("INACTIVE");
-            userRepository.save(student.getUser());
+        if (sinh_vien.getUser() != null) {
+            sinh_vien.getUser().setStatus("INACTIVE");
+            userRepository.save(sinh_vien.getUser());
             if (refreshTokenService != null) {
-                refreshTokenService.revokeAllActiveByUserId(student.getUser().getUserId());
+                refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
             }
         }
     }
@@ -660,7 +660,7 @@ public class Student_Service {
      * Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được
      * xem
      */
-    private void checkViewPermission(Student student) {
+    private void checkViewPermission(Student sinh_vien) {
         if (currentUserService == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
@@ -680,7 +680,7 @@ public class Student_Service {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (student.getUser() == null || !student.getUser().getUserId().equals(currentUserId)) {
+        if (sinh_vien.getUser() == null || !sinh_vien.getUser().getUserId().equals(currentUserId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Bạn không có quyền xem thông tin hồ sơ của sinh viên khác");
         }
     }
@@ -793,16 +793,16 @@ public class Student_Service {
         if (resp == null || resp.getStudentId() == null || contractRepository == null)
             return;
         try {
-            List<Contract> contracts = contractRepository.findByStudent_StudentIdAndStatus(resp.getStudentId(),
+            List<Contract> danh_sach_hop_dong = contractRepository.findByStudent_StudentIdAndStatus(resp.getStudentId(),
                     "ACTIVE");
-            if (contracts != null && !contracts.isEmpty()) {
-                Contract c = contracts.get(0);
+            if (danh_sach_hop_dong != null && !danh_sach_hop_dong.isEmpty()) {
+                Contract hop_dong = danh_sach_hop_dong.get(0);
                 resp.setIsResident(true);
-                resp.setContractCode(c.getContractCode());
-                if (c.getBed() != null) {
-                    resp.setBedNumber(c.getBed().getBedNumber());
-                    if (c.getBed().getRoom() != null) {
-                        resp.setRoomNumber(c.getBed().getRoom().getRoomNumber());
+                resp.setContractCode(hop_dong.getContractCode());
+                if (hop_dong.getBed() != null) {
+                    resp.setBedNumber(hop_dong.getBed().getBedNumber());
+                    if (hop_dong.getBed().getRoom() != null) {
+                        resp.setRoomNumber(hop_dong.getBed().getRoom().getRoomNumber());
                     }
                 }
             } else {
@@ -818,8 +818,8 @@ public class Student_Service {
         if (list == null || list.isEmpty() || contractRepository == null)
             return;
         try {
-            List<Contract> activeContracts = contractRepository.findByStatus("ACTIVE");
-            if (activeContracts == null || activeContracts.isEmpty()) {
+            List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStatus("ACTIVE");
+            if (danh_sach_hop_dong_hieu_luc == null || danh_sach_hop_dong_hieu_luc.isEmpty()) {
                 for (Student_Response resp : list) {
                     resp.setIsResident(false);
                 }
@@ -827,21 +827,21 @@ public class Student_Service {
             }
 
             Map<String, Contract> contractMap = new HashMap<>();
-            for (Contract c : activeContracts) {
-                if (c.getStudent() != null && c.getStudent().getStudentId() != null) {
-                    contractMap.putIfAbsent(c.getStudent().getStudentId(), c);
+            for (Contract hop_dong : danh_sach_hop_dong_hieu_luc) {
+                if (hop_dong.getStudent() != null && hop_dong.getStudent().getStudentId() != null) {
+                    contractMap.putIfAbsent(hop_dong.getStudent().getStudentId(), hop_dong);
                 }
             }
 
             for (Student_Response resp : list) {
-                Contract c = contractMap.get(resp.getStudentId());
-                if (c != null) {
+                Contract hop_dong = contractMap.get(resp.getStudentId());
+                if (hop_dong != null) {
                     resp.setIsResident(true);
-                    resp.setContractCode(c.getContractCode());
-                    if (c.getBed() != null) {
-                        resp.setBedNumber(c.getBed().getBedNumber());
-                        if (c.getBed().getRoom() != null) {
-                            resp.setRoomNumber(c.getBed().getRoom().getRoomNumber());
+                    resp.setContractCode(hop_dong.getContractCode());
+                    if (hop_dong.getBed() != null) {
+                        resp.setBedNumber(hop_dong.getBed().getBedNumber());
+                        if (hop_dong.getBed().getRoom() != null) {
+                            resp.setRoomNumber(hop_dong.getBed().getRoom().getRoomNumber());
                         }
                     }
                 } else {

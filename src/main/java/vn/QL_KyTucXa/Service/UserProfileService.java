@@ -31,17 +31,17 @@ public class UserProfileService {
         String userCode = "";
 
         if ("STUDENT".equalsIgnoreCase(roleCode)) {
-            var studentOpt = studentRepository.findByUser_UserId(user.getUserId());
-            if (studentOpt.isPresent()) {
-                fullName = studentOpt.get().getFullName();
-                userCode = studentOpt.get().getStudentCode();
+            var ho_so_sinh_vien = studentRepository.findByUser_UserId(user.getUserId());
+            if (ho_so_sinh_vien.isPresent()) {
+                fullName = ho_so_sinh_vien.get().getFullName();
+                userCode = ho_so_sinh_vien.get().getStudentCode();
             }
         } else {
             // Tra hồ sơ nhân viên cho mọi vai trò khác STUDENT (STAFF, MANAGER, ADMIN...)
-            var staffOpt = staffRepository.findByUser_UserId(user.getUserId());
-            if (staffOpt.isPresent()) {
-                fullName = staffOpt.get().getFullName();
-                userCode = staffOpt.get().getStaffCode();
+            var ho_so_nhan_vien = staffRepository.findByUser_UserId(user.getUserId());
+            if (ho_so_nhan_vien.isPresent()) {
+                fullName = ho_so_nhan_vien.get().getFullName();
+                userCode = ho_so_nhan_vien.get().getStaffCode();
             } else if ("ADMIN".equalsIgnoreCase(roleCode)) {
                 fullName = "Quản trị viên";
             }
@@ -56,8 +56,8 @@ public class UserProfileService {
     }
 
     public UserProfileDTO resolveUserProfileByUserId(String userId) {
-        User user = userRepository.findById(userId)
+        User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        return resolveUserProfile(user);
+        return resolveUserProfile(nguoi_dung);
     }
 }

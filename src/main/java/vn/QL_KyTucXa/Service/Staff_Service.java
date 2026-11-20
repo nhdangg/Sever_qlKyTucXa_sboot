@@ -61,14 +61,14 @@ public class Staff_Service {
             request.setPhone(request.getPhone().trim());
         }
 
-        User user;
+        User nguoi_dung;
         if (request.getUserId() != null && !request.getUserId().isBlank()) {
-            user = userRepository.findById(request.getUserId())
+            nguoi_dung = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             // Kiểm tra vai trò của tài khoản: phải là nhân viên, chặn tài khoản STUDENT
-            if (user.getRole() == null
-                    || !ALLOWED_STAFF_ROLES.contains(user.getRole().getRoleCode().trim().toUpperCase())) {
+            if (nguoi_dung.getRole() == null
+                    || !ALLOWED_STAFF_ROLES.contains(nguoi_dung.getRole().getRoleCode().trim().toUpperCase())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Tài khoản người dùng phải có vai trò nhân viên (STAFF hoặc MANAGER)");
             }
@@ -111,53 +111,53 @@ public class Staff_Service {
                         "Email '" + userEmail + "' đã được sử dụng bởi tài khoản khác");
             }
 
-            Role staffRole = roleRepository.findByRoleCode("STAFF")
+            Role vai_tro_nhan_vien = roleRepository.findByRoleCode("STAFF")
                     .orElseThrow(
                             () -> new AppException(ErrorCode.ROLE_NOT_FOUND, "Không tìm thấy vai trò hệ thống STAFF"));
 
-            user = User.builder()
+            nguoi_dung = User.builder()
                     .username(staffCode)
                     .passwordHash(passwordEncoder.encode(staffCode))
                     .email(userEmail)
                     .phone(request.getPhone())
-                    .role(staffRole)
+                    .role(vai_tro_nhan_vien)
                     .status("ACTIVE")
                     .failedLoginAttempts(0)
                     .isEmailVerified(false)
                     .mustChangePassword(true)
                     .build();
 
-            user = userRepository.save(user);
+            nguoi_dung = userRepository.save(nguoi_dung);
         }
 
-        Staff staff = staffMapper.toEntity(request);
-        staff.setStaffCode(staffCode);
-        staff.setUser(user);
-        staff = staffRepository.save(staff);
+        Staff nhan_vien = staffMapper.toEntity(request);
+        nhan_vien.setStaffCode(staffCode);
+        nhan_vien.setUser(nguoi_dung);
+        nhan_vien = staffRepository.save(nhan_vien);
 
-        return staffMapper.toResponse(staff);
+        return staffMapper.toResponse(nhan_vien);
     }
 
     @Transactional(readOnly = true)
     public Staff_Response getById(String staffId) {
-        Staff staff = staffRepository.findById(staffId)
+        Staff nhan_vien = staffRepository.findById(staffId)
                 .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
 
-        return staffMapper.toResponse(staff);
+        return staffMapper.toResponse(nhan_vien);
     }
 
     @Transactional(readOnly = true)
     public Staff_Response getByStaffCode(String staffCode) {
-        Staff staff = staffRepository.findByStaffCode(staffCode)
+        Staff nhan_vien = staffRepository.findByStaffCode(staffCode)
                 .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
 
-        return staffMapper.toResponse(staff);
+        return staffMapper.toResponse(nhan_vien);
     }
 
     @Transactional(readOnly = true)
     public List<Staff_Response> getAll() {
-        List<Staff> list = staffRepository.findAll();
-        return staffMapper.toResponseList(list);
+        List<Staff> danh_sach_nhan_vien = staffRepository.findAll();
+        return staffMapper.toResponseList(danh_sach_nhan_vien);
     }
 
     @Transactional(readOnly = true)
@@ -178,18 +178,18 @@ public class Staff_Service {
         String dept = (department != null && !department.isBlank()) ? department.trim() : null;
         String st = (status != null && !status.isBlank()) ? status.trim() : null;
 
-        Page<Staff> pageResult = staffRepository.searchStaffs(kw, dept, st, pageable);
-        List<Staff_Response> data = staffMapper.toResponseList(pageResult.getContent());
+        Page<Staff> trang_nhan_vien = staffRepository.searchStaffs(kw, dept, st, pageable);
+        List<Staff_Response> data = staffMapper.toResponseList(trang_nhan_vien.getContent());
 
         return Page_Response.<Staff_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_nhan_vien.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_nhan_vien.getTotalPages())
+                .totalElements(trang_nhan_vien.getTotalElements())
+                .hasPrevious(trang_nhan_vien.hasPrevious())
+                .hasNext(trang_nhan_vien.hasNext())
+                .isFirst(trang_nhan_vien.isFirst())
+                .isLast(trang_nhan_vien.isLast())
                 .data(data)
                 .build();
     }
@@ -198,10 +198,10 @@ public class Staff_Service {
     public Staff_Response update(String staffId, Staff_Request request) {
         log.info("Cập nhật thông tin nhân viên ID: {}", staffId);
 
-        Staff staff = staffRepository.findById(staffId)
+        Staff nhan_vien = staffRepository.findById(staffId)
                 .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
 
-        if (!staff.getStaffCode().equalsIgnoreCase(request.getStaffCode()) &&
+        if (!nhan_vien.getStaffCode().equalsIgnoreCase(request.getStaffCode()) &&
                 staffRepository.existsByStaffCode(request.getStaffCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mã nhân viên '" + request.getStaffCode() + "' đã tồn tại");
@@ -209,7 +209,7 @@ public class Staff_Service {
 
         // Kiểm tra khi đổi tài khoản người dùng liên kết
         if (request.getUserId() != null
-                && (staff.getUser() == null || !staff.getUser().getUserId().equals(request.getUserId()))) {
+                && (nhan_vien.getUser() == null || !nhan_vien.getUser().getUserId().equals(request.getUserId()))) {
             // Chặn gán tài khoản đã liên kết với nhân viên khác
             if (staffRepository.existsByUser_UserIdAndStaffIdNot(request.getUserId(), staffId)) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
@@ -222,17 +222,17 @@ public class Staff_Service {
                         "Tài khoản người dùng này đã có hồ sơ sinh viên");
             }
 
-            User user = userRepository.findById(request.getUserId())
+            User nguoi_dung = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             // Kiểm tra vai trò của tài khoản mới: phải là nhân viên
-            if (user.getRole() == null
-                    || !ALLOWED_STAFF_ROLES.contains(user.getRole().getRoleCode().trim().toUpperCase())) {
+            if (nguoi_dung.getRole() == null
+                    || !ALLOWED_STAFF_ROLES.contains(nguoi_dung.getRole().getRoleCode().trim().toUpperCase())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Tài khoản người dùng phải có vai trò nhân viên (STAFF hoặc MANAGER)");
             }
 
-            staff.setUser(user);
+            nhan_vien.setUser(nguoi_dung);
         }
 
         // Xử lý số điện thoại: null = giữ nguyên, rỗng = xóa (set null), còn lại = cập
@@ -240,63 +240,63 @@ public class Staff_Service {
         if (request.getPhone() != null) {
             if (request.getPhone().isBlank()) {
                 request.setPhone(null);
-                staff.setPhone(null);
+                nhan_vien.setPhone(null);
             } else {
                 String trimmedPhone = request.getPhone().trim();
                 request.setPhone(trimmedPhone);
-                staff.setPhone(trimmedPhone);
+                nhan_vien.setPhone(trimmedPhone);
             }
         }
 
-        staffMapper.updateEntityFromRequest(staff, request);
+        staffMapper.updateEntityFromRequest(nhan_vien, request);
 
         // Nếu cập nhật trạng thái nhân viên:
         // - INACTIVE: khóa tài khoản người dùng và thu hồi toàn bộ refresh token
         // - ACTIVE: mở khóa lại tài khoản người dùng nếu đang bị INACTIVE
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             String normalizedStatus = request.getStatus().trim().toUpperCase();
-            staff.setStatus(normalizedStatus);
+            nhan_vien.setStatus(normalizedStatus);
             if ("INACTIVE".equalsIgnoreCase(normalizedStatus)) {
-                if (staff.getUser() != null) {
-                    staff.getUser().setStatus("INACTIVE");
-                    userRepository.save(staff.getUser());
+                if (nhan_vien.getUser() != null) {
+                    nhan_vien.getUser().setStatus("INACTIVE");
+                    userRepository.save(nhan_vien.getUser());
                     if (refreshTokenService != null) {
-                        refreshTokenService.revokeAllActiveByUserId(staff.getUser().getUserId());
+                        refreshTokenService.revokeAllActiveByUserId(nhan_vien.getUser().getUserId());
                     }
                 }
             } else if ("ACTIVE".equalsIgnoreCase(normalizedStatus)) {
-                if (staff.getUser() != null && "INACTIVE".equalsIgnoreCase(staff.getUser().getStatus())) {
-                    staff.getUser().setStatus("ACTIVE");
-                    userRepository.save(staff.getUser());
+                if (nhan_vien.getUser() != null && "INACTIVE".equalsIgnoreCase(nhan_vien.getUser().getStatus())) {
+                    nhan_vien.getUser().setStatus("ACTIVE");
+                    userRepository.save(nhan_vien.getUser());
                 }
             }
         }
 
-        staff = staffRepository.save(staff);
+        nhan_vien = staffRepository.save(nhan_vien);
 
-        return staffMapper.toResponse(staff);
+        return staffMapper.toResponse(nhan_vien);
     }
 
     @Transactional
     public void delete(String staffId) {
         log.info("Xử lý cho nhân viên nghỉ việc ID: {}", staffId);
 
-        Staff staff = staffRepository.findById(staffId)
+        Staff nhan_vien = staffRepository.findById(staffId)
                 .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
 
         // Tránh lỗi khóa ngoại với các bảng liên kết (hợp đồng, thanh toán, vi
         // phạm...),
         // chuyển trạng thái nhân viên sang INACTIVE (nghỉ việc) và khóa tài khoản đăng
         // nhập
-        staff.setStatus("INACTIVE");
-        staffRepository.save(staff);
+        nhan_vien.setStatus("INACTIVE");
+        staffRepository.save(nhan_vien);
 
-        User user = staff.getUser();
-        if (user != null) {
-            user.setStatus("INACTIVE");
-            userRepository.save(user);
+        User nguoi_dung = nhan_vien.getUser();
+        if (nguoi_dung != null) {
+            nguoi_dung.setStatus("INACTIVE");
+            userRepository.save(nguoi_dung);
             if (refreshTokenService != null) {
-                refreshTokenService.revokeAllActiveByUserId(user.getUserId());
+                refreshTokenService.revokeAllActiveByUserId(nguoi_dung.getUserId());
             }
         }
     }
