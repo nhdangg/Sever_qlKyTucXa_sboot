@@ -78,23 +78,23 @@ public class Invoice_Service {
             throw new AppException(ErrorCode.CONTRACT_NOT_FOUND);
         }
 
-        Contract contract = contractRepository.findById(request.getContractId())
+        Contract hop_dong = contractRepository.findById(request.getContractId())
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
 
-        if (!"ACTIVE".equalsIgnoreCase(contract.getStatus())) {
+        if (!"ACTIVE".equalsIgnoreCase(hop_dong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Chỉ được phép lập hóa đơn cho hợp đồng đang có hiệu lực (ACTIVE)");
         }
 
         // Lấy thông tin sinh viên trực tiếp từ hợp đồng
-        Student student = contract.getStudent();
-        if (student == null) {
+        Student sinh_vien = hop_dong.getStudent();
+        if (sinh_vien == null) {
             throw new AppException(ErrorCode.STUDENT_NOT_FOUND);
         }
 
         // Kiểm tra tính nhất quán nếu client truyền kèm studentId
         if (request.getStudentId() != null && !request.getStudentId().isBlank()
-                && !request.getStudentId().equals(student.getStudentId())) {
+                && !request.getStudentId().equals(sinh_vien.getStudentId())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Mã sinh viên không khớp với sinh viên trên hợp đồng");
         }
 
@@ -103,21 +103,21 @@ public class Invoice_Service {
                 .withDayOfMonth(1);
 
         // Kiểm tra trùng lặp kỳ hóa đơn trên cùng một hợp đồng
-        if (invoiceRepository.existsByContract_ContractIdAndInvoiceMonth(contract.getContractId(), invoiceMonth)) {
-            throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn cho hợp đồng '" + contract.getContractCode()
+        if (invoiceRepository.existsByContract_ContractIdAndInvoiceMonth(hop_dong.getContractId(), invoiceMonth)) {
+            throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn cho hợp đồng '" + hop_dong.getContractCode()
                     + "' trong tháng " + invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")) + " đã tồn tại");
         }
 
         // Tạo mã hóa đơn theo quy chuẩn nếu client không truyền vào
         String invoiceCode = request.getInvoiceCode();
         if (invoiceCode == null || invoiceCode.isBlank()) {
-            invoiceCode = generateInvoiceCode(student, invoiceMonth);
+            invoiceCode = generateInvoiceCode(sinh_vien, invoiceMonth);
             request.setInvoiceCode(invoiceCode);
         } else if (invoiceRepository.existsByInvoiceCode(invoiceCode)) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Mã hóa đơn '" + invoiceCode + "' đã tồn tại");
         }
 
-        log.info("Tạo hóa đơn mới: {} cho sinh viên: {}", invoiceCode, student.getStudentCode());
+        log.info("Tạo hóa đơn mới: {} cho sinh viên: {}", invoiceCode, sinh_vien.getStudentCode());
 
         LocalDate issueDate = request.getIssueDate() != null ? request.getIssueDate() : LocalDate.now();
         int deadlineDays = systemSettingService != null
@@ -128,25 +128,25 @@ public class Invoice_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hạn thanh toán không thể trước ngày phát hành");
         }
 
-        Invoice invoice = invoiceMapper.toEntity(request);
-        invoice.setInvoiceCode(invoiceCode);
-        invoice.setContract(contract);
-        invoice.setStudent(student);
-        invoice.setInvoiceMonth(invoiceMonth);
-        invoice.setIssueDate(issueDate);
-        invoice.setDueDate(dueDate);
+        Invoice hoa_don = invoiceMapper.toEntity(request);
+        hoa_don.setInvoiceCode(invoiceCode);
+        hoa_don.setContract(hop_dong);
+        hoa_don.setStudent(sinh_vien);
+        hoa_don.setInvoiceMonth(invoiceMonth);
+        hoa_don.setIssueDate(issueDate);
+        hoa_don.setDueDate(dueDate);
 
         // Trạng thái ban đầu: ưu tiên theo request (ISSUED / DRAFT), số tiền đã trả
         // luôn là 0
         String initialStatus = (request.getStatus() != null && !request.getStatus().isBlank())
                 ? request.getStatus().toUpperCase()
                 : "DRAFT";
-        invoice.setStatus(initialStatus);
-        invoice.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+        hoa_don.setStatus(initialStatus);
+        hoa_don.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
 
         // Khởi tạo danh sách chi tiết hóa đơn nếu chưa có
-        if (invoice.getInvoiceItems() == null) {
-            invoice.setInvoiceItems(new ArrayList<>());
+        if (hoa_don.getInvoiceItems() == null) {
+            hoa_don.setInvoiceItems(new ArrayList<>());
         }
 
         // 1. Trường hợp client gửi danh sách chi tiết khoản thu (invoiceItems)
@@ -160,7 +160,7 @@ public class Invoice_Service {
                         : qty.multiply(price).setScale(2, RoundingMode.HALF_UP);
 
                 InvoiceItem item = InvoiceItem.builder()
-                        .invoice(invoice)
+                        .invoice(hoa_don)
                         .itemType(itemReq.getItemType() != null ? itemReq.getItemType() : "SERVICE")
                         .description(itemReq.getDescription())
                         .quantity(qty)
@@ -168,7 +168,7 @@ public class Invoice_Service {
                         .amount(amt)
                         .referenceId(itemReq.getReferenceId())
                         .build();
-                invoice.getInvoiceItems().add(item);
+                hoa_don.getInvoiceItems().add(item);
             }
         } else {
             // 2. Tự động bóc tách các dòng chi tiết: RENT, UTILITY, SERVICE (PER_PERSON &
@@ -177,38 +177,38 @@ public class Invoice_Service {
             if (request.getSubtotalAmount() != null && request.getSubtotalAmount().compareTo(BigDecimal.ZERO) > 0) {
                 roomRent = request.getSubtotalAmount().setScale(2, RoundingMode.HALF_UP);
             } else {
-                roomRent = resolveRoomMonthlyFee(contract);
+                roomRent = resolveRoomMonthlyFee(hop_dong);
             }
             if (roomRent.compareTo(BigDecimal.ZERO) > 0) {
                 InvoiceItem rentItem = InvoiceItem.builder()
-                        .invoice(invoice)
+                        .invoice(hoa_don)
                         .itemType("RENT")
                         .description("Tiền thuê phòng lưu trú kỳ tháng "
                                 + invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")))
                         .quantity(BigDecimal.ONE)
                         .unitPrice(roomRent)
                         .amount(roomRent)
-                        .referenceId(contract.getContractId())
+                        .referenceId(hop_dong.getContractId())
                         .build();
-                invoice.getInvoiceItems().add(rentItem);
+                hoa_don.getInvoiceItems().add(rentItem);
             }
 
             // Gắn tiền điện nước phòng (UTILITY) phân bổ cho sinh viên
             if (utilityReadingRepository != null && utilityReadingService != null
-                    && contract.getBed() != null && contract.getBed().getRoom() != null) {
-                String roomId = contract.getBed().getRoom().getRoomId();
+                    && hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+                String roomId = hop_dong.getBed().getRoom().getRoomId();
                 LocalDate utilityMonth = invoiceMonth.minusMonths(1);
-                List<vn.QL_KyTucXa.Entity.UtilityReading> readings = utilityReadingRepository
+                List<vn.QL_KyTucXa.Entity.UtilityReading> danh_sach_chi_so = utilityReadingRepository
                         .findByRoom_RoomIdAndReadingMonth(roomId, utilityMonth);
-                if (readings.isEmpty()) {
-                    readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
-                    if (!readings.isEmpty()) {
+                if (danh_sach_chi_so.isEmpty()) {
+                    danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
+                    if (!danh_sach_chi_so.isEmpty()) {
                         utilityMonth = invoiceMonth;
                     }
                 }
-                final Invoice targetInvoice = invoice;
+                final Invoice targetInvoice = hoa_don;
                 final LocalDate finalInvoiceMonth = invoiceMonth;
-                for (vn.QL_KyTucXa.Entity.UtilityReading reading : readings) {
+                for (vn.QL_KyTucXa.Entity.UtilityReading reading : danh_sach_chi_so) {
                     try {
                         vn.QL_KyTucXa.DTO.Response.UtilitySplit_Response split = utilityReadingService
                                 .calculateRoomUtilitySplit(
@@ -216,15 +216,15 @@ public class Invoice_Service {
                         if (split != null && split.getResidentShares() != null) {
                             split.getResidentShares().stream()
                                     .filter(rs -> rs.getStudentId() != null
-                                            && rs.getStudentId().equals(student.getStudentId()))
+                                            && rs.getStudentId().equals(sinh_vien.getStudentId()))
                                     .findFirst()
                                     .ifPresent(rs -> {
                                         if (rs.getShareAmount() != null
                                                 && rs.getShareAmount().compareTo(BigDecimal.ZERO) > 0) {
-                                            String srvName = (reading.getServiceType() != null
+                                             String srvName = (reading.getServiceType() != null
                                                     && reading.getServiceType().getServiceName() != null)
-                                                            ? reading.getServiceType().getServiceName()
-                                                            : "Điện nước";
+                                                             ? reading.getServiceType().getServiceName()
+                                                             : "Điện nước";
                                             InvoiceItem utilityItem = InvoiceItem.builder()
                                                     .invoice(targetInvoice)
                                                     .itemType("UTILITY")
@@ -249,13 +249,13 @@ public class Invoice_Service {
             // Tự động gắn các dịch vụ KTX theo tháng (PER_PERSON: Rác, An ninh & FLAT: Wifi
             // phòng)
             if (serviceTypeRepository != null) {
-                List<ServiceType> serviceTypes = serviceTypeRepository.findAll();
+                List<ServiceType> danh_sach_loai_dich_vu = serviceTypeRepository.findAll();
                 String monthLabel = invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
-                for (ServiceType st : serviceTypes) {
+                for (ServiceType st : danh_sach_loai_dich_vu) {
                     if ("PER_PERSON".equalsIgnoreCase(st.getBillingType())
                             && st.getUnitPrice() != null && st.getUnitPrice().compareTo(BigDecimal.ZERO) > 0) {
                         InvoiceItem serviceItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("SERVICE")
                                 .description(st.getServiceName() + " tháng " + monthLabel)
                                 .quantity(BigDecimal.ONE)
@@ -263,21 +263,21 @@ public class Invoice_Service {
                                 .amount(st.getUnitPrice().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(st.getServiceTypeId())
                                 .build();
-                        invoice.getInvoiceItems().add(serviceItem);
+                        hoa_don.getInvoiceItems().add(serviceItem);
                     }
                 }
-                if (contract.getBed() != null && contract.getBed().getRoom() != null) {
-                    String roomId = contract.getBed().getRoom().getRoomId();
-                    String roomNumber = contract.getBed().getRoom().getRoomNumber();
+                if (hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+                    String roomId = hop_dong.getBed().getRoom().getRoomId();
+                    String roomNumber = hop_dong.getBed().getRoom().getRoomNumber();
                     List<Contract> activeContractsInRoom = contractRepository.findActiveContractsByRoomId(roomId);
                     int activeCountInRoom = activeContractsInRoom.isEmpty() ? 1 : activeContractsInRoom.size();
-                    for (ServiceType st : serviceTypes) {
+                    for (ServiceType st : danh_sach_loai_dich_vu) {
                         if ("FLAT".equalsIgnoreCase(st.getBillingType())
                                 && st.getUnitPrice() != null && st.getUnitPrice().compareTo(BigDecimal.ZERO) > 0) {
                             BigDecimal flatShare = st.getUnitPrice().divide(
                                     BigDecimal.valueOf(activeCountInRoom), 2, RoundingMode.HALF_UP);
                             InvoiceItem flatItem = InvoiceItem.builder()
-                                    .invoice(invoice)
+                                    .invoice(hoa_don)
                                     .itemType("SERVICE")
                                     .description(
                                             st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
@@ -286,7 +286,7 @@ public class Invoice_Service {
                                     .amount(flatShare)
                                     .referenceId(st.getServiceTypeId())
                                     .build();
-                            invoice.getInvoiceItems().add(flatItem);
+                            hoa_don.getInvoiceItems().add(flatItem);
                         }
                     }
                 }
@@ -296,15 +296,15 @@ public class Invoice_Service {
 
             // Tự động gắn phí gửi xe (VEHICLE) đang hoạt động trong kỳ
             if (vehicleRegistrationRepository != null) {
-                List<VehicleRegistration> vehicles = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
-                        student.getStudentId(), invoiceMonth, monthEnd);
-                for (VehicleRegistration vehicle : vehicles) {
+                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
+                        sinh_vien.getStudentId(), invoiceMonth, monthEnd);
+                for (VehicleRegistration vehicle : danh_sach_xe) {
                     if (vehicle.getMonthlyFee() != null && vehicle.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
                         String plateInfo = (vehicle.getLicensePlate() != null && !vehicle.getLicensePlate().isBlank())
                                 ? " (" + vehicle.getLicensePlate() + ")"
                                 : "";
                         InvoiceItem vehicleItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("VEHICLE")
                                 .description("Phí gửi xe " + vehicle.getVehicleType() + plateInfo + " tháng "
                                         + invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")))
@@ -313,16 +313,16 @@ public class Invoice_Service {
                                 .amount(vehicle.getMonthlyFee().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(vehicle.getVehicleId())
                                 .build();
-                        invoice.getInvoiceItems().add(vehicleItem);
+                        hoa_don.getInvoiceItems().add(vehicleItem);
                     }
                 }
             }
 
             // Tự động gắn tiền phạt vi phạm kỷ luật chưa tính vào hóa đơn (FINE)
             if (violationRepository != null) {
-                List<Violation> violations = violationRepository.findUnbilledFinesByStudent(student.getStudentId(),
+                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(sinh_vien.getStudentId(),
                         monthEnd);
-                for (Violation v : violations) {
+                for (Violation v : danh_sach_vi_pham) {
                     boolean alreadyBilled = invoiceItemRepository != null
                             && invoiceItemRepository.existsByItemTypeAndReferenceId("FINE", v.getViolationId());
                     if (!alreadyBilled && v.getFineAmount() != null
@@ -331,7 +331,7 @@ public class Invoice_Service {
                                 ? v.getViolationType().getViolationName()
                                 : "Kỷ luật";
                         InvoiceItem fineItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("FINE")
                                 .description("Tiền phạt vi phạm: " + vName)
                                 .quantity(BigDecimal.ONE)
@@ -339,22 +339,22 @@ public class Invoice_Service {
                                 .amount(v.getFineAmount().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(v.getViolationId())
                                 .build();
-                        invoice.getInvoiceItems().add(fineItem);
+                        hoa_don.getInvoiceItems().add(fineItem);
                     }
                 }
             }
         }
 
-        invoice.setDiscountAmount(
+        hoa_don.setDiscountAmount(
                 request.getDiscountAmount() != null ? request.getDiscountAmount().setScale(2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        invoice.setLateFeeAmount(
+        hoa_don.setLateFeeAmount(
                 request.getLateFeeAmount() != null ? request.getLateFeeAmount().setScale(2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-        recalculateInvoiceAmounts(invoice);
+        recalculateInvoiceAmounts(hoa_don);
 
-        invoice = invoiceRepository.save(invoice);
-        return invoiceMapper.toResponse(invoice);
+        hoa_don = invoiceRepository.save(hoa_don);
+        return invoiceMapper.toResponse(hoa_don);
     }
 
     // Tính toán lại tổng tiền các dòng chi tiết và các khoản chiết khấu, phạt trễ
@@ -411,31 +411,31 @@ public class Invoice_Service {
 
     // Xác định đơn giá phòng hàng tháng theo thứ tự ưu tiên: Hợp đồng -> Bảng Loại
     // phòng trong CSDL
-    private BigDecimal resolveRoomMonthlyFee(Contract contract) {
-        if (contract != null && contract.getMonthlyFee() != null
-                && contract.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
-            return contract.getMonthlyFee().setScale(2, RoundingMode.HALF_UP);
+    private BigDecimal resolveRoomMonthlyFee(Contract hop_dong) {
+        if (hop_dong != null && hop_dong.getMonthlyFee() != null
+                && hop_dong.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
+            return hop_dong.getMonthlyFee().setScale(2, RoundingMode.HALF_UP);
         }
-        if (contract != null && contract.getBed() != null && contract.getBed().getRoom() != null) {
-            Room room = contract.getBed().getRoom();
-            if (room.getRoomType() != null && room.getRoomType().getPricePerMonth() != null
-                    && room.getRoomType().getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
-                return room.getRoomType().getPricePerMonth().setScale(2, RoundingMode.HALF_UP);
+        if (hop_dong != null && hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+            Room phong = hop_dong.getBed().getRoom();
+            if (phong.getRoomType() != null && phong.getRoomType().getPricePerMonth() != null
+                    && phong.getRoomType().getPricePerMonth().compareTo(BigDecimal.ZERO) > 0) {
+                return phong.getRoomType().getPricePerMonth().setScale(2, RoundingMode.HALF_UP);
             }
         }
         throw new AppException(ErrorCode.OPERATION_FAILED,
-                "Không thể xác định đơn giá phòng cho hợp đồng '" + (contract != null ? contract.getContractCode() : "")
+                "Không thể xác định đơn giá phòng cho hợp đồng '" + (hop_dong != null ? hop_dong.getContractCode() : "")
                         + "'. Vui lòng cấu hình đơn giá cho loại phòng hoặc ghi rõ trên hợp đồng.");
     }
 
     // Lấy thông tin hóa đơn theo ID kèm kiểm tra quyền sở hữu sinh viên
     @Transactional(readOnly = true)
     public Invoice_Response getById(String invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        checkStudentAccessOwnership(invoice.getStudent().getStudentId());
-        return invoiceMapper.toResponse(invoice);
+        checkStudentAccessOwnership(hoa_don.getStudent().getStudentId());
+        return invoiceMapper.toResponse(hoa_don);
     }
 
     // Lấy danh sách hóa đơn theo sinh viên kèm kiểm tra quyền sở hữu
@@ -446,22 +446,22 @@ public class Invoice_Service {
             throw new AppException(ErrorCode.STUDENT_NOT_FOUND);
         }
 
-        List<Invoice> list = invoiceRepository.findByStudent_StudentId(studentId);
-        return invoiceMapper.toResponseList(list);
+        List<Invoice> danh_sach_hoa_don = invoiceRepository.findByStudent_StudentId(studentId);
+        return invoiceMapper.toResponseList(danh_sach_hoa_don);
     }
 
     // Lấy danh sách hóa đơn theo hợp đồng
     @Transactional(readOnly = true)
     public List<Invoice_Response> getByContractId(String contractId) {
-        Contract contract = contractRepository.findById(contractId)
+        Contract hop_dong = contractRepository.findById(contractId)
                 .orElseThrow(() -> new AppException(ErrorCode.CONTRACT_NOT_FOUND));
 
-        if (contract.getStudent() != null) {
-            checkStudentAccessOwnership(contract.getStudent().getStudentId());
+        if (hop_dong.getStudent() != null) {
+            checkStudentAccessOwnership(hop_dong.getStudent().getStudentId());
         }
 
-        List<Invoice> list = invoiceRepository.findByContract_ContractId(contractId);
-        return invoiceMapper.toResponseList(list);
+        List<Invoice> danh_sach_hoa_don = invoiceRepository.findByContract_ContractId(contractId);
+        return invoiceMapper.toResponseList(danh_sach_hoa_don);
     }
 
     // Tìm kiếm hóa đơn phân trang theo từ khóa, trạng thái và kỳ hóa đơn
@@ -486,23 +486,23 @@ public class Invoice_Service {
                 : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Invoice> pageResult = invoiceRepository.searchInvoices(
+        Page<Invoice> trang_hoa_don = invoiceRepository.searchInvoices(
                 (keyword != null && !keyword.isBlank()) ? keyword.trim() : null,
                 (status != null && !status.isBlank()) ? status.trim() : null,
                 normalizedMonth,
                 pageable);
 
-        List<Invoice_Response> data = invoiceMapper.toResponseList(pageResult.getContent());
+        List<Invoice_Response> data = invoiceMapper.toResponseList(trang_hoa_don.getContent());
 
         return Page_Response.<Invoice_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_hoa_don.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_hoa_don.getTotalPages())
+                .totalElements(trang_hoa_don.getTotalElements())
+                .hasPrevious(trang_hoa_don.hasPrevious())
+                .hasNext(trang_hoa_don.hasNext())
+                .isFirst(trang_hoa_don.isFirst())
+                .isLast(trang_hoa_don.isLast())
                 .data(data)
                 .build();
     }
@@ -521,29 +521,29 @@ public class Invoice_Service {
                     "Chỉ nhân viên hoặc quản trị viên mới có quyền phát hành hóa đơn");
         }
 
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if (!"DRAFT".equalsIgnoreCase(invoice.getStatus())) {
+        if (!"DRAFT".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Chỉ có thể phát hành hóa đơn khi đang ở trạng thái DRAFT (Trạng thái hiện tại: "
-                            + invoice.getStatus() + ")");
+                            + hoa_don.getStatus() + ")");
         }
 
-        invoice.setStatus("ISSUED");
-        invoice.setIssueDate(LocalDate.now());
-        if (invoice.getDueDate() == null || invoice.getDueDate().isBefore(invoice.getIssueDate())) {
+        hoa_don.setStatus("ISSUED");
+        hoa_don.setIssueDate(LocalDate.now());
+        if (hoa_don.getDueDate() == null || hoa_don.getDueDate().isBefore(hoa_don.getIssueDate())) {
             int deadlineDays = systemSettingService != null
                     ? systemSettingService.getIntSetting("INVOICE_PAYMENT_DEADLINE_DAYS", 10)
                     : 10;
-            invoice.setDueDate(invoice.getIssueDate().plusDays(deadlineDays));
+            hoa_don.setDueDate(hoa_don.getIssueDate().plusDays(deadlineDays));
         }
 
-        recalculateInvoiceAmounts(invoice);
-        invoice = invoiceRepository.save(invoice);
-        log.info("Đã phát hành hóa đơn: {}", invoice.getInvoiceCode());
+        recalculateInvoiceAmounts(hoa_don);
+        hoa_don = invoiceRepository.save(hoa_don);
+        log.info("Đã phát hành hóa đơn: {}", hoa_don.getInvoiceCode());
 
-        return invoiceMapper.toResponse(invoice);
+        return invoiceMapper.toResponse(hoa_don);
     }
 
     // Cập nhật thông tin hóa đơn khi chưa thanh toán hoàn tất
@@ -554,18 +554,18 @@ public class Invoice_Service {
                     "Chỉ quản lý hoặc quản trị viên mới có quyền chỉnh sửa hóa đơn");
         }
 
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể chỉnh sửa hóa đơn đã thanh toán hoàn tất");
         }
-        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể chỉnh sửa hóa đơn đã bị hủy (CANCELLED)");
         }
 
         if (request.getInvoiceCode() != null && !request.getInvoiceCode().isBlank() &&
-                !invoice.getInvoiceCode().equalsIgnoreCase(request.getInvoiceCode()) &&
+                !hoa_don.getInvoiceCode().equalsIgnoreCase(request.getInvoiceCode()) &&
                 invoiceRepository.existsByInvoiceCode(request.getInvoiceCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mã hóa đơn '" + request.getInvoiceCode() + "' đã tồn tại");
@@ -573,33 +573,33 @@ public class Invoice_Service {
 
         if (request.getInvoiceMonth() != null) {
             LocalDate newMonth = request.getInvoiceMonth().withDayOfMonth(1);
-            if (!newMonth.equals(invoice.getInvoiceMonth()) &&
-                    invoiceRepository.existsByContract_ContractIdAndInvoiceMonth(invoice.getContract().getContractId(),
+            if (!newMonth.equals(hoa_don.getInvoiceMonth()) &&
+                    invoiceRepository.existsByContract_ContractIdAndInvoiceMonth(hoa_don.getContract().getContractId(),
                             newMonth)) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Hóa đơn cho kỳ " + newMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")) + " đã tồn tại");
             }
-            invoice.setInvoiceMonth(newMonth);
+            hoa_don.setInvoiceMonth(newMonth);
         }
 
-        invoiceMapper.updateEntityFromRequest(invoice, request);
+        invoiceMapper.updateEntityFromRequest(hoa_don, request);
 
         if (request.getSubtotalAmount() != null && request.getSubtotalAmount().compareTo(BigDecimal.ZERO) > 0) {
-            invoice.setSubtotalAmount(request.getSubtotalAmount().setScale(2, RoundingMode.HALF_UP));
+            hoa_don.setSubtotalAmount(request.getSubtotalAmount().setScale(2, RoundingMode.HALF_UP));
         }
 
-        recalculateInvoiceAmounts(invoice);
+        recalculateInvoiceAmounts(hoa_don);
 
         // Kiểm tra tổng tiền sau cập nhật không được nhỏ hơn số tiền sinh viên đã thanh
         // toán thực tế
-        if (invoice.getPaidAmount() != null && invoice.getTotalAmount().compareTo(invoice.getPaidAmount()) < 0) {
+        if (hoa_don.getPaidAmount() != null && hoa_don.getTotalAmount().compareTo(hoa_don.getPaidAmount()) < 0) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Tổng tiền phải trả sau khi cập nhật (" + invoice.getTotalAmount()
-                            + ") không được nhỏ hơn số tiền đã thanh toán (" + invoice.getPaidAmount() + ")");
+                    "Tổng tiền phải trả sau khi cập nhật (" + hoa_don.getTotalAmount()
+                            + ") không được nhỏ hơn số tiền đã thanh toán (" + hoa_don.getPaidAmount() + ")");
         }
 
-        invoice = invoiceRepository.save(invoice);
-        return invoiceMapper.toResponse(invoice);
+        hoa_don = invoiceRepository.save(hoa_don);
+        return invoiceMapper.toResponse(hoa_don);
     }
 
     // Hủy hóa đơn (chuyển sang CANCELLED nếu chưa thanh toán và chưa có khoản thanh
@@ -610,35 +610,35 @@ public class Invoice_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ quản lý hoặc quản trị viên mới có quyền hủy hóa đơn");
         }
 
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể hủy hóa đơn đã thanh toán hoàn tất");
         }
-        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn này đã ở trạng thái CANCELLED trước đó");
         }
-        if (invoice.getPaidAmount() != null && invoice.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+        if (hoa_don.getPaidAmount() != null && hoa_don.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Không thể hủy hóa đơn đã phát sinh tiền thanh toán thực tế (" + invoice.getPaidAmount()
+                    "Không thể hủy hóa đơn đã phát sinh tiền thanh toán thực tế (" + hoa_don.getPaidAmount()
                             + " VNĐ). Vui lòng hoàn tiền trước");
         }
 
         // Giải phóng các biên bản vi phạm FINE khỏi hóa đơn hủy để không bị kẹt
         // referenceId
-        if (invoice.getInvoiceItems() != null) {
-            for (InvoiceItem item : invoice.getInvoiceItems()) {
+        if (hoa_don.getInvoiceItems() != null) {
+            for (InvoiceItem item : hoa_don.getInvoiceItems()) {
                 if ("FINE".equalsIgnoreCase(item.getItemType())) {
                     item.setReferenceId(null);
                 }
             }
         }
 
-        invoice.setStatus("CANCELLED");
-        invoice = invoiceRepository.save(invoice);
-        log.info("Đã hủy hóa đơn: {} với lý do: {}", invoice.getInvoiceCode(), reason);
-        return invoiceMapper.toResponse(invoice);
+        hoa_don.setStatus("CANCELLED");
+        hoa_don = invoiceRepository.save(hoa_don);
+        log.info("Đã hủy hóa đơn: {} với lý do: {}", hoa_don.getInvoiceCode(), reason);
+        return invoiceMapper.toResponse(hoa_don);
     }
 
     // Xóa hóa đơn (chỉ cho phép xóa khi chưa thanh toán và chưa có giao dịch thu
@@ -649,12 +649,12 @@ public class Invoice_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ quản lý hoặc quản trị viên mới có quyền xóa hóa đơn");
         }
 
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())
-                || "PARTIALLY_PAID".equalsIgnoreCase(invoice.getStatus())
-                || (invoice.getPaidAmount() != null && invoice.getPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())
+                || "PARTIALLY_PAID".equalsIgnoreCase(hoa_don.getStatus())
+                || (hoa_don.getPaidAmount() != null && hoa_don.getPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không thể xóa hóa đơn đã thanh toán hoặc đã thu tiền một phần");
         }
@@ -664,8 +664,8 @@ public class Invoice_Service {
                     "Không thể xóa hóa đơn đã phát sinh giao dịch thanh toán");
         }
 
-        invoiceRepository.delete(invoice);
-        log.info("Đã xóa hóa đơn: {}", invoice.getInvoiceCode());
+        invoiceRepository.delete(hoa_don);
+        log.info("Đã xóa hóa đơn: {}", hoa_don.getInvoiceCode());
     }
 
     // Lập hóa đơn hàng loạt cho các hợp đồng đang hoạt động trong kỳ tháng
@@ -688,22 +688,22 @@ public class Invoice_Service {
 
         log.info("Bắt đầu lập hóa đơn hàng loạt cho kỳ tháng: {}", invoiceMonth);
 
-        List<Contract> activeContracts = contractRepository.findByStatus("ACTIVE");
-        List<Invoice> createdInvoices = new ArrayList<>();
+        List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findByStatus("ACTIVE");
+        List<Invoice> danh_sach_hoa_don_da_tao = new ArrayList<>();
         LocalDate monthEnd = invoiceMonth.withDayOfMonth(invoiceMonth.lengthOfMonth());
 
-        for (Contract contract : activeContracts) {
-            if (contract.getStartDate().isAfter(monthEnd) || contract.getEndDate().isBefore(invoiceMonth)) {
+        for (Contract hop_dong : danh_sach_hop_dong_hieu_luc) {
+            if (hop_dong.getStartDate().isAfter(monthEnd) || hop_dong.getEndDate().isBefore(invoiceMonth)) {
                 continue;
             }
 
             // Lọc theo Tòa nhà nếu có yêu cầu phạm vi
             if (request.getBuildingId() != null && !request.getBuildingId().isBlank()) {
                 String contractBuildingId = null;
-                if (contract.getBed() != null && contract.getBed().getRoom() != null
-                        && contract.getBed().getRoom().getFloor() != null
-                        && contract.getBed().getRoom().getFloor().getBuilding() != null) {
-                    contractBuildingId = contract.getBed().getRoom().getFloor().getBuilding().getBuildingId();
+                if (hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null
+                        && hop_dong.getBed().getRoom().getFloor() != null
+                        && hop_dong.getBed().getRoom().getFloor().getBuilding() != null) {
+                    contractBuildingId = hop_dong.getBed().getRoom().getFloor().getBuilding().getBuildingId();
                 }
                 if (!request.getBuildingId().equals(contractBuildingId)) {
                     continue;
@@ -713,9 +713,9 @@ public class Invoice_Service {
             // Lọc theo Tầng nếu có yêu cầu phạm vi
             if (request.getFloorId() != null && !request.getFloorId().isBlank()) {
                 String contractFloorId = null;
-                if (contract.getBed() != null && contract.getBed().getRoom() != null
-                        && contract.getBed().getRoom().getFloor() != null) {
-                    contractFloorId = contract.getBed().getRoom().getFloor().getFloorId();
+                if (hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null
+                        && hop_dong.getBed().getRoom().getFloor() != null) {
+                    contractFloorId = hop_dong.getBed().getRoom().getFloor().getFloorId();
                 }
                 if (!request.getFloorId().equals(contractFloorId)) {
                     continue;
@@ -724,33 +724,33 @@ public class Invoice_Service {
 
             // Bỏ qua nếu đã có hóa đơn đang hoạt động (không tính hóa đơn đã bị hủy
             // CANCELLED)
-            List<Invoice> existingInvoices = invoiceRepository
-                    .findByContract_ContractIdAndInvoiceMonth(contract.getContractId(), invoiceMonth);
-            if (existingInvoices != null
-                    && existingInvoices.stream().anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
+            List<Invoice> danh_sach_hoa_don_da_ton_tai = invoiceRepository
+                    .findByContract_ContractIdAndInvoiceMonth(hop_dong.getContractId(), invoiceMonth);
+            if (danh_sach_hoa_don_da_ton_tai != null
+                    && danh_sach_hoa_don_da_ton_tai.stream().anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
                 continue;
             }
 
-            Student student = contract.getStudent();
-            if (student == null) {
+            Student sinh_vien = hop_dong.getStudent();
+            if (sinh_vien == null) {
                 continue;
             }
 
             BigDecimal monthlyFee;
             try {
-                monthlyFee = resolveRoomMonthlyFee(contract);
+                monthlyFee = resolveRoomMonthlyFee(hop_dong);
             } catch (Exception ex) {
-                log.warn("Bỏ qua hợp đồng {} khi lập hóa đơn hàng loạt: {}", contract.getContractCode(),
+                log.warn("Bỏ qua hợp đồng {} khi lập hóa đơn hàng loạt: {}", hop_dong.getContractCode(),
                         ex.getMessage());
                 continue;
             }
 
-            String invoiceCode = generateInvoiceCode(student, invoiceMonth);
+            String invoiceCode = generateInvoiceCode(sinh_vien, invoiceMonth);
 
-            Invoice invoice = Invoice.builder()
+            Invoice hoa_don = Invoice.builder()
                     .invoiceCode(invoiceCode)
-                    .contract(contract)
-                    .student(student)
+                    .contract(hop_dong)
+                    .student(sinh_vien)
                     .invoiceMonth(invoiceMonth)
                     .issueDate(issueDate)
                     .dueDate(dueDate)
@@ -765,40 +765,40 @@ public class Invoice_Service {
 
             if (monthlyFee.compareTo(BigDecimal.ZERO) > 0) {
                 InvoiceItem rentItem = InvoiceItem.builder()
-                        .invoice(invoice)
+                        .invoice(hoa_don)
                         .itemType("RENT")
                         .description("Tiền thuê phòng lưu trú kỳ tháng "
                                 + invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")))
                         .quantity(BigDecimal.ONE)
                         .unitPrice(monthlyFee)
                         .amount(monthlyFee)
-                        .referenceId(contract.getContractId())
+                        .referenceId(hop_dong.getContractId())
                         .build();
-                invoice.getInvoiceItems().add(rentItem);
+                hoa_don.getInvoiceItems().add(rentItem);
             }
 
             // Gắn tiền điện nước phòng (UTILITY) phân bổ cho sinh viên (ưu tiên chỉ số chốt
             // tháng trước invoiceMonth.minusMonths(1))
             if (utilityReadingRepository != null && utilityReadingService != null
-                    && contract.getBed() != null && contract.getBed().getRoom() != null) {
-                String roomId = contract.getBed().getRoom().getRoomId();
+                    && hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+                String roomId = hop_dong.getBed().getRoom().getRoomId();
                 LocalDate utilityMonth = invoiceMonth.minusMonths(1);
-                List<UtilityReading> readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId,
+                List<UtilityReading> danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId,
                         utilityMonth);
-                if (readings.isEmpty()) {
-                    readings = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
-                    if (!readings.isEmpty()) {
+                if (danh_sach_chi_so.isEmpty()) {
+                    danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
+                    if (!danh_sach_chi_so.isEmpty()) {
                         utilityMonth = invoiceMonth;
                     }
                 }
-                for (UtilityReading reading : readings) {
+                for (UtilityReading reading : danh_sach_chi_so) {
                     try {
                         UtilitySplit_Response split = utilityReadingService.calculateRoomUtilitySplit(
                                 roomId, reading.getServiceType().getServiceTypeId(), utilityMonth);
                         if (split != null && split.getResidentShares() != null) {
                             split.getResidentShares().stream()
                                     .filter(rs -> rs.getStudentId() != null
-                                            && rs.getStudentId().equals(student.getStudentId()))
+                                            && rs.getStudentId().equals(sinh_vien.getStudentId()))
                                     .findFirst()
                                     .ifPresent(rs -> {
                                         if (rs.getShareAmount() != null
@@ -808,7 +808,7 @@ public class Invoice_Service {
                                                             ? reading.getServiceType().getServiceName()
                                                             : "Điện nước";
                                             InvoiceItem utilityItem = InvoiceItem.builder()
-                                                    .invoice(invoice)
+                                                    .invoice(hoa_don)
                                                     .itemType("UTILITY")
                                                     .description("Tiền " + srvName + " tháng "
                                                             + invoiceMonth
@@ -818,13 +818,13 @@ public class Invoice_Service {
                                                     .amount(rs.getShareAmount().setScale(2, RoundingMode.HALF_UP))
                                                     .referenceId(reading.getReadingId())
                                                     .build();
-                                            invoice.getInvoiceItems().add(utilityItem);
+                                            hoa_don.getInvoiceItems().add(utilityItem);
                                         }
                                     });
                         }
                     } catch (Exception ex) {
                         log.warn("Không thể tính chia điện nước phòng {} cho hợp đồng {}: {}", roomId,
-                                contract.getContractCode(), ex.getMessage());
+                                hop_dong.getContractCode(), ex.getMessage());
                     }
                 }
             }
@@ -835,14 +835,14 @@ public class Invoice_Service {
             // 2. Phí cố định theo phòng (FLAT) chia đều số SV trong phòng của kỳ tháng:
             // Internet Wifi
             if (serviceTypeRepository != null) {
-                List<ServiceType> serviceTypes = serviceTypeRepository.findAll();
+                List<ServiceType> danh_sach_loai_dich_vu = serviceTypeRepository.findAll();
                 String monthLabel = invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
 
-                for (ServiceType st : serviceTypes) {
+                for (ServiceType st : danh_sach_loai_dich_vu) {
                     if ("PER_PERSON".equalsIgnoreCase(st.getBillingType())
                             && st.getUnitPrice() != null && st.getUnitPrice().compareTo(BigDecimal.ZERO) > 0) {
                         InvoiceItem serviceItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("SERVICE")
                                 .description(st.getServiceName() + " tháng " + monthLabel)
                                 .quantity(BigDecimal.ONE)
@@ -850,29 +850,29 @@ public class Invoice_Service {
                                 .amount(st.getUnitPrice().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(st.getServiceTypeId())
                                 .build();
-                        invoice.getInvoiceItems().add(serviceItem);
+                        hoa_don.getInvoiceItems().add(serviceItem);
                     }
                 }
 
-                if (contract.getBed() != null && contract.getBed().getRoom() != null) {
-                    String roomId = contract.getBed().getRoom().getRoomId();
-                    String roomNumber = contract.getBed().getRoom().getRoomNumber();
-                    long activeCountInRoom = activeContracts.stream()
+                if (hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
+                    String roomId = hop_dong.getBed().getRoom().getRoomId();
+                    String roomNumber = hop_dong.getBed().getRoom().getRoomNumber();
+                    long activeCountInRoom = danh_sach_hop_dong_hieu_luc.stream()
                             .filter(c -> c.getBed() != null && c.getBed().getRoom() != null
-                                    && roomId.equals(c.getBed().getRoom().getRoomId())
+                                     && roomId.equals(c.getBed().getRoom().getRoomId())
                                     && !c.getStartDate().isAfter(monthEnd) && !c.getEndDate().isBefore(invoiceMonth))
                             .count();
                     if (activeCountInRoom == 0) {
                         activeCountInRoom = 1;
                     }
 
-                    for (ServiceType st : serviceTypes) {
+                    for (ServiceType st : danh_sach_loai_dich_vu) {
                         if ("FLAT".equalsIgnoreCase(st.getBillingType())
                                 && st.getUnitPrice() != null && st.getUnitPrice().compareTo(BigDecimal.ZERO) > 0) {
                             BigDecimal flatShare = st.getUnitPrice().divide(
                                     BigDecimal.valueOf(activeCountInRoom), 2, RoundingMode.HALF_UP);
                             InvoiceItem flatItem = InvoiceItem.builder()
-                                    .invoice(invoice)
+                                    .invoice(hoa_don)
                                     .itemType("SERVICE")
                                     .description(
                                             st.getServiceName() + " (Phòng " + roomNumber + ") tháng " + monthLabel)
@@ -881,7 +881,7 @@ public class Invoice_Service {
                                     .amount(flatShare)
                                     .referenceId(st.getServiceTypeId())
                                     .build();
-                            invoice.getInvoiceItems().add(flatItem);
+                            hoa_don.getInvoiceItems().add(flatItem);
                         }
                     }
                 }
@@ -889,15 +889,15 @@ public class Invoice_Service {
 
             // Gắn phí gửi xe (VEHICLE) đang hoạt động trong kỳ
             if (vehicleRegistrationRepository != null) {
-                List<VehicleRegistration> vehicles = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
-                        student.getStudentId(), invoiceMonth, monthEnd);
-                for (VehicleRegistration vehicle : vehicles) {
+                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
+                        sinh_vien.getStudentId(), invoiceMonth, monthEnd);
+                for (VehicleRegistration vehicle : danh_sach_xe) {
                     if (vehicle.getMonthlyFee() != null && vehicle.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
                         String plateInfo = (vehicle.getLicensePlate() != null && !vehicle.getLicensePlate().isBlank())
                                 ? " (" + vehicle.getLicensePlate() + ")"
                                 : "";
                         InvoiceItem vehicleItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("VEHICLE")
                                 .description("Phí gửi xe " + vehicle.getVehicleType() + plateInfo + " tháng "
                                         + invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")))
@@ -906,16 +906,16 @@ public class Invoice_Service {
                                 .amount(vehicle.getMonthlyFee().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(vehicle.getVehicleId())
                                 .build();
-                        invoice.getInvoiceItems().add(vehicleItem);
+                        hoa_don.getInvoiceItems().add(vehicleItem);
                     }
                 }
             }
 
             // Gắn tiền phạt vi phạm kỷ luật chưa tính vào hóa đơn (FINE)
             if (violationRepository != null) {
-                List<Violation> violations = violationRepository.findUnbilledFinesByStudent(student.getStudentId(),
+                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(sinh_vien.getStudentId(),
                         monthEnd);
-                for (Violation v : violations) {
+                for (Violation v : danh_sach_vi_pham) {
                     boolean alreadyBilled = invoiceItemRepository != null
                             && invoiceItemRepository.existsByItemTypeAndReferenceId("FINE", v.getViolationId());
                     if (!alreadyBilled && v.getFineAmount() != null
@@ -924,7 +924,7 @@ public class Invoice_Service {
                                 ? v.getViolationType().getViolationName()
                                 : "Kỷ luật";
                         InvoiceItem fineItem = InvoiceItem.builder()
-                                .invoice(invoice)
+                                .invoice(hoa_don)
                                 .itemType("FINE")
                                 .description("Tiền phạt vi phạm: " + vName)
                                 .quantity(BigDecimal.ONE)
@@ -932,25 +932,25 @@ public class Invoice_Service {
                                 .amount(v.getFineAmount().setScale(2, RoundingMode.HALF_UP))
                                 .referenceId(v.getViolationId())
                                 .build();
-                        invoice.getInvoiceItems().add(fineItem);
+                        hoa_don.getInvoiceItems().add(fineItem);
                     }
                 }
             }
 
             // Tự động tính lại tổng tiền từ toàn bộ các dòng chi tiết RENT, UTILITY,
             // VEHICLE, FINE
-            recalculateInvoiceAmounts(invoice);
+            recalculateInvoiceAmounts(hoa_don);
 
-            createdInvoices.add(invoice);
+            danh_sach_hoa_don_da_tao.add(hoa_don);
         }
 
-        if (!createdInvoices.isEmpty()) {
-            createdInvoices = invoiceRepository.saveAll(createdInvoices);
-            log.info("Lập hóa đơn hàng loạt hoàn tất: đã tạo {} hóa đơn cho kỳ {}", createdInvoices.size(),
+        if (!danh_sach_hoa_don_da_tao.isEmpty()) {
+            danh_sach_hoa_don_da_tao = invoiceRepository.saveAll(danh_sach_hoa_don_da_tao);
+            log.info("Lập hóa đơn hàng loạt hoàn tất: đã tạo {} hóa đơn cho kỳ {}", danh_sach_hoa_don_da_tao.size(),
                     invoiceMonth);
         }
 
-        return invoiceMapper.toResponseList(createdInvoices);
+        return invoiceMapper.toResponseList(danh_sach_hoa_don_da_tao);
     }
 
     // Tác vụ tự động lập hóa đơn hàng loạt vào lúc 23:00 ngày 28 hàng tháng
@@ -973,51 +973,51 @@ public class Invoice_Service {
     @Transactional
     public int processOverdueInvoices() {
         LocalDate today = LocalDate.now();
-        List<Invoice> overdueInvoices = invoiceRepository.findOverdueInvoices(today);
+        List<Invoice> danh_sach_hoa_don_qua_han = invoiceRepository.findOverdueInvoices(today);
 
-        if (overdueInvoices.isEmpty()) {
+        if (danh_sach_hoa_don_qua_han.isEmpty()) {
             log.info("Không có hóa đơn nào quá hạn cần xử lý hôm nay: {}", today);
             return 0;
         }
 
         log.info("Phát hiện {} hóa đơn quá hạn chưa thanh toán, tiến hành cập nhật trạng thái và phí phạt trễ hạn",
-                overdueInvoices.size());
+                danh_sach_hoa_don_qua_han.size());
 
         int count = 0;
-        for (Invoice invoice : overdueInvoices) {
+        for (Invoice hoa_don : danh_sach_hoa_don_qua_han) {
             // Chỉ cập nhật trạng thái OVERDUE cho hóa đơn ISSUED (chưa thanh toán đồng
             // nào).
             // Hóa đơn PARTIALLY_PAID giữ nguyên trạng thái để tránh bị đảo trạng thái qua
             // lại hằng đêm.
-            if ("ISSUED".equalsIgnoreCase(invoice.getStatus())) {
-                invoice.setStatus("OVERDUE");
+            if ("ISSUED".equalsIgnoreCase(hoa_don.getStatus())) {
+                hoa_don.setStatus("OVERDUE");
             }
 
             // Áp dụng phí phạt trễ hạn đọc từ cấu hình hệ thống (mặc định 5%) trên số tiền
             // chưa thanh toán nếu chưa bị tính phí phạt
-            if (invoice.getLateFeeAmount() == null || invoice.getLateFeeAmount().compareTo(BigDecimal.ZERO) == 0) {
+            if (hoa_don.getLateFeeAmount() == null || hoa_don.getLateFeeAmount().compareTo(BigDecimal.ZERO) == 0) {
                 BigDecimal finePercent = systemSettingService != null
                         ? systemSettingService.getDecimalSetting("LATE_PAYMENT_FINE_PERCENT", new BigDecimal("5.0"))
                         : new BigDecimal("5.0");
                 BigDecimal lateFeeRate = finePercent.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
 
-                BigDecimal totalBeforeLate = (invoice.getSubtotalAmount() != null ? invoice.getSubtotalAmount()
+                BigDecimal totalBeforeLate = (hoa_don.getSubtotalAmount() != null ? hoa_don.getSubtotalAmount()
                         : BigDecimal.ZERO)
-                        .subtract(invoice.getDiscountAmount() != null ? invoice.getDiscountAmount() : BigDecimal.ZERO);
-                BigDecimal paid = invoice.getPaidAmount() != null ? invoice.getPaidAmount() : BigDecimal.ZERO;
+                        .subtract(hoa_don.getDiscountAmount() != null ? hoa_don.getDiscountAmount() : BigDecimal.ZERO);
+                BigDecimal paid = hoa_don.getPaidAmount() != null ? hoa_don.getPaidAmount() : BigDecimal.ZERO;
                 BigDecimal unpaid = totalBeforeLate.subtract(paid);
 
                 if (unpaid.compareTo(BigDecimal.ZERO) > 0 && lateFeeRate.compareTo(BigDecimal.ZERO) > 0) {
                     BigDecimal lateFee = unpaid.multiply(lateFeeRate).setScale(2, RoundingMode.HALF_UP);
-                    invoice.setLateFeeAmount(lateFee);
+                    hoa_don.setLateFeeAmount(lateFee);
                 }
             }
 
-            recalculateInvoiceAmounts(invoice);
+            recalculateInvoiceAmounts(hoa_don);
             count++;
         }
 
-        invoiceRepository.saveAll(overdueInvoices);
+        invoiceRepository.saveAll(danh_sach_hoa_don_qua_han);
         log.info("Đã xử lý {} hóa đơn quá hạn", count);
         return count;
     }

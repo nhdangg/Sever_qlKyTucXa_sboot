@@ -68,13 +68,13 @@ public class UtilityReading_Service {
     public UtilityReading_Response create(UtilityReading_Request request) {
         log.info("Ghi chỉ số điện nước cho phòng ID: {}, dịch vụ ID: {}", request.getRoomId(), request.getServiceTypeId());
 
-        Room room = roomRepository.findById(request.getRoomId())
+        Room phong = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        ServiceType serviceType = serviceTypeRepository.findById(request.getServiceTypeId())
+        ServiceType loai_dich_vu = serviceTypeRepository.findById(request.getServiceTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
 
-        if (!"METERED".equalsIgnoreCase(serviceType.getBillingType())) {
+        if (!"METERED".equalsIgnoreCase(loai_dich_vu.getBillingType())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ có thể ghi chỉ số cho loại dịch vụ tính theo đồng hồ (METERED)");
         }
 
@@ -86,7 +86,7 @@ public class UtilityReading_Service {
 
         // Kiểm tra tránh trùng lặp bản ghi chỉ số trong cùng một tháng
         Optional<UtilityReading> existingOpt = readingRepository.findByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonth(
-                room.getRoomId(), serviceType.getServiceTypeId(), readingMonth);
+                phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth);
         if (existingOpt.isPresent()) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ số tháng " + readingMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")) + " của phòng đã được ghi nhận");
         }
@@ -98,7 +98,7 @@ public class UtilityReading_Service {
         } else {
             Optional<UtilityReading> latestPriorReadingOpt = readingRepository
                     .findTopByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonthLessThanOrderByReadingMonthDesc(
-                            room.getRoomId(), serviceType.getServiceTypeId(), readingMonth);
+                            phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth);
             if (latestPriorReadingOpt.isPresent()) {
                 previousIndex = latestPriorReadingOpt.get().getCurrentIndex();
             } else {
@@ -112,32 +112,32 @@ public class UtilityReading_Service {
         }
 
         // Lấy nhân viên ghi số từ JWT (không dự phòng nhân viên đầu tiên trong CSDL)
-        Staff recordedStaff = null;
+        Staff nhan_vien_ghi_so = null;
         if (request.getRecordedBy() != null && !request.getRecordedBy().isBlank()) {
-            recordedStaff = staffRepository.findById(request.getRecordedBy())
+            nhan_vien_ghi_so = staffRepository.findById(request.getRecordedBy())
                     .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
         } else {
-            recordedStaff = currentUserService.findStaffId()
+            nhan_vien_ghi_so = currentUserService.findStaffId()
                     .flatMap(staffRepository::findById)
                     .orElse(null);
         }
 
-        UtilityReading reading = UtilityReading.builder()
-                .room(room)
-                .serviceType(serviceType)
+        UtilityReading chi_so = UtilityReading.builder()
+                .room(phong)
+                .serviceType(loai_dich_vu)
                 .readingMonth(readingMonth)
                 .previousIndex(previousIndex)
                 .currentIndex(currentIndex)
                 .consumption(currentIndex.subtract(previousIndex))
-                .recordedBy(recordedStaff)
+                .recordedBy(nhan_vien_ghi_so)
                 .build();
 
-        reading = readingRepository.save(reading);
+        chi_so = readingRepository.save(chi_so);
 
         // Đồng bộ cập nhật chỉ số đầu kỳ của tháng kế tiếp nếu đã được tạo trước đó
-        syncNextMonthPreviousIndex(room.getRoomId(), serviceType.getServiceTypeId(), readingMonth, currentIndex);
+        syncNextMonthPreviousIndex(phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth, currentIndex);
 
-        return readingMapper.toResponse(reading);
+        return readingMapper.toResponse(chi_so);
     }
 
     // Nhập chỉ số hàng loạt cho nhiều phòng (Tự động thêm mới hoặc cập nhật nếu đã có)
@@ -150,13 +150,13 @@ public class UtilityReading_Service {
             throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Chưa chọn loại dịch vụ (Điện/Nước)");
         }
 
-        Room room = roomRepository.findById(request.getRoomId())
+        Room phong = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        ServiceType serviceType = serviceTypeRepository.findById(request.getServiceTypeId())
+        ServiceType loai_dich_vu = serviceTypeRepository.findById(request.getServiceTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
 
-        if (!"METERED".equalsIgnoreCase(serviceType.getBillingType())) {
+        if (!"METERED".equalsIgnoreCase(loai_dich_vu.getBillingType())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ có thể ghi chỉ số cho loại dịch vụ tính theo đồng hồ (METERED)");
         }
 
@@ -167,7 +167,7 @@ public class UtilityReading_Service {
         }
 
         Optional<UtilityReading> existingOpt = readingRepository.findByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonth(
-                room.getRoomId(), serviceType.getServiceTypeId(), readingMonth);
+                phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth);
 
         BigDecimal previousIndex;
         if (Boolean.TRUE.equals(request.getIsMeterReset())) {
@@ -175,7 +175,7 @@ public class UtilityReading_Service {
         } else {
             Optional<UtilityReading> latestPriorReadingOpt = readingRepository
                     .findTopByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonthLessThanOrderByReadingMonthDesc(
-                            room.getRoomId(), serviceType.getServiceTypeId(), readingMonth);
+                            phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth);
             if (latestPriorReadingOpt.isPresent()) {
                 previousIndex = latestPriorReadingOpt.get().getCurrentIndex();
             } else {
@@ -188,41 +188,41 @@ public class UtilityReading_Service {
             throw new AppException(ErrorCode.INDEX_INVALID, "Chỉ số mới (" + currentIndex + ") không được nhỏ hơn chỉ số cũ (" + previousIndex + ")");
         }
 
-        Staff recordedStaff = null;
+        Staff nhan_vien_ghi_so = null;
         if (request.getRecordedBy() != null && !request.getRecordedBy().isBlank()) {
-            recordedStaff = staffRepository.findById(request.getRecordedBy())
+            nhan_vien_ghi_so = staffRepository.findById(request.getRecordedBy())
                     .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
         } else {
-            recordedStaff = currentUserService.findStaffId()
+            nhan_vien_ghi_so = currentUserService.findStaffId()
                     .flatMap(staffRepository::findById)
                     .orElse(null);
         }
 
-        UtilityReading reading;
+        UtilityReading chi_so;
         if (existingOpt.isPresent()) {
-            reading = existingOpt.get();
-            reading.setPreviousIndex(previousIndex);
-            reading.setCurrentIndex(currentIndex);
-            reading.setConsumption(currentIndex.subtract(previousIndex));
-            if (recordedStaff != null) {
-                reading.setRecordedBy(recordedStaff);
+            chi_so = existingOpt.get();
+            chi_so.setPreviousIndex(previousIndex);
+            chi_so.setCurrentIndex(currentIndex);
+            chi_so.setConsumption(currentIndex.subtract(previousIndex));
+            if (nhan_vien_ghi_so != null) {
+                chi_so.setRecordedBy(nhan_vien_ghi_so);
             }
         } else {
-            reading = UtilityReading.builder()
-                    .room(room)
-                    .serviceType(serviceType)
+            chi_so = UtilityReading.builder()
+                    .room(phong)
+                    .serviceType(loai_dich_vu)
                     .readingMonth(readingMonth)
                     .previousIndex(previousIndex)
                     .currentIndex(currentIndex)
                     .consumption(currentIndex.subtract(previousIndex))
-                    .recordedBy(recordedStaff)
+                    .recordedBy(nhan_vien_ghi_so)
                     .build();
         }
 
-        reading = readingRepository.save(reading);
-        syncNextMonthPreviousIndex(room.getRoomId(), serviceType.getServiceTypeId(), readingMonth, currentIndex);
+        chi_so = readingRepository.save(chi_so);
+        syncNextMonthPreviousIndex(phong.getRoomId(), loai_dich_vu.getServiceTypeId(), readingMonth, currentIndex);
 
-        return readingMapper.toResponse(reading);
+        return readingMapper.toResponse(chi_so);
     }
 
     @Transactional
@@ -252,10 +252,10 @@ public class UtilityReading_Service {
 
     @Transactional(readOnly = true)
     public UtilityReading_Response getById(String readingId) {
-        UtilityReading reading = readingRepository.findById(readingId)
+        UtilityReading chi_so = readingRepository.findById(readingId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy chỉ số điện nước"));
 
-        return readingMapper.toResponse(reading);
+        return readingMapper.toResponse(chi_so);
     }
 
     @Transactional(readOnly = true)
@@ -264,8 +264,8 @@ public class UtilityReading_Service {
             throw new AppException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        List<UtilityReading> list = readingRepository.findByRoom_RoomId(roomId);
-        return readingMapper.toResponseList(list);
+        List<UtilityReading> danh_sach_chi_so = readingRepository.findByRoom_RoomId(roomId);
+        return readingMapper.toResponseList(danh_sach_chi_so);
     }
 
     // Tìm kiếm chỉ số phân trang theo tòa nhà, phòng, dịch vụ và kỳ tháng
@@ -287,7 +287,7 @@ public class UtilityReading_Service {
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
         LocalDate normalizedMonth = readingMonth != null ? normalizeReadingMonth(readingMonth) : null;
 
-        Page<UtilityReading> pageResult = readingRepository.searchUtilityReadings(
+        Page<UtilityReading> trang_chi_so = readingRepository.searchUtilityReadings(
                 (buildingId != null && !buildingId.isBlank()) ? buildingId.trim() : null,
                 (roomId != null && !roomId.isBlank()) ? roomId.trim() : null,
                 (serviceTypeId != null && !serviceTypeId.isBlank()) ? serviceTypeId.trim() : null,
@@ -295,17 +295,17 @@ public class UtilityReading_Service {
                 pageable
         );
 
-        List<UtilityReading_Response> data = readingMapper.toResponseList(pageResult.getContent());
+        List<UtilityReading_Response> data = readingMapper.toResponseList(trang_chi_so.getContent());
 
         return Page_Response.<UtilityReading_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_chi_so.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_chi_so.getTotalPages())
+                .totalElements(trang_chi_so.getTotalElements())
+                .hasPrevious(trang_chi_so.hasPrevious())
+                .hasNext(trang_chi_so.hasNext())
+                .isFirst(trang_chi_so.isFirst())
+                .isLast(trang_chi_so.isLast())
                 .data(data)
                 .build();
     }
@@ -319,74 +319,74 @@ public class UtilityReading_Service {
     @Transactional(readOnly = true)
     public List<Room_Response> getUnrecordedRooms(LocalDate readingMonth, String serviceTypeId, String buildingId) {
         LocalDate normalizedMonth = normalizeReadingMonth(readingMonth);
-        List<Room> allRooms = roomRepository.findAll();
+        List<Room> danh_sach_phong = roomRepository.findAll();
 
         if (buildingId != null && !buildingId.isBlank()) {
-            allRooms = allRooms.stream()
+            danh_sach_phong = danh_sach_phong.stream()
                     .filter(r -> r.getFloor() != null && r.getFloor().getBuilding() != null
                             && buildingId.equals(r.getFloor().getBuilding().getBuildingId()))
                     .toList();
         }
 
         // Bỏ qua các phòng đã đóng (CLOSED)
-        allRooms = allRooms.stream()
+        danh_sach_phong = danh_sach_phong.stream()
                 .filter(r -> !"CLOSED".equalsIgnoreCase(r.getStatus()))
                 .toList();
 
         // Bỏ qua các phòng không có người ở (không có hợp đồng ACTIVE nào)
-        if (!allRooms.isEmpty() && contractRepository != null) {
-            List<String> roomIds = allRooms.stream().map(Room::getRoomId).toList();
+        if (!danh_sach_phong.isEmpty() && contractRepository != null) {
+            List<String> roomIds = danh_sach_phong.stream().map(Room::getRoomId).toList();
             List<Object[]> activeCounts = contractRepository.countActiveByRoomIds(roomIds);
             Map<String, Long> countMap = activeCounts.stream()
                     .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
-            allRooms = allRooms.stream()
+            danh_sach_phong = danh_sach_phong.stream()
                     .filter(r -> countMap.getOrDefault(r.getRoomId(), 0L) > 0)
                     .toList();
         }
 
         // Lấy danh sách ID phòng đã được ghi chỉ số trong tháng
-        List<UtilityReading> readings = (serviceTypeId != null && !serviceTypeId.isBlank())
+        List<UtilityReading> danh_sach_chi_so = (serviceTypeId != null && !serviceTypeId.isBlank())
                 ? readingRepository.findByReadingMonth(normalizedMonth).stream()
                         .filter(u -> serviceTypeId.equals(u.getServiceType().getServiceTypeId()))
                         .toList()
                 : readingRepository.findByReadingMonth(normalizedMonth);
 
-        Set<String> recordedRoomIds = readings.stream()
+        Set<String> recordedRoomIds = danh_sach_chi_so.stream()
                 .map(u -> u.getRoom().getRoomId())
                 .collect(Collectors.toSet());
 
-        List<Room> unrecordedRooms = allRooms.stream()
+        List<Room> danh_sach_phong_chua_ghi = danh_sach_phong.stream()
                 .filter(r -> !recordedRoomIds.contains(r.getRoomId()))
                 .toList();
 
-        return roomMapper.toResponseList(unrecordedRooms);
+        return roomMapper.toResponseList(danh_sach_phong_chua_ghi);
     }
 
     // Thuật toán tính toán và phân bổ chi phí điện nước theo số sinh viên có hợp đồng ACTIVE trong phòng
     @Transactional(readOnly = true)
     public UtilitySplit_Response calculateRoomUtilitySplit(String roomId, String serviceTypeId, LocalDate readingMonth) {
-        Room room = roomRepository.findById(roomId)
+        Room phong = roomRepository.findById(roomId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
         LocalDate normalizedMonth = normalizeReadingMonth(readingMonth);
 
-        UtilityReading reading = readingRepository.findByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonth(
+        UtilityReading chi_so = readingRepository.findByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonth(
                 roomId, serviceTypeId, normalizedMonth)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Chưa ghi nhận chỉ số điện nước cho phòng trong tháng " + normalizedMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"))));
 
-        ServiceType serviceType = reading.getServiceType();
-        BigDecimal unitPrice = serviceType.getUnitPrice() != null ? serviceType.getUnitPrice() : BigDecimal.ZERO;
-        BigDecimal consumption = reading.getConsumption() != null ? reading.getConsumption() : BigDecimal.ZERO;
+        ServiceType loai_dich_vu = chi_so.getServiceType();
+        BigDecimal unitPrice = loai_dich_vu.getUnitPrice() != null ? loai_dich_vu.getUnitPrice() : BigDecimal.ZERO;
+        BigDecimal consumption = chi_so.getConsumption() != null ? chi_so.getConsumption() : BigDecimal.ZERO;
         BigDecimal totalAmount = consumption.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 
         // Lấy các hợp đồng có hiệu lực trong tháng ghi chỉ số của phòng (ưu tiên theo tháng, dự phòng theo ACTIVE hiện tại)
         LocalDate monthStart = normalizedMonth.withDayOfMonth(1);
         LocalDate monthEnd = normalizedMonth.withDayOfMonth(normalizedMonth.lengthOfMonth());
-        List<Contract> activeContracts = contractRepository.findEffectiveContractsByRoomIdAndMonth(roomId, monthStart, monthEnd);
-        if (activeContracts.isEmpty()) {
-            activeContracts = contractRepository.findActiveContractsByRoomId(roomId);
+        List<Contract> danh_sach_hop_dong_hieu_luc = contractRepository.findEffectiveContractsByRoomIdAndMonth(roomId, monthStart, monthEnd);
+        if (danh_sach_hop_dong_hieu_luc.isEmpty()) {
+            danh_sach_hop_dong_hieu_luc = contractRepository.findActiveContractsByRoomId(roomId);
         }
-        int activeCount = activeContracts.size();
+        int activeCount = danh_sach_hop_dong_hieu_luc.size();
 
         BigDecimal amountPerResident = BigDecimal.ZERO;
         BigDecimal remainder = BigDecimal.ZERO;
@@ -398,32 +398,32 @@ public class UtilityReading_Service {
 
         List<UtilitySplit_Response.ResidentShare> shares = new ArrayList<>();
         boolean isFirst = true;
-        for (Contract c : activeContracts) {
-            if (c.getStudent() != null) {
+        for (Contract hop_dong : danh_sach_hop_dong_hieu_luc) {
+            if (hop_dong.getStudent() != null) {
                 BigDecimal share = amountPerResident;
                 if (isFirst) {
                     share = share.add(remainder);
                     isFirst = false;
                 }
                 shares.add(UtilitySplit_Response.ResidentShare.builder()
-                        .studentId(c.getStudent().getStudentId())
-                        .studentCode(c.getStudent().getStudentCode())
-                        .fullName(c.getStudent().getFullName())
-                        .contractId(c.getContractId())
-                        .contractCode(c.getContractCode())
+                        .studentId(hop_dong.getStudent().getStudentId())
+                        .studentCode(hop_dong.getStudent().getStudentCode())
+                        .fullName(hop_dong.getStudent().getFullName())
+                        .contractId(hop_dong.getContractId())
+                        .contractCode(hop_dong.getContractCode())
                         .shareAmount(share)
                         .build());
             }
         }
 
         return UtilitySplit_Response.builder()
-                .roomId(room.getRoomId())
-                .roomNumber(room.getRoomNumber())
-                .serviceTypeId(serviceType.getServiceTypeId())
-                .serviceName(serviceType.getServiceName())
+                .roomId(phong.getRoomId())
+                .roomNumber(phong.getRoomNumber())
+                .serviceTypeId(loai_dich_vu.getServiceTypeId())
+                .serviceName(loai_dich_vu.getServiceName())
                 .readingMonth(normalizedMonth)
-                .previousIndex(reading.getPreviousIndex())
-                .currentIndex(reading.getCurrentIndex())
+                .previousIndex(chi_so.getPreviousIndex())
+                .currentIndex(chi_so.getCurrentIndex())
                 .consumption(consumption)
                 .unitPrice(unitPrice)
                 .totalAmount(totalAmount)
@@ -436,38 +436,38 @@ public class UtilityReading_Service {
     // Cập nhật thông tin chỉ số điện nước
     @Transactional
     public UtilityReading_Response update(String readingId, UtilityReading_Request request) {
-        UtilityReading reading = readingRepository.findById(readingId)
+        UtilityReading chi_so = readingRepository.findById(readingId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy chỉ số điện nước"));
 
-        Room targetRoom = reading.getRoom();
+        Room phong_dich = chi_so.getRoom();
         if (request.getRoomId() != null && !request.getRoomId().isBlank()) {
-            targetRoom = roomRepository.findById(request.getRoomId())
+            phong_dich = roomRepository.findById(request.getRoomId())
                     .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
         }
 
-        ServiceType targetService = reading.getServiceType();
+        ServiceType loai_dich_vu_dich = chi_so.getServiceType();
         if (request.getServiceTypeId() != null && !request.getServiceTypeId().isBlank()) {
-            targetService = serviceTypeRepository.findById(request.getServiceTypeId())
+            loai_dich_vu_dich = serviceTypeRepository.findById(request.getServiceTypeId())
                     .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
         }
 
-        if (!"METERED".equalsIgnoreCase(targetService.getBillingType())) {
+        if (!"METERED".equalsIgnoreCase(loai_dich_vu_dich.getBillingType())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Chỉ có thể ghi chỉ số cho loại dịch vụ tính theo đồng hồ (METERED)");
         }
 
-        LocalDate targetMonth = request.getReadingMonth() != null ? normalizeReadingMonth(request.getReadingMonth()) : reading.getReadingMonth();
+        LocalDate targetMonth = request.getReadingMonth() != null ? normalizeReadingMonth(request.getReadingMonth()) : chi_so.getReadingMonth();
 
         // Kiểm tra tránh trùng lặp nếu đổi phòng, loại dịch vụ hoặc kỳ tháng
-        final String currentReadingId = reading.getReadingId();
+        final String currentReadingId = chi_so.getReadingId();
         readingRepository.findByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonth(
-                targetRoom.getRoomId(), targetService.getServiceTypeId(), targetMonth)
+                phong_dich.getRoomId(), loai_dich_vu_dich.getServiceTypeId(), targetMonth)
                 .filter(existing -> !existing.getReadingId().equals(currentReadingId))
                 .ifPresent(existing -> {
                     throw new AppException(ErrorCode.OPERATION_FAILED, "Đã tồn tại bản ghi chỉ số cho phòng và dịch vụ này trong tháng");
                 });
 
         // Chặn sửa chỉ số khi hóa đơn tháng đó của phòng đã được phát hành hoặc đã thanh toán
-        if (invoiceRepository.existsIssuedInvoiceForRoomAndMonth(targetRoom.getRoomId(), targetMonth)) {
+        if (invoiceRepository.existsIssuedInvoiceForRoomAndMonth(phong_dich.getRoomId(), targetMonth)) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể chỉnh sửa chỉ số vì hóa đơn tháng " + targetMonth.format(DateTimeFormatter.ofPattern("MM/yyyy")) + " của phòng đã được phát hành");
         }
 
@@ -478,44 +478,44 @@ public class UtilityReading_Service {
         } else {
             Optional<UtilityReading> latestPriorReadingOpt = readingRepository
                     .findTopByRoom_RoomIdAndServiceType_ServiceTypeIdAndReadingMonthLessThanOrderByReadingMonthDesc(
-                            targetRoom.getRoomId(), targetService.getServiceTypeId(), targetMonth);
+                            phong_dich.getRoomId(), loai_dich_vu_dich.getServiceTypeId(), targetMonth);
             if (latestPriorReadingOpt.isPresent()) {
                 previousIndex = latestPriorReadingOpt.get().getCurrentIndex();
             } else {
-                previousIndex = request.getPreviousIndex() != null ? request.getPreviousIndex() : reading.getPreviousIndex();
+                previousIndex = request.getPreviousIndex() != null ? request.getPreviousIndex() : chi_so.getPreviousIndex();
             }
         }
 
-        BigDecimal currentIndex = request.getCurrentIndex() != null ? request.getCurrentIndex() : reading.getCurrentIndex();
+        BigDecimal currentIndex = request.getCurrentIndex() != null ? request.getCurrentIndex() : chi_so.getCurrentIndex();
         if (currentIndex.compareTo(previousIndex) < 0) {
             throw new AppException(ErrorCode.INDEX_INVALID);
         }
 
-        reading.setRoom(targetRoom);
-        reading.setServiceType(targetService);
-        reading.setReadingMonth(targetMonth);
-        reading.setPreviousIndex(previousIndex);
-        reading.setCurrentIndex(currentIndex);
-        reading.setConsumption(currentIndex.subtract(previousIndex));
+        chi_so.setRoom(phong_dich);
+        chi_so.setServiceType(loai_dich_vu_dich);
+        chi_so.setReadingMonth(targetMonth);
+        chi_so.setPreviousIndex(previousIndex);
+        chi_so.setCurrentIndex(currentIndex);
+        chi_so.setConsumption(currentIndex.subtract(previousIndex));
 
-        reading = readingRepository.save(reading);
+        chi_so = readingRepository.save(chi_so);
 
         // Đồng bộ cập nhật sang tháng tiếp theo nếu có
-        syncNextMonthPreviousIndex(targetRoom.getRoomId(), targetService.getServiceTypeId(), targetMonth, currentIndex);
+        syncNextMonthPreviousIndex(phong_dich.getRoomId(), loai_dich_vu_dich.getServiceTypeId(), targetMonth, currentIndex);
 
-        return readingMapper.toResponse(reading);
+        return readingMapper.toResponse(chi_so);
     }
 
     // Xóa chỉ số điện nước (chỉ cho phép khi chưa phát hành hóa đơn)
     @Transactional
     public void delete(String readingId) {
-        UtilityReading reading = readingRepository.findById(readingId)
+        UtilityReading chi_so = readingRepository.findById(readingId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy chỉ số điện nước"));
 
-        if (invoiceRepository.existsIssuedInvoiceForRoomAndMonth(reading.getRoom().getRoomId(), reading.getReadingMonth())) {
-            throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa chỉ số vì hóa đơn tháng " + reading.getReadingMonth().format(DateTimeFormatter.ofPattern("MM/yyyy")) + " của phòng đã được phát hành");
+        if (invoiceRepository.existsIssuedInvoiceForRoomAndMonth(chi_so.getRoom().getRoomId(), chi_so.getReadingMonth())) {
+            throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa chỉ số vì hóa đơn tháng " + chi_so.getReadingMonth().format(DateTimeFormatter.ofPattern("MM/yyyy")) + " của phòng đã được phát hành");
         }
 
-        readingRepository.delete(reading);
+        readingRepository.delete(chi_so);
     }
 }

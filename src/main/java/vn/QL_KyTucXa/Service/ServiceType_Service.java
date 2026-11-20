@@ -49,31 +49,31 @@ public class ServiceType_Service {
             request.setBillingType(normalizedBillingType);
         }
 
-        ServiceType serviceType = serviceTypeMapper.toEntity(request);
-        serviceType = serviceTypeRepository.save(serviceType);
-        return serviceTypeMapper.toResponse(serviceType);
+        ServiceType loai_dich_vu = serviceTypeMapper.toEntity(request);
+        loai_dich_vu = serviceTypeRepository.save(loai_dich_vu);
+        return serviceTypeMapper.toResponse(loai_dich_vu);
     }
 
     @Transactional(readOnly = true)
     public ServiceType_Response getById(String serviceTypeId) {
-        ServiceType serviceType = serviceTypeRepository.findById(serviceTypeId)
+        ServiceType loai_dich_vu = serviceTypeRepository.findById(serviceTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
 
-        return serviceTypeMapper.toResponse(serviceType);
+        return serviceTypeMapper.toResponse(loai_dich_vu);
     }
 
     @Transactional(readOnly = true)
     public List<ServiceType_Response> getAll() {
-        List<ServiceType> list = serviceTypeRepository.findAll();
-        return serviceTypeMapper.toResponseList(list);
+        List<ServiceType> danh_sach_loai_dich_vu = serviceTypeRepository.findAll();
+        return serviceTypeMapper.toResponseList(danh_sach_loai_dich_vu);
     }
 
     @Transactional
     public ServiceType_Response update(String serviceTypeId, ServiceType_Request request) {
-        ServiceType serviceType = serviceTypeRepository.findById(serviceTypeId)
+        ServiceType loai_dich_vu = serviceTypeRepository.findById(serviceTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
 
-        if (!serviceType.getServiceCode().equalsIgnoreCase(request.getServiceCode()) &&
+        if (!loai_dich_vu.getServiceCode().equalsIgnoreCase(request.getServiceCode()) &&
                 serviceTypeRepository.existsByServiceCode(request.getServiceCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mã dịch vụ '" + request.getServiceCode() + "' đã tồn tại");
@@ -90,14 +90,14 @@ public class ServiceType_Service {
             request.setBillingType(null);
         }
 
-        serviceTypeMapper.updateEntityFromRequest(serviceType, request);
-        serviceType = serviceTypeRepository.save(serviceType);
-        return serviceTypeMapper.toResponse(serviceType);
+        serviceTypeMapper.updateEntityFromRequest(loai_dich_vu, request);
+        loai_dich_vu = serviceTypeRepository.save(loai_dich_vu);
+        return serviceTypeMapper.toResponse(loai_dich_vu);
     }
 
     @Transactional
     public void delete(String serviceTypeId) {
-        ServiceType serviceType = serviceTypeRepository.findById(serviceTypeId)
+        ServiceType loai_dich_vu = serviceTypeRepository.findById(serviceTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại dịch vụ"));
 
         if (utilityReadingRepository.existsByServiceType_ServiceTypeId(serviceTypeId)) {
@@ -105,6 +105,6 @@ public class ServiceType_Service {
                     "Không thể xóa loại dịch vụ này vì đã có dữ liệu ghi chỉ số điện nước liên quan");
         }
 
-        serviceTypeRepository.delete(serviceType);
+        serviceTypeRepository.delete(loai_dich_vu);
     }
 }

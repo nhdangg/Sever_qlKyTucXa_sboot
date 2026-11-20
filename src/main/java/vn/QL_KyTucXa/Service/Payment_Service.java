@@ -80,22 +80,22 @@ public class Payment_Service {
 
         // Sử dụng khóa PESSIMISTIC_WRITE để ngăn chặn race condition khi hai giao dịch
         // thanh toán đồng thời
-        Invoice invoice = invoiceRepository.findByIdForUpdate(request.getInvoiceId())
+        Invoice hoa_don = invoiceRepository.findByIdForUpdate(request.getInvoiceId())
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if (invoice.getStudent() != null) {
-            checkStudentAccessOwnership(invoice.getStudent().getStudentId());
+        if (hoa_don.getStudent() != null) {
+            checkStudentAccessOwnership(hoa_don.getStudent().getStudentId());
         }
 
         // Chặn thanh toán cho hóa đơn DRAFT, CANCELLED hoặc đã PAID
-        if ("DRAFT".equalsIgnoreCase(invoice.getStatus())) {
+        if ("DRAFT".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không thể thanh toán cho hóa đơn đang ở trạng thái DRAFT");
         }
-        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể thanh toán cho hóa đơn đã bị hủy");
         }
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn này đã được thanh toán đầy đủ");
         }
 
@@ -106,9 +106,9 @@ public class Payment_Service {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Số tiền thanh toán phải lớn hơn 0");
         }
 
-        BigDecimal totalDue = (invoice.getTotalAmount() != null ? invoice.getTotalAmount() : BigDecimal.ZERO)
+        BigDecimal totalDue = (hoa_don.getTotalAmount() != null ? hoa_don.getTotalAmount() : BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal currentPaid = (invoice.getPaidAmount() != null ? invoice.getPaidAmount() : BigDecimal.ZERO)
+        BigDecimal currentPaid = (hoa_don.getPaidAmount() != null ? hoa_don.getPaidAmount() : BigDecimal.ZERO)
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal remainingAmount = totalDue.subtract(currentPaid).setScale(2, RoundingMode.HALF_UP);
 
@@ -164,26 +164,26 @@ public class Payment_Service {
                             + ALLOWED_PAYMENT_STATUSES);
         }
 
-        Payment payment = paymentMapper.toEntity(request);
-        payment.setPaymentCode(paymentCode);
-        payment.setInvoice(invoice);
-        payment.setPaymentMethod(paymentMethod);
-        payment.setAmount(paymentAmount);
-        payment.setStatus(status);
+        Payment thanh_toan = paymentMapper.toEntity(request);
+        thanh_toan.setPaymentCode(paymentCode);
+        thanh_toan.setInvoice(hoa_don);
+        thanh_toan.setPaymentMethod(paymentMethod);
+        thanh_toan.setAmount(paymentAmount);
+        thanh_toan.setStatus(status);
 
         // Xác định nhân viên thu tiền từ JWT của người đăng nhập
-        Staff receiver = resolveReceiver(request.getReceivedBy());
-        payment.setReceivedBy(receiver);
+        Staff nguoi_thu = resolveReceiver(request.getReceivedBy());
+        thanh_toan.setReceivedBy(nguoi_thu);
 
-        payment = paymentRepository.save(payment);
+        thanh_toan = paymentRepository.save(thanh_toan);
 
         // Nếu thanh toán thành công thì cập nhật lại số tiền đã trả và trạng thái hóa
         // đơn
         if ("SUCCESS".equalsIgnoreCase(status)) {
-            recalculateInvoicePayment(invoice);
+            recalculateInvoicePayment(hoa_don);
         }
 
-        return paymentMapper.toResponse(payment);
+        return paymentMapper.toResponse(thanh_toan);
     }
 
     // Xác nhận giao dịch PENDING thành SUCCESS (xử lý callback VNPAY/MoMo hoặc cán
@@ -194,93 +194,93 @@ public class Payment_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ cán bộ nhân viên hoặc quản trị viên mới có quyền xác nhận thanh toán");
         }
 
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment thanh_toan = paymentRepository.findById(paymentId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy giao dịch thanh toán"));
 
-        if ("SUCCESS".equalsIgnoreCase(payment.getStatus())) {
+        if ("SUCCESS".equalsIgnoreCase(thanh_toan.getStatus())) {
             log.info("Giao dịch thanh toán {} đã ở trạng thái SUCCESS trước đó", paymentId);
-            return paymentMapper.toResponse(payment);
+            return paymentMapper.toResponse(thanh_toan);
         }
 
-        if (!"PENDING".equalsIgnoreCase(payment.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(thanh_toan.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Chỉ có thể xác nhận giao dịch đang ở trạng thái PENDING (trạng thái hiện tại: "
-                            + payment.getStatus() + ")");
+                            + thanh_toan.getStatus() + ")");
         }
 
-        Invoice invoice = invoiceRepository.findByIdForUpdate(payment.getInvoice().getInvoiceId())
+        Invoice hoa_don = invoiceRepository.findByIdForUpdate(thanh_toan.getInvoice().getInvoiceId())
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn này đã được thanh toán hoàn tất (PAID)");
         }
 
-        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(hoa_don.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Hóa đơn liên quan đã bị hủy (CANCELLED)");
         }
 
-        BigDecimal currentPaid = invoice.getPaidAmount() != null ? invoice.getPaidAmount() : BigDecimal.ZERO;
-        BigDecimal totalDue = invoice.getTotalAmount() != null ? invoice.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal currentPaid = hoa_don.getPaidAmount() != null ? hoa_don.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal totalDue = hoa_don.getTotalAmount() != null ? hoa_don.getTotalAmount() : BigDecimal.ZERO;
         BigDecimal remainingDue = totalDue.subtract(currentPaid);
-        if (payment.getAmount() != null && payment.getAmount().compareTo(remainingDue) > 0) {
+        if (thanh_toan.getAmount() != null && thanh_toan.getAmount().compareTo(remainingDue) > 0) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Số tiền xác nhận (" + payment.getAmount() + ") vượt quá số tiền còn nợ của hóa đơn (" + remainingDue + ")");
+                    "Số tiền xác nhận (" + thanh_toan.getAmount() + ") vượt quá số tiền còn nợ của hóa đơn (" + remainingDue + ")");
         }
 
-        Staff receiver = null;
+        Staff nguoi_thu = null;
         if (staffId != null && !staffId.isBlank()) {
-            receiver = staffRepository.findById(staffId).orElse(null);
+            nguoi_thu = staffRepository.findById(staffId).orElse(null);
         } else {
-            receiver = resolveReceiver(null);
+            nguoi_thu = resolveReceiver(null);
         }
 
-        payment.setStatus("SUCCESS");
-        if (receiver != null) {
-            payment.setReceivedBy(receiver);
+        thanh_toan.setStatus("SUCCESS");
+        if (nguoi_thu != null) {
+            thanh_toan.setReceivedBy(nguoi_thu);
         }
         if (transactionCode != null && !transactionCode.isBlank()) {
-            payment.setTransactionRef(transactionCode.trim());
+            thanh_toan.setTransactionRef(transactionCode.trim());
         }
 
-        payment = paymentRepository.save(payment);
+        thanh_toan = paymentRepository.save(thanh_toan);
 
         // Cập nhật lại số tiền đã thanh toán và trạng thái của hóa đơn
-        recalculateInvoicePayment(invoice);
+        recalculateInvoicePayment(hoa_don);
 
-        log.info("Đã xác nhận thành công giao dịch thanh toán: {}, hóa đơn: {}", payment.getPaymentCode(),
-                invoice.getInvoiceCode());
-        return paymentMapper.toResponse(payment);
+        log.info("Đã xác nhận thành công giao dịch thanh toán: {}, hóa đơn: {}", thanh_toan.getPaymentCode(),
+                hoa_don.getInvoiceCode());
+        return paymentMapper.toResponse(thanh_toan);
     }
 
     // Lấy thông tin chi tiết giao dịch thanh toán theo ID kèm kiểm tra quyền sở hữu
     // sinh viên
     @Transactional(readOnly = true)
     public Payment_Response getById(String paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment thanh_toan = paymentRepository.findById(paymentId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy giao dịch thanh toán"));
 
-        if (payment.getInvoice() != null && payment.getInvoice().getStudent() != null) {
-            checkStudentAccessOwnership(payment.getInvoice().getStudent().getStudentId());
+        if (thanh_toan.getInvoice() != null && thanh_toan.getInvoice().getStudent() != null) {
+            checkStudentAccessOwnership(thanh_toan.getInvoice().getStudent().getStudentId());
         }
 
-        return paymentMapper.toResponse(payment);
+        return paymentMapper.toResponse(thanh_toan);
     }
 
     // Lấy danh sách giao dịch thanh toán theo mã hóa đơn kèm kiểm tra quyền sở hữu
     // sinh viên
     @Transactional(readOnly = true)
     public List<Payment_Response> getByInvoiceId(String invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Invoice hoa_don = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVOICE_NOT_FOUND));
 
-        if (invoice.getStudent() != null) {
-            checkStudentAccessOwnership(invoice.getStudent().getStudentId());
+        if (hoa_don.getStudent() != null) {
+            checkStudentAccessOwnership(hoa_don.getStudent().getStudentId());
         }
 
-        List<Payment> list = paymentRepository.findByInvoice_InvoiceId(invoiceId);
-        return paymentMapper.toResponseList(list);
+        List<Payment> danh_sach_thanh_toan = paymentRepository.findByInvoice_InvoiceId(invoiceId);
+        return paymentMapper.toResponseList(danh_sach_thanh_toan);
     }
 
     // Lấy danh sách giao dịch thanh toán phân trang cơ bản
@@ -320,20 +320,20 @@ public class Payment_Service {
         LocalDateTime startDateTime = fromDate != null ? fromDate.atStartOfDay() : null;
         LocalDateTime endDateTime = toDate != null ? toDate.atTime(23, 59, 59) : null;
 
-        Page<Payment> pageResult = paymentRepository.searchPayments(
+        Page<Payment> trang_thanh_toan = paymentRepository.searchPayments(
                 codeFilter, methodFilter, statusFilter, startDateTime, endDateTime, pageable);
-        List<Payment_Response> data = paymentMapper.toResponseList(pageResult.getContent());
+        List<Payment_Response> danh_sach_ket_qua = paymentMapper.toResponseList(trang_thanh_toan.getContent());
 
         return Page_Response.<Payment_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_thanh_toan.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
-                .data(data)
+                .totalPages(trang_thanh_toan.getTotalPages())
+                .totalElements(trang_thanh_toan.getTotalElements())
+                .hasPrevious(trang_thanh_toan.hasPrevious())
+                .hasNext(trang_thanh_toan.hasNext())
+                .isFirst(trang_thanh_toan.isFirst())
+                .isLast(trang_thanh_toan.isLast())
+                .data(danh_sach_ket_qua)
                 .build();
     }
 
@@ -345,31 +345,31 @@ public class Payment_Service {
             throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ cán bộ nhân viên hoặc quản trị viên mới có quyền hủy giao dịch thanh toán");
         }
 
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment thanh_toan = paymentRepository.findById(paymentId)
                 .orElseThrow(
                         () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy giao dịch thanh toán"));
 
-        if ("CANCELLED".equalsIgnoreCase(payment.getStatus())) {
+        if ("CANCELLED".equalsIgnoreCase(thanh_toan.getStatus())) {
             log.info("Giao dịch thanh toán {} đã ở trạng thái CANCELLED trước đó", paymentId);
             return;
         }
 
-        payment.setStatus("CANCELLED");
-        paymentRepository.save(payment);
+        thanh_toan.setStatus("CANCELLED");
+        paymentRepository.save(thanh_toan);
 
         // Khóa bi quan và tính toán lại hóa đơn
-        if (payment.getInvoice() != null) {
-            Invoice invoice = invoiceRepository.findByIdForUpdate(payment.getInvoice().getInvoiceId())
-                    .orElse(payment.getInvoice());
-            recalculateInvoicePayment(invoice);
+        if (thanh_toan.getInvoice() != null) {
+            Invoice hoa_don = invoiceRepository.findByIdForUpdate(thanh_toan.getInvoice().getInvoiceId())
+                    .orElse(thanh_toan.getInvoice());
+            recalculateInvoicePayment(hoa_don);
         }
     }
 
     // Tính toán lại số tiền đã thanh toán và trạng thái của hóa đơn dựa trên các
     // giao dịch SUCCESS
     private void recalculateInvoicePayment(Invoice invoice) {
-        List<Payment> payments = paymentRepository.findByInvoice_InvoiceId(invoice.getInvoiceId());
-        BigDecimal totalPaid = payments.stream()
+        List<Payment> danh_sach_thanh_toan = paymentRepository.findByInvoice_InvoiceId(invoice.getInvoiceId());
+        BigDecimal totalPaid = danh_sach_thanh_toan.stream()
                 .filter(p -> "SUCCESS".equalsIgnoreCase(p.getStatus()) && p.getAmount() != null)
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -392,9 +392,9 @@ public class Payment_Service {
             // Tự động chuyển các biên bản vi phạm kỷ luật sang trạng thái PAID nếu tiền
             // phạt đã thanh toán
             if (violationRepository != null && invoice.getInvoiceItems() != null) {
-                for (InvoiceItem item : invoice.getInvoiceItems()) {
-                    if ("FINE".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
-                        violationRepository.findById(item.getReferenceId()).ifPresent(v -> {
+                for (InvoiceItem muc_hoa_don : invoice.getInvoiceItems()) {
+                    if ("FINE".equalsIgnoreCase(muc_hoa_don.getItemType()) && muc_hoa_don.getReferenceId() != null) {
+                        violationRepository.findById(muc_hoa_don.getReferenceId()).ifPresent(v -> {
                             if (!"PAID".equalsIgnoreCase(v.getStatus())) {
                                 v.setStatus("PAID");
                                 violationRepository.save(v);
@@ -412,9 +412,9 @@ public class Payment_Service {
         // Nếu hóa đơn không còn ở trạng thái PAID (ví dụ vừa hủy một giao dịch SUCCESS làm totalPaid < totalDue),
         // cần hoàn lại trạng thái các biên bản vi phạm FINE từ PAID về RECORDED
         if (totalPaid.compareTo(totalDue) < 0 && violationRepository != null && invoice.getInvoiceItems() != null) {
-            for (InvoiceItem item : invoice.getInvoiceItems()) {
-                if ("FINE".equalsIgnoreCase(item.getItemType()) && item.getReferenceId() != null) {
-                    violationRepository.findById(item.getReferenceId()).ifPresent(v -> {
+            for (InvoiceItem muc_hoa_don : invoice.getInvoiceItems()) {
+                if ("FINE".equalsIgnoreCase(muc_hoa_don.getItemType()) && muc_hoa_don.getReferenceId() != null) {
+                    violationRepository.findById(muc_hoa_don.getReferenceId()).ifPresent(v -> {
                         if ("PAID".equalsIgnoreCase(v.getStatus())) {
                             v.setStatus("RECORDED");
                             violationRepository.save(v);
@@ -547,30 +547,30 @@ public class Payment_Service {
         String rawContent = ((webhook.getContent() != null ? webhook.getContent() : "") + " "
                 + (webhook.getDescription() != null ? webhook.getDescription() : "")).trim();
 
-        Invoice invoice = findMatchingInvoice(rawContent);
-        if (invoice == null) {
+        Invoice hoa_don = findMatchingInvoice(rawContent);
+        if (hoa_don == null) {
             log.warn("Không tìm thấy hóa đơn khớp với nội dung chuyển khoản: '{}'", rawContent);
             return Map.of("success", true, "message", "Không tìm thấy hóa đơn khớp với nội dung chuyển khoản: " + rawContent);
         }
 
         // Khóa hóa đơn để cập nhật an toàn
-        invoice = invoiceRepository.findByIdForUpdate(invoice.getInvoiceId()).orElse(invoice);
+        hoa_don = invoiceRepository.findByIdForUpdate(hoa_don.getInvoiceId()).orElse(hoa_don);
 
-        if ("PAID".equalsIgnoreCase(invoice.getStatus())) {
-            log.info("Hóa đơn {} đã được thanh toán hoàn tất (PAID) trước đó", invoice.getInvoiceCode());
-            return Map.of("success", true, "message", "Hóa đơn " + invoice.getInvoiceCode() + " đã thanh toán hoàn tất trước đó");
+        if ("PAID".equalsIgnoreCase(hoa_don.getStatus())) {
+            log.info("Hóa đơn {} đã được thanh toán hoàn tất (PAID) trước đó", hoa_don.getInvoiceCode());
+            return Map.of("success", true, "message", "Hóa đơn " + hoa_don.getInvoiceCode() + " đã thanh toán hoàn tất trước đó");
         }
 
-        if ("CANCELLED".equalsIgnoreCase(invoice.getStatus())) {
-            log.warn("Hóa đơn {} đã bị hủy (CANCELLED), không thể gạch nợ tự động", invoice.getInvoiceCode());
-            return Map.of("success", false, "message", "Hóa đơn " + invoice.getInvoiceCode() + " đã bị hủy");
+        if ("CANCELLED".equalsIgnoreCase(hoa_don.getStatus())) {
+            log.warn("Hóa đơn {} đã bị hủy (CANCELLED), không thể gạch nợ tự động", hoa_don.getInvoiceCode());
+            return Map.of("success", false, "message", "Hóa đơn " + hoa_don.getInvoiceCode() + " đã bị hủy");
         }
 
         // 5. Tạo bản ghi thanh toán tự động
         String paymentCode = generatePaymentCode();
-        Payment payment = Payment.builder()
+        Payment thanh_toan = Payment.builder()
                 .paymentCode(paymentCode)
-                .invoice(invoice)
+                .invoice(hoa_don)
                 .paymentMethod("BANK_TRANSFER")
                 .amount(transferAmount.setScale(2, RoundingMode.HALF_UP))
                 .transactionRef(refCode)
@@ -581,35 +581,35 @@ public class Payment_Service {
                         refCode != null ? refCode : ""))
                 .build();
 
-        paymentRepository.save(payment);
+        paymentRepository.save(thanh_toan);
 
         // 6. Tính toán lại số tiền đã thanh toán và cập nhật trạng thái hóa đơn
-        recalculateInvoicePayment(invoice);
+        recalculateInvoicePayment(hoa_don);
 
         // 7. Gửi thông báo cho sinh viên nếu có
-        if (notificationService != null && invoice.getStudent() != null) {
+        if (notificationService != null && hoa_don.getStudent() != null) {
             try {
-                String notifTitle = "Thanh toán thành công hóa đơn " + invoice.getInvoiceCode();
+                String notifTitle = "Thanh toán thành công hóa đơn " + hoa_don.getInvoiceCode();
                 String notifContent = String.format("Hệ thống đã tự động ghi nhận thanh toán %s VNĐ qua SePay (%s) cho hóa đơn %s. Trạng thái hiện tại: %s.",
                         transferAmount.toPlainString(),
                         webhook.getGateway() != null ? webhook.getGateway() : "Ngân hàng",
-                        invoice.getInvoiceCode(),
-                        invoice.getStatus());
-                notificationService.notifyStudent(invoice.getStudent(), notifTitle, notifContent, null);
+                        hoa_don.getInvoiceCode(),
+                        hoa_don.getStatus());
+                notificationService.notifyStudent(hoa_don.getStudent(), notifTitle, notifContent, null);
             } catch (Exception ex) {
                 log.warn("Không thể gửi thông báo sau khi tự động thanh toán: {}", ex.getMessage());
             }
         }
 
         log.info("Tự động gạch nợ thành công cho hóa đơn: {}, số tiền: {}, trạng thái mới: {}",
-                invoice.getInvoiceCode(), transferAmount, invoice.getStatus());
+                hoa_don.getInvoiceCode(), transferAmount, hoa_don.getStatus());
 
         return Map.of(
                 "success", true,
-                "message", "Thanh toán hóa đơn " + invoice.getInvoiceCode() + " thành công",
-                "invoiceCode", invoice.getInvoiceCode(),
+                "message", "Thanh toán hóa đơn " + hoa_don.getInvoiceCode() + " thành công",
+                "invoiceCode", hoa_don.getInvoiceCode(),
                 "paidAmount", transferAmount,
-                "invoiceStatus", invoice.getStatus()
+                "invoiceStatus", hoa_don.getStatus()
         );
     }
 
@@ -625,36 +625,36 @@ public class Payment_Service {
         if (matcher.find()) {
             String candidateCode = matcher.group(0).replaceAll("[-_ ]", "");
             String formattedCode = "INV-" + matcher.group(1) + "-" + matcher.group(2).toUpperCase();
-            Optional<Invoice> invOpt = invoiceRepository.findByInvoiceCode(formattedCode);
-            if (invOpt.isPresent()) {
-                return invOpt.get();
+            Optional<Invoice> hoa_don_tuy_chon = invoiceRepository.findByInvoiceCode(formattedCode);
+            if (hoa_don_tuy_chon.isPresent()) {
+                return hoa_don_tuy_chon.get();
             }
-            invOpt = invoiceRepository.findByInvoiceCode(candidateCode);
-            if (invOpt.isPresent()) {
-                return invOpt.get();
+            hoa_don_tuy_chon = invoiceRepository.findByInvoiceCode(candidateCode);
+            if (hoa_don_tuy_chon.isPresent()) {
+                return hoa_don_tuy_chon.get();
             }
         }
 
         // Cách 2: Nếu nội dung chứa SEVQR (mã test mặc định của SePay), tự động khớp với hóa đơn thử nghiệm đang mở
         if (rawContent.toUpperCase().contains("SEVQR")) {
-            Optional<Invoice> testInv = invoiceRepository.findByInvoiceCode("INV-202610-SV001");
-            if (testInv.isPresent() && !"PAID".equalsIgnoreCase(testInv.get().getStatus())) {
-                log.info("Khớp hóa đơn {} qua mã mặc định SEVQR từ SePay", testInv.get().getInvoiceCode());
-                return testInv.get();
+            Optional<Invoice> hoa_don_thu_nghiem = invoiceRepository.findByInvoiceCode("INV-202610-SV001");
+            if (hoa_don_thu_nghiem.isPresent() && !"PAID".equalsIgnoreCase(hoa_don_thu_nghiem.get().getStatus())) {
+                log.info("Khớp hóa đơn {} qua mã mặc định SEVQR từ SePay", hoa_don_thu_nghiem.get().getInvoiceCode());
+                return hoa_don_thu_nghiem.get();
             }
         }
 
         // Cách 2: Quét tất cả hóa đơn chưa thanh toán và kiểm tra xem mã hóa đơn có xuất hiện trong nội dung không
-        List<Invoice> pendingInvoices = invoiceRepository.findAll().stream()
+        List<Invoice> danh_sach_hoa_don_chua_tra = invoiceRepository.findAll().stream()
                 .filter(inv -> !"PAID".equalsIgnoreCase(inv.getStatus()) && !"CANCELLED".equalsIgnoreCase(inv.getStatus()))
                 .toList();
 
-        for (Invoice inv : pendingInvoices) {
-            if (inv.getInvoiceCode() != null) {
-                String cleanInvCode = inv.getInvoiceCode().replaceAll("[-_ ]", "").toUpperCase();
+        for (Invoice hoa_don_cho : danh_sach_hoa_don_chua_tra) {
+            if (hoa_don_cho.getInvoiceCode() != null) {
+                String cleanInvCode = hoa_don_cho.getInvoiceCode().replaceAll("[-_ ]", "").toUpperCase();
                 String cleanContent = rawContent.replaceAll("[-_ ]", "").toUpperCase();
                 if (cleanContent.contains(cleanInvCode)) {
-                    return inv;
+                    return hoa_don_cho;
                 }
             }
         }
