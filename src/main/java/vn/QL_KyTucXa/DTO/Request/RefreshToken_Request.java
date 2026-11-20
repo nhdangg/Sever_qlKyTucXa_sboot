@@ -12,6 +12,5 @@ import lombok.*;
 public class RefreshToken_Request {
 
     @NotBlank(message = "TOKEN_BLANK")
-    @Size(max = 512, message = "STRING_TOO_LONG")
     private String token;
 }

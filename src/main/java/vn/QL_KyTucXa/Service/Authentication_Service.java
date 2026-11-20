@@ -30,6 +30,10 @@ import vn.QL_KyTucXa.Repository.LogoutToken_Repository;
 import vn.QL_KyTucXa.Repository.Role_Repository;
 import vn.QL_KyTucXa.Repository.User_Repository;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -256,11 +260,23 @@ public class Authentication_Service {
         LocalDateTime now = LocalDateTime.now();
         String currentUserId = null;
 
+        String rawToken = (request != null) ? request.getToken() : null;
+        if (!StringUtils.hasText(rawToken)) {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest httpRequest = attributes.getRequest();
+                String authHeader = httpRequest.getHeader("Authorization");
+                if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+                    rawToken = authHeader.substring(7);
+                }
+            }
+        }
+
         // Nếu có access token: đưa jti vào blacklist và trích xuất userId của người
         // đang logout
-        if (StringUtils.hasText(request.getToken())) {
+        if (StringUtils.hasText(rawToken)) {
             try {
-                SignedJWT signedJWT = tokenService.verifyToken(request.getToken(), false);
+                SignedJWT signedJWT = tokenService.verifyToken(rawToken, false);
                 JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
                 String jti = claims.getJWTID();
                 Date expiryTime = claims.getExpirationTime();
@@ -285,12 +301,19 @@ public class Authentication_Service {
                 }
             } catch (AppException | JOSEException | ParseException e) {
                 log.info("Bỏ qua access token khi logout (hết hạn hoặc không hợp lệ): {}", e.getMessage());
+                if (currentUserId == null) {
+                    try {
+                        SignedJWT parsed = SignedJWT.parse(rawToken);
+                        currentUserId = (String) parsed.getJWTClaimsSet().getClaim("userId");
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         }
 
         // Thu hồi refresh token trong refresh_tokens: chỉ xóa nếu refresh token thuộc
         // quyền sở hữu của người đang logout
-        if (StringUtils.hasText(request.getRefreshToken())) {
+        if (request != null && StringUtils.hasText(request.getRefreshToken())) {
             if (currentUserId != null) {
                 refreshTokenService.deleteIfExists(request.getRefreshToken(), currentUserId);
             } else {

@@ -38,7 +38,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -89,7 +88,8 @@ public class Student_Service {
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             // Kiểm tra vai trò tài khoản: phải là STUDENT
-            if (nguoi_dung.getRole() == null || !"STUDENT".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode().trim())) {
+            if (nguoi_dung.getRole() == null
+                    || !"STUDENT".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode().trim())) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Tài khoản người dùng phải có vai trò sinh viên (STUDENT)");
             }
@@ -591,7 +591,8 @@ public class Student_Service {
         // hợp đồng lưu trú ACTIVE
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             String newStatus = request.getStatus().trim().toUpperCase();
-            String currentStatus = sinh_vien.getStatus() != null ? sinh_vien.getStatus().trim().toUpperCase() : "ACTIVE";
+            String currentStatus = sinh_vien.getStatus() != null ? sinh_vien.getStatus().trim().toUpperCase()
+                    : "ACTIVE";
             if (!newStatus.equals(currentStatus)) {
                 if ("INACTIVE".equalsIgnoreCase(newStatus)) {
                     // Chặn ngừng hoạt động sinh viên nếu vẫn còn hợp đồng cư trú ACTIVE

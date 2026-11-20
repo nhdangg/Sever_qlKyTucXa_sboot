@@ -68,9 +68,13 @@ const Auth = {
         const refreshToken = Auth.getRefreshToken();
         if (token || refreshToken) {
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
                 await fetch(`${API_BASE}/auth/logout`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ token: token, refreshToken: refreshToken })
                 });
             } catch (e) {

@@ -133,4 +133,22 @@ public class Authentication_ControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.code").value(100));
         }
+
+        @Test
+        @DisplayName("POST /api/auth/logout - Đăng xuất thành công với token JWT dài hơn 512 ký tự")
+        void logout_success_withLongJwtToken() throws Exception {
+                String longJwtToken = "eyJhbGciOiJIUzUxMiJ9." + "a".repeat(800) + "." + "b".repeat(86);
+                LogoutToken_Request request = LogoutToken_Request.builder()
+                                .token(longJwtToken)
+                                .refreshToken("rt_" + "c".repeat(600))
+                                .build();
+
+                doNothing().when(authenticationService).logout(any(LogoutToken_Request.class));
+
+                mockMvc.perform(post("/api/auth/logout")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.code").value(100));
+        }
 }

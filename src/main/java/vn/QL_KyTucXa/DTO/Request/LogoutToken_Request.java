@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Builder
 public class LogoutToken_Request {
 
-    @Size(max = 512, message = "STRING_TOO_LONG")
     private String token;
     private String refreshToken;
 
