@@ -452,11 +452,13 @@
                 if (result && result.requires2FA) {
                     currentVerificationId = result.verificationId;
 
-                    // Hiển thị link duyệt thủ công phục vụ kiểm thử nhanh
+                    // Hiển thị link duyệt thủ công phục vụ kiểm thử nhanh nếu có
                     const manualBox = document.getElementById('manualApproveBox');
                     const manualLink = document.getElementById('manualApproveLink');
-                    manualLink.href = `${API_BASE}/auth/telegram-confirm?id=${currentVerificationId}&action=APPROVE`;
-                    manualBox.classList.remove('d-none');
+                    if (manualLink && manualBox) {
+                        manualLink.href = `${API_BASE}/auth/telegram-confirm?id=${currentVerificationId}&action=APPROVE`;
+                        manualBox.classList.remove('d-none');
+                    }
 
                     modal2FA.show();
                     startPolling(currentVerificationId, username);
