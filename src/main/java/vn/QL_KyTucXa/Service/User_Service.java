@@ -412,8 +412,9 @@ public class User_Service {
         }
     }
 
+    public static final String DEFAULT_RESET_PASSWORD = "KytucXa123@";
 
-    // Quản trị viên đặt lại mật khẩu cho người dùng khi người dùng quên mật khẩu
+    // Quản trị viên đặt lại mật khẩu cho người dùng khi quên mật khẩu về mật khẩu mặc định (KytucXa123@)
     @Transactional
     public String resetPassword(String userId, ResetPassword_Request request) {
         log.info("Quản trị viên đặt lại mật khẩu cho người dùng: {}", userId);
@@ -428,7 +429,7 @@ public class User_Service {
 
         String mat_khau_moi = (request != null && StringUtils.hasText(request.getNewPassword()))
                 ? request.getNewPassword().trim()
-                : generateRandomPassword();
+                : DEFAULT_RESET_PASSWORD;
 
         nguoi_dung.setPasswordHash(passwordEncoder.encode(mat_khau_moi));
         nguoi_dung.setMustChangePassword(true);
@@ -452,28 +453,7 @@ public class User_Service {
         return mat_khau_moi;
     }
 
-    // Sinh mật khẩu ngẫu nhiên an toàn gồm chữ hoa, chữ thường, số và ký tự đặc
-    // biệt
-    private String generateRandomPassword() {
-        String chu_hoa = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        String chu_thuong = "abcdefghijkmnopqrstuvwxyz";
-        String chu_so = "23456789";
-        String ky_tu_dac_biet = "@#$%&*";
-        java.security.SecureRandom ngau_nhien = new java.security.SecureRandom();
-        StringBuilder chuoi_mat_khau = new StringBuilder();
-        chuoi_mat_khau.append(chu_hoa.charAt(ngau_nhien.nextInt(chu_hoa.length())));
-        chuoi_mat_khau.append(chu_thuong.charAt(ngau_nhien.nextInt(chu_thuong.length())));
-        chuoi_mat_khau.append(chu_so.charAt(ngau_nhien.nextInt(chu_so.length())));
-        chuoi_mat_khau.append(ky_tu_dac_biet.charAt(ngau_nhien.nextInt(ky_tu_dac_biet.length())));
-        String tat_ca_ky_tu = chu_hoa + chu_thuong + chu_so + ky_tu_dac_biet;
-        for (int i = 0; i < 4; i++) {
-            chuoi_mat_khau.append(tat_ca_ky_tu.charAt(ngau_nhien.nextInt(tat_ca_ky_tu.length())));
-        }
-        return chuoi_mat_khau.toString();
-    }
-
-    // Cập nhật Telegram Chat ID phục vụ xác thực 2FA (chỉ chính chủ hoặc Quản trị
-    // viên được đổi)
+    // Cập nhật Telegram Chat ID phục vụ xác thực 2FA (chỉ chính chủ hoặc Quản trị viên được đổi)
     @Transactional
     public User_Response updateTelegram2FA(String userId, String telegramChatId, String confirmPassword) {
         User nguoi_dung = userRepository.findById(userId)
@@ -532,10 +512,10 @@ public class User_Service {
         User nguoi_dung = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean targetIsAdmin = nguoi_dung.getRole() != null && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
+        boolean targetIsAdmin = nguoi_dung.getRole() != null
+                && "ADMIN".equalsIgnoreCase(nguoi_dung.getRole().getRoleCode());
         boolean callerIsAdmin = currentUserService != null && currentUserService.hasRole("ADMIN");
 
-                
         // 1. Kiểm tra quyền bảo vệ ADMIN
         if (targetIsAdmin) {
             if (!callerIsAdmin) {
@@ -572,10 +552,8 @@ public class User_Service {
         userRepository.save(nguoi_dung);
 
         if (auditLogService != null) {
-            auditLogService.recordAction("DELETE_USER", "nguoiDung", userId, Map.of("username", nguoi_dung.getUsername()),
-
-                    null);
-                    
+            auditLogService.recordAction("DELETE_USER", "nguoiDung", userId,
+                    Map.of("username", nguoi_dung.getUsername()), null);
         }
 
         if (refreshTokenService != null) {

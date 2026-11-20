@@ -472,17 +472,17 @@ class User_ServiceTest {
     }
 
     @Test
-    @DisplayName("Admin đặt lại mật khẩu tự sinh khi không truyền mật khẩu mới")
-    void resetPassword_byAdmin_withoutPassword_generatesRandom() {
+    @DisplayName("Admin đặt lại mật khẩu về mặc định KytucXa123@ khi không truyền mật khẩu mới")
+    void resetPassword_byAdmin_withoutPassword_usesDefaultPassword() {
         user.setStatus("LOCKED");
         when(currentUserService.hasRole("ADMIN")).thenReturn(true);
         when(userRepository.findById("user-123")).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode(anyString())).thenReturn("hashed_random");
+        when(passwordEncoder.encode(User_Service.DEFAULT_RESET_PASSWORD)).thenReturn("hashed_default_pwd");
 
         String result = userService.resetPassword("user-123", null);
 
-        assertThat(result).isNotBlank().hasSize(8);
-        assertThat(user.getPasswordHash()).isEqualTo("hashed_random");
+        assertThat(result).isEqualTo("KytucXa123@");
+        assertThat(user.getPasswordHash()).isEqualTo("hashed_default_pwd");
         assertThat(user.getMustChangePassword()).isTrue();
         assertThat(user.getFailedLoginAttempts()).isEqualTo(0);
         assertThat(user.getStatus()).isEqualTo("ACTIVE"); // Mở khóa tài khoản bị LOCKED
