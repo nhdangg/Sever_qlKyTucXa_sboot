@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Nhật ký Hoạt động Hệ thống')}"></head>
+
+<body>
+
+    <aside th:replace="~{fragments/layout :: sidebar('admin-audit-logs')}"></aside>
+
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Nhật ký Hoạt động Hệ thống (System Audit Logs)')}"></nav>
+
+        <div class="content-body">
+            <!-- Header Card tổng quan -->
+            <div class="card border shadow-sm rounded-3 p-3 bg-white mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+                            style="width: 46px; height: 46px; font-size: 1.4rem;">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">Nhật ký Hoạt động Hệ thống (System Audit Logs)</h5>
+                            <p class="text-muted small mb-0">Theo dõi toàn bộ lịch sử đăng nhập, thay đổi dữ liệu, thao tác quản trị và bảo mật</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-shield-lock-fill text-warning"></i> Chế độ: Chỉ xem (Read-Only)
+                        </span>
+                        <button class="btn btn-outline-primary btn-sm fw-semibold px-3" onclick="loadAuditLogs(1)">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thanh Tìm kiếm & Bộ lọc -->
+            <div class="card border shadow-sm rounded-3 p-3 bg-white mb-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="filterKeyword" class="form-control border-start-0"
+                                placeholder="Tìm theo tài khoản, IP, bảng, mã bản ghi..." oninput="onSearchChange()">
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <select id="filterAction" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
+                            <option value="">-- Tất cả hành động --</option>
+                            <option value="LOGIN">Đăng nhập (LOGIN)</option>
+                            <option value="LOGOUT">Đăng xuất (LOGOUT)</option>
+                            <option value="CREATE">Thêm mới (CREATE)</option>
+                            <option value="UPDATE">Cập nhật (UPDATE)</option>
+                            <option value="DELETE">Xóa (DELETE)</option>
+                            <option value="RESET_PASSWORD">Đặt lại mật khẩu</option>
+                            <option value="LOCK">Khóa tài khoản</option>
+                            <option value="UNLOCK">Mở khóa tài khoản</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <select id="filterTableName" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
+                            <option value="">-- Tất cả bảng dữ liệu --</option>
+                            <option value="users">Tài khoản (users)</option>
+                            <option value="hopDong">Hợp đồng (hopDong)</option>
+                            <option value="phong">Phòng ở (phong)</option>
+                            <option value="giuong">Giường (giuong)</option>
+                            <option value="toaNha">Tòa nhà (toaNha)</option>
+                            <option value="hoaDon">Hóa đơn (hoaDon)</option>
+                            <option value="phieuBaoHong">Báo hỏng (phieuBaoHong)</option>
+                            <option value="taiSan">Tài sản (taiSan)</option>
+                            <option value="bienBanKyLuat">Kỷ luật (bienBanKyLuat)</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-2 text-md-end">
+                        <div class="d-flex align-items-center justify-content-md-end gap-1">
+                            <span class="text-muted small">Số dòng:</span>
+                            <select id="pageSizeSelect" class="form-select form-select-sm" style="width: 75px;" onchange="loadAuditLogs(1)">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng Dữ liệu Nhật ký (Chỉ xem) -->
+            <div class="card border shadow-sm rounded-3 bg-white">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="auditLogTable">
+                        <thead class="table-light text-secondary small text-uppercase">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th style="width: 170px;">Thời gian</th>
+                                <th style="width: 150px;">Người thực hiện</th>
+                                <th style="width: 130px;">Hành động</th>
+                                <th style="width: 130px;">Bảng tác động</th>
+                                <th style="width: 180px;">Mã bản ghi</th>
+                                <th style="width: 130px;">Địa chỉ IP</th>
+                                <th class="text-center" style="width: 90px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div> Đang tải dữ liệu nhật ký...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang -->
+                <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                    <span class="small text-muted" id="auditPaginationInfo">Hiển thị 0 / 0 bản ghi</span>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="auditPagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi tiết Nhật ký (Read-Only) -->
+    <div class="modal fade" id="auditDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h6 class="modal-title fw-bold text-dark">
+                        <i class="bi bi-file-text text-primary me-2"></i>Chi tiết Nhật ký Hoạt động
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Mã nhật ký:</span>
+                            <div class="fw-semibold text-break" id="detailLogId">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Thời gian ghi nhận:</span>
+                            <div class="fw-semibold text-primary" id="detailCreatedAt">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Người thực hiện:</span>
+                            <div class="fw-semibold" id="detailUser">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Hành động:</span>
+                            <div id="detailAction">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Bảng dữ liệu:</span>
+                            <div class="fw-semibold" id="detailTable">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Mã bản ghi:</span>
+                            <div class="fw-semibold text-break" id="detailRecordId">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Địa chỉ IP:</span>
+                            <div class="fw-semibold" id="detailIp">-</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <span class="text-muted small">Trình duyệt / Thiết bị:</span>
+                            <div class="small text-truncate" id="detailUserAgent" title="">-</div>
+                        </div>
+                    </div>
+
+                    <!-- So sánh Giá trị Cũ vs Mới -->
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold text-danger">
+                                <i class="bi bi-dash-circle me-1"></i>Giá trị trước thay đổi (Old Value)
+                            </label>
+                            <pre class="bg-light p-2 rounded border small text-dark" style="max-height: 250px; overflow: auto; font-family: monospace;" id="detailOldValue">Không có</pre>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold text-success">
+                                <i class="bi bi-plus-circle me-1"></i>Giá trị sau thay đổi (New Value)
+                            </label>
+                            <pre class="bg-light p-2 rounded border small text-dark" style="max-height: 250px; overflow: auto; font-family: monospace;" id="detailNewValue">Không có</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+    <script>
+        let currentLogs = [];
+        let searchTimeout = null;
+        let currentPage = 1;
+        let totalPages = 1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAuditLogs(1);
+        });
+
+        function onSearchChange() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                loadAuditLogs(1);
+            }, 400);
+        }
+
+        async function loadAuditLogs(page = 1) {
+            currentPage = page;
+            const tbody = document.getElementById('auditLogTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div> Đang tải dữ liệu...
+                    </td>
+                </tr>
+            `;
+
+            const keyword = document.getElementById('filterKeyword').value.trim();
+            const action = document.getElementById('filterAction').value;
+            const tableName = document.getElementById('filterTableName').value;
+            const size = document.getElementById('pageSizeSelect').value || 20;
+
+            const params = new URLSearchParams({
+                page: page,
+                size: size
+            });
+            if (keyword) params.append('keyword', keyword);
+            if (action) params.append('action', action);
+            if (tableName) params.append('tableName', tableName);
+
+            try {
+                const res = await apiFetch(`/audit-logs?${params.toString()}`);
+                const pageData = res.result;
+
+                if (!pageData || !pageData.data || pageData.data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-4 d-block mb-1"></i> Không có bản ghi nhật ký nào phù hợp.
+                            </td>
+                        </tr>
+                    `;
+                    document.getElementById('auditPaginationInfo').textContent = 'Hiển thị 0 / 0 bản ghi';
+                    document.getElementById('auditPagination').innerHTML = '';
+                    currentLogs = [];
+                    return;
+                }
+
+                currentLogs = pageData.data;
+                totalPages = pageData.totalPages || 1;
+
+                tbody.innerHTML = currentLogs.map((log, idx) => {
+                    const stt = (page - 1) * size + idx + 1;
+                    const actionBadge = renderActionBadge(log.action);
+                    const timeStr = formatDateTime(log.createdAt);
+                    const userDisplay = log.username ? `<span class="fw-semibold text-dark"><i class="bi bi-person me-1"></i>${escapeHtml(log.username)}</span>` : '<span class="text-muted">Hệ thống</span>';
+
+                    return `
+                        <tr>
+                            <td class="text-center text-muted small">${stt}</td>
+                            <td class="small fw-semibold text-secondary">${timeStr}</td>
+                            <td class="small">${userDisplay}</td>
+                            <td>${actionBadge}</td>
+                            <td><span class="badge bg-light text-dark border font-monospace">${escapeHtml(log.tableName || '-')}</span></td>
+                            <td class="small font-monospace text-truncate" style="max-width: 180px;" title="${escapeHtml(log.recordId || '')}">${escapeHtml(log.recordId || '-')}</td>
+                            <td class="small text-muted font-monospace">${escapeHtml(log.ipAddress || '-')}</td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-primary btn-sm px-2 py-1" onclick="viewAuditDetail(${idx})" title="Xem chi tiết nhật ký">
+                                    <i class="bi bi-eye"></i> Xem
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Hiển thị phân trang
+                document.getElementById('auditPaginationInfo').textContent =
+                    `Trang ${pageData.currentPage} / ${pageData.totalPages} (Tổng: ${pageData.totalElements} bản ghi)`;
+
+                renderPagination(pageData.currentPage, pageData.totalPages);
+            } catch (err) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-danger">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Lỗi khi tải nhật ký: ${escapeHtml(err.message || 'Lỗi kết nối')}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderActionBadge(action) {
+            if (!action) return '<span class="badge bg-secondary">KHÁC</span>';
+            const act = action.toUpperCase();
+            if (act === 'LOGIN') {
+                return '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-box-arrow-in-right me-1"></i>LOGIN</span>';
+            }
+            if (act === 'LOGOUT') {
+                return '<span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-box-arrow-right me-1"></i>LOGOUT</span>';
+            }
+            if (act === 'CREATE') {
+                return '<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-plus-lg me-1"></i>CREATE</span>';
+            }
+            if (act === 'UPDATE') {
+                return '<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-pencil me-1"></i>UPDATE</span>';
+            }
+            if (act === 'DELETE') {
+                return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-trash me-1"></i>DELETE</span>';
+            }
+            if (act === 'RESET_PASSWORD') {
+                return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-key me-1"></i>RESET_PWD</span>';
+            }
+            if (act === 'LOCK' || act === 'UNLOCK') {
+                return `<span class="badge bg-dark-subtle text-dark border"><i class="bi bi-shield-lock me-1"></i>${act}</span>`;
+            }
+            return `<span class="badge bg-light text-dark border">${escapeHtml(act)}</span>`;
+        }
+
+        function formatDateTime(dtStr) {
+            if (!dtStr) return '-';
+            const d = new Date(dtStr);
+            if (isNaN(d.getTime())) return dtStr;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            const hours = String(d.getHours()).padStart(2, '0');
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            const secs = String(d.getSeconds()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${mins}:${secs}`;
+        }
+
+        function formatJson(str) {
+            if (!str) return 'Không có';
+            try {
+                const obj = JSON.parse(str);
+                return JSON.stringify(obj, null, 2);
+            } catch (e) {
+                return str;
+            }
+        }
+
+        function viewAuditDetail(idx) {
+            const log = currentLogs[idx];
+            if (!log) return;
+
+            document.getElementById('detailLogId').textContent = log.logId || '-';
+            document.getElementById('detailCreatedAt').textContent = formatDateTime(log.createdAt);
+            document.getElementById('detailUser').textContent = log.username ? `${log.username} (${log.userId || '-'})` : 'Hệ thống';
+            document.getElementById('detailAction').innerHTML = renderActionBadge(log.action);
+            document.getElementById('detailTable').textContent = log.tableName || '-';
+            document.getElementById('detailRecordId').textContent = log.recordId || '-';
+            document.getElementById('detailIp').textContent = log.ipAddress || '-';
+            const uaEl = document.getElementById('detailUserAgent');
+            uaEl.textContent = log.userAgent || '-';
+            uaEl.title = log.userAgent || '';
+
+            document.getElementById('detailOldValue').textContent = formatJson(log.oldValue);
+            document.getElementById('detailNewValue').textContent = formatJson(log.newValue);
+
+            const modal = new bootstrap.Modal(document.getElementById('auditDetailModal'));
+            modal.show();
+        }
+
+        function renderPagination(current, total) {
+            const ul = document.getElementById('auditPagination');
+            ul.innerHTML = '';
+            if (total <= 1) return;
+
+            // Nút Trước
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${current === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="loadAuditLogs(${current - 1})"><i class="bi bi-chevron-left"></i></a>`;
+            ul.appendChild(prevLi);
+
+            // Các nút số trang
+            const start = Math.max(1, current - 2);
+            const end = Math.min(total, current + 2);
+
+            if (start > 1) {
+                ul.appendChild(createPageItem(1, current));
+                if (start > 2) ul.appendChild(createEllipsisItem());
+            }
+
+            for (let i = start; i <= end; i++) {
+                ul.appendChild(createPageItem(i, current));
+            }
+
+            if (end < total) {
+                if (end < total - 1) ul.appendChild(createEllipsisItem());
+                ul.appendChild(createPageItem(total, current));
+            }
+
+            // Nút Sau
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${current === total ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="loadAuditLogs(${current + 1})"><i class="bi bi-chevron-right"></i></a>`;
+            ul.appendChild(nextLi);
+        }
+
+        function createPageItem(page, current) {
+            const li = document.createElement('li');
+            li.className = `page-item ${page === current ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="loadAuditLogs(${page})">${page}</a>`;
+            return li;
+        }
+
+        function createEllipsisItem() {
+            const li = document.createElement('li');
+            li.className = 'page-item disabled';
+            li.innerHTML = '<span class="page-link">...</span>';
+            return li;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+
+</html>

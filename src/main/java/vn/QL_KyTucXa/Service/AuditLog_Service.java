@@ -92,8 +92,18 @@ public class AuditLog_Service {
     // Tra cứu danh sách nhật ký kiểm toán phục vụ Admin xem trên Dashboard
     @Transactional(readOnly = true)
     public Page_Response<AuditLog_Response> getAllLogs(int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by("createdAt").descending());
-        Page<AuditLog> trang_nhat_ky = auditLogRepository.findAll(pageable);
+        return getAllLogs(page, size, null, null, null);
+    }
+
+    // Tra cứu danh sách nhật ký kiểm toán có lọc và phân trang
+    @Transactional(readOnly = true)
+    public Page_Response<AuditLog_Response> getAllLogs(int page, int size, String tu_khoa, String hanh_dong, String ten_bang) {
+        Pageable phan_trang = PageRequest.of(Math.max(0, page - 1), size, Sort.by("createdAt").descending());
+        String tu_khoa_chuan_hoa = (tu_khoa != null && !tu_khoa.isBlank()) ? tu_khoa.trim() : null;
+        String hanh_dong_chuan_hoa = (hanh_dong != null && !hanh_dong.isBlank()) ? hanh_dong.trim() : null;
+        String ten_bang_chuan_hoa = (ten_bang != null && !ten_bang.isBlank()) ? ten_bang.trim() : null;
+
+        Page<AuditLog> trang_nhat_ky = auditLogRepository.searchLogs(tu_khoa_chuan_hoa, hanh_dong_chuan_hoa, ten_bang_chuan_hoa, phan_trang);
 
         return Page_Response.<AuditLog_Response>builder()
                 .currentPage(page)

@@ -159,39 +159,48 @@
                     </div>
                 </div>
                 <div class="row g-3">
-                    <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl">
                         <a th:href="@{/admin/users}" class="action-tile">
                             <div class="action-tile-icon"><i class="bi bi-person-fill-lock"></i></div>
                             <div>
                                 <div class="fw-bold small">Tài khoản & RBAC</div>
-                                <div class="text-muted" style="font-size: 0.76rem;">Quản lý User, 4 Role & 35 Quyền</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Quản lý User & Quyền</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl">
                         <a th:href="@{/admin/database}" class="action-tile">
                             <div class="action-tile-icon"><i class="bi bi-database-fill-gear"></i></div>
                             <div>
                                 <div class="fw-bold small">CSDL 28 Bảng KTX</div>
-                                <div class="text-muted" style="font-size: 0.76rem;">Tra cứu & kiểm tra dữ liệu gốc</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Tra cứu dữ liệu gốc</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl">
+                        <a th:href="@{/admin/audit-logs}" class="action-tile">
+                            <div class="action-tile-icon"><i class="bi bi-clock-history"></i></div>
+                            <div>
+                                <div class="fw-bold small">Nhật ký Hệ thống</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Kiểm toán & Chỉ xem</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl">
                         <a th:href="@{/settings}" class="action-tile">
                             <div class="action-tile-icon"><i class="bi bi-telegram"></i></div>
                             <div>
                                 <div class="fw-bold small">Bảo mật 2FA Telegram</div>
-                                <div class="text-muted" style="font-size: 0.76rem;">Cấu hình Bot & Phê duyệt đăng nhập</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Cấu hình Bot & Duyệt đăng nhập</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl">
                         <a th:href="@{/admin/security}" class="action-tile">
                             <div class="action-tile-icon"><i class="bi bi-shield-exclamation"></i></div>
                             <div>
                                 <div class="fw-bold small">An ninh & Kỷ luật</div>
-                                <div class="text-muted" style="font-size: 0.76rem;">Biên bản vi phạm & Khách ra vào</div>
+                                <div class="text-muted" style="font-size: 0.76rem;">Biên bản vi phạm & Khách</div>
                             </div>
                         </a>
                     </div>

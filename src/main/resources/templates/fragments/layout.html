@@ -141,6 +141,13 @@
                     <span>CSDL 32 Bảng KTX</span>
                 </a>
             </li>
+            <li class="nav-item role-admin-only">
+                <a th:href="@{/admin/audit-logs}" class="nav-link"
+                    th:classappend="${activeTab == 'admin-audit-logs'} ? 'active' : ''">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Nhật ký hệ thống</span>
+                </a>
+            </li>
             <li class="nav-item role-manager-up">
                 <a th:href="@{/admin/users}" class="nav-link"
                     th:classappend="${activeTab == 'admin-users'} ? 'active' : ''">

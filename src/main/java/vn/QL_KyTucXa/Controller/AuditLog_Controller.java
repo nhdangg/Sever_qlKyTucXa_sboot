@@ -18,18 +18,18 @@ public class AuditLog_Controller {
 
     AuditLog_Service auditLogService;
 
-    /**
-     * API tra cứu danh sách nhật ký kiểm toán hệ thống
-     * Chỉ tài khoản có vai trò ADMIN hoặc quyền AUDIT_VIEW mới được phép xem
-     */
+    // API tra cứu danh sách nhật ký kiểm toán hệ thống (chỉ cho phép xem)
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('AUDIT_VIEW')")
     public Api_Response<Page_Response<AuditLog_Response>> getAllLogs(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String tableName
     ) {
         return Api_Response.<Page_Response<AuditLog_Response>>builder()
-                .result(auditLogService.getAllLogs(page, size))
+                .result(auditLogService.getAllLogs(page, size, keyword, action, tableName))
                 .build();
     }
 }

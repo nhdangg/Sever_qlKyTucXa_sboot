@@ -85,4 +85,10 @@ public class WebViewController {
     public String adminSecurity() {
         return "admin/security";
     }
+
+    // Điều hướng tới trang Nhật ký hệ thống (Audit Logs) dành cho Quản trị viên
+    @GetMapping("/admin/audit-logs")
+    public String adminAuditLogs() {
+        return "admin/audit-logs";
+    }
 }
