@@ -53,10 +53,10 @@ public class Building_Service {
                     "Mã tòa nhà '" + request.getBuildingCode() + "' đã tồn tại");
         }
 
-        Building building = buildingMapper.toEntity(request);
-        building = buildingRepository.save(building);
+        Building toa_nha = buildingMapper.toEntity(request);
+        toa_nha = buildingRepository.save(toa_nha);
 
-        return buildingMapper.toResponse(building);
+        return buildingMapper.toResponse(toa_nha);
     }
 
     // Lấy thông tin chi tiết một tòa nhà theo ID
@@ -64,10 +64,10 @@ public class Building_Service {
     public Building_Response getById(String buildingId) {
         log.info("Lấy thông tin tòa nhà theo ID: {}", buildingId);
 
-        Building building = buildingRepository.findById(buildingId)
+        Building toa_nha = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
 
-        return buildingMapper.toResponse(building);
+        return buildingMapper.toResponse(toa_nha);
     }
 
     // Lấy danh sách tất cả các tòa nhà không phân trang
@@ -75,8 +75,8 @@ public class Building_Service {
     public List<Building_Response> getAll() {
         log.info("Lấy danh sách tất cả tòa nhà");
 
-        List<Building> buildings = buildingRepository.findAll();
-        return buildingMapper.toResponseList(buildings);
+        List<Building> danh_sach_toa_nha = buildingRepository.findAll();
+        return buildingMapper.toResponseList(danh_sach_toa_nha);
     }
 
     // Lấy danh sách tòa nhà có phân trang, tìm kiếm và sắp xếp an toàn theo
@@ -121,10 +121,10 @@ public class Building_Service {
     public Building_Response update(String buildingId, Building_Request request) {
         log.info("Cập nhật thông tin tòa nhà có ID: {}", buildingId);
 
-        Building building = buildingRepository.findById(buildingId)
+        Building toa_nha = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
 
-        if (!building.getBuildingCode().equalsIgnoreCase(request.getBuildingCode())
+        if (!toa_nha.getBuildingCode().equalsIgnoreCase(request.getBuildingCode())
                 && buildingRepository.existsByBuildingCode(request.getBuildingCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mã tòa nhà '" + request.getBuildingCode() + "' đã được sử dụng");
@@ -133,14 +133,14 @@ public class Building_Service {
         // Kiểm tra không được giảm số tầng xuống thấp hơn số tầng đang có hoặc số thứ
         // tự tầng hiện tại
         if (request.getNumFloors() != null) {
-            List<Floor> existingFloors = floorRepository.findByBuilding_BuildingId(buildingId);
-            if (request.getNumFloors() < existingFloors.size()) {
+            List<Floor> danh_sach_tang_hien_co = floorRepository.findByBuilding_BuildingId(buildingId);
+            if (request.getNumFloors() < danh_sach_tang_hien_co.size()) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Không thể giảm số tầng xuống " + request.getNumFloors()
-                                + " vì tòa nhà đang có " + existingFloors.size() + " tầng trong hệ thống");
+                                + " vì tòa nhà đang có " + danh_sach_tang_hien_co.size() + " tầng trong hệ thống");
             }
 
-            boolean hasHigherFloorNumber = existingFloors.stream()
+            boolean hasHigherFloorNumber = danh_sach_tang_hien_co.stream()
                     .anyMatch(f -> f.getFloorNumber() != null && f.getFloorNumber() > request.getNumFloors());
             if (hasHigherFloorNumber) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
@@ -153,7 +153,7 @@ public class Building_Service {
         // khác giới cư trú
         if (request.getGenderType() != null && !request.getGenderType().isBlank()) {
             String newGender = request.getGenderType().trim().toUpperCase();
-            String currentGender = building.getGenderType() != null ? building.getGenderType().trim().toUpperCase()
+            String currentGender = toa_nha.getGenderType() != null ? toa_nha.getGenderType().trim().toUpperCase()
                     : "MIXED";
             if (!newGender.equals(currentGender)) {
                 if ("MALE".equals(newGender)) {
@@ -172,10 +172,10 @@ public class Building_Service {
             }
         }
 
-        buildingMapper.updateEntityFromRequest(building, request);
-        building = buildingRepository.save(building);
+        buildingMapper.updateEntityFromRequest(toa_nha, request);
+        toa_nha = buildingRepository.save(toa_nha);
 
-        return buildingMapper.toResponse(building);
+        return buildingMapper.toResponse(toa_nha);
     }
 
     // Xóa một tòa nhà theo ID: kiểm tra tòa nhà còn tầng hoặc phòng có người ở
@@ -183,7 +183,7 @@ public class Building_Service {
     public void delete(String buildingId) {
         log.info("Xóa tòa nhà có ID: {}", buildingId);
 
-        Building building = buildingRepository.findById(buildingId)
+        Building toa_nha = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BUILDING_NOT_FOUND));
 
         // Kiểm tra nếu tòa nhà đang có giường có sinh viên cư trú hoặc giữ chỗ
@@ -198,6 +198,6 @@ public class Building_Service {
                     "Không thể xóa tòa nhà vì đang có các tầng và phòng trực thuộc. Vui lòng xóa các tầng trước");
         }
 
-        buildingRepository.delete(building);
+        buildingRepository.delete(toa_nha);
     }
 }

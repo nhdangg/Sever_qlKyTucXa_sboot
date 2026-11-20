@@ -48,12 +48,12 @@ public class Bed_Service {
     public Bed_Response create(Bed_Request request) {
         log.info("Tạo mới giường số: {} trong phòng ID: {}", request.getBedNumber(), request.getRoomId());
 
-        Room room = roomRepository.findById(request.getRoomId())
+        Room phong = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new AppException(ErrorCode.ROOM_NOT_FOUND));
 
-        if (room.getCapacity() != null && bedRepository.countByRoom_RoomId(request.getRoomId()) >= room.getCapacity()) {
-            throw new AppException(ErrorCode.OPERATION_FAILED, "Phòng " + room.getRoomNumber()
-                    + " đã đạt sức chứa tối đa (" + room.getCapacity() + " giường), không thể tạo thêm");
+        if (phong.getCapacity() != null && bedRepository.countByRoom_RoomId(request.getRoomId()) >= phong.getCapacity()) {
+            throw new AppException(ErrorCode.OPERATION_FAILED, "Phòng " + phong.getRoomNumber()
+                    + " đã đạt sức chứa tối đa (" + phong.getCapacity() + " giường), không thể tạo thêm");
         }
 
         if (bedRepository.findByRoom_RoomIdAndBedNumber(request.getRoomId(), request.getBedNumber()).isPresent()) {
@@ -61,24 +61,24 @@ public class Bed_Service {
                     "Giường số " + request.getBedNumber() + " đã tồn tại trong phòng này");
         }
 
-        Bed bed = bedMapper.toEntity(request);
-        bed.setRoom(room);
-        if (bed.getStatus() == null || !ALLOWED_MANUAL_STATUSES.contains(bed.getStatus().toUpperCase())) {
-            bed.setStatus("AVAILABLE");
+        Bed giuong = bedMapper.toEntity(request);
+        giuong.setRoom(phong);
+        if (giuong.getStatus() == null || !ALLOWED_MANUAL_STATUSES.contains(giuong.getStatus().toUpperCase())) {
+            giuong.setStatus("AVAILABLE");
         }
-        bed = bedRepository.save(bed);
-        syncRoomStatus(room);
+        giuong = bedRepository.save(giuong);
+        syncRoomStatus(phong);
 
-        return bedMapper.toResponse(bed);
+        return bedMapper.toResponse(giuong);
     }
 
     // Lấy thông tin chi tiết một giường theo ID
     @Transactional(readOnly = true)
     public Bed_Response getById(String bedId) {
-        Bed bed = bedRepository.findById(bedId)
+        Bed giuong = bedRepository.findById(bedId)
                 .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
 
-        return bedMapper.toResponse(bed);
+        return bedMapper.toResponse(giuong);
     }
 
     // Lấy danh sách tất cả giường thuộc một phòng
@@ -88,8 +88,8 @@ public class Bed_Service {
             throw new AppException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        List<Bed> beds = bedRepository.findByRoom_RoomId(roomId);
-        return bedMapper.toResponseList(beds);
+        List<Bed> danh_sach_giuong = bedRepository.findByRoom_RoomId(roomId);
+        return bedMapper.toResponseList(danh_sach_giuong);
     }
 
     // Lấy danh sách theo giường còn trống
@@ -99,8 +99,8 @@ public class Bed_Service {
             throw new AppException(ErrorCode.ROOM_NOT_FOUND);
         }
 
-        List<Bed> beds = bedRepository.findByRoom_RoomIdAndStatus(roomId, "AVAILABLE");
-        return bedMapper.toResponseList(beds);
+        List<Bed> danh_sach_giuong_trong = bedRepository.findByRoom_RoomIdAndStatus(roomId, "AVAILABLE");
+        return bedMapper.toResponseList(danh_sach_giuong_trong);
     }
 
     // Lấy danh sách giường trống theo tòa nhà
@@ -110,15 +110,15 @@ public class Bed_Service {
             throw new AppException(ErrorCode.BUILDING_NOT_FOUND);
         }
 
-        List<Bed> beds = bedRepository.findByBuilding_BuildingIdAndStatus(buildingId, "AVAILABLE");
-        return bedMapper.toResponseList(beds);
+        List<Bed> danh_sach_giuong_trong = bedRepository.findByBuilding_BuildingIdAndStatus(buildingId, "AVAILABLE");
+        return bedMapper.toResponseList(danh_sach_giuong_trong);
     }
 
     // Lấy danh sách toàn bộ giường trong hệ thống
     @Transactional(readOnly = true)
     public List<Bed_Response> getAll() {
-        List<Bed> beds = bedRepository.findAll();
-        return bedMapper.toResponseList(beds);
+        List<Bed> danh_sach_giuong = bedRepository.findAll();
+        return bedMapper.toResponseList(danh_sach_giuong);
     }
 
     // Tìm kiếm và phân trang giường (hỗ trợ lọc giường trống cho form hợp đồng)
@@ -161,25 +161,25 @@ public class Bed_Service {
     // Cập nhật thông tin giường: kiểm tra mã giường và trạng thái hợp lệ
     @Transactional
     public Bed_Response update(String bedId, Bed_Request request) {
-        Bed bed = bedRepository.findById(bedId)
+        Bed giuong = bedRepository.findById(bedId)
                 .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
 
-        if (!bed.getBedNumber().equalsIgnoreCase(request.getBedNumber()) &&
-                bedRepository.findByRoom_RoomIdAndBedNumber(bed.getRoom().getRoomId(), request.getBedNumber())
+        if (!giuong.getBedNumber().equalsIgnoreCase(request.getBedNumber()) &&
+                bedRepository.findByRoom_RoomIdAndBedNumber(giuong.getRoom().getRoomId(), request.getBedNumber())
                         .isPresent()) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Giường số " + request.getBedNumber() + " đã tồn tại trong phòng này");
         }
 
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            validateManualStatusChange(bed, request.getStatus().trim().toUpperCase());
+            validateManualStatusChange(giuong, request.getStatus().trim().toUpperCase());
         }
 
-        bedMapper.updateEntityFromRequest(bed, request);
-        bed = bedRepository.save(bed);
-        syncRoomStatus(bed.getRoom());
+        bedMapper.updateEntityFromRequest(giuong, request);
+        giuong = bedRepository.save(giuong);
+        syncRoomStatus(giuong.getRoom());
 
-        return bedMapper.toResponse(bed);
+        return bedMapper.toResponse(giuong);
     }
 
     // Cập nhật trạng thái giường: chỉ cho phép AVAILABLE hoặc MAINTENANCE
@@ -199,34 +199,34 @@ public class Bed_Service {
                     "Trạng thái giường không hợp lệ. Chỉ chấp nhận AVAILABLE hoặc MAINTENANCE");
         }
 
-        Bed bed = bedRepository.findById(bedId)
+        Bed giuong = bedRepository.findById(bedId)
                 .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
 
-        if ("OCCUPIED".equalsIgnoreCase(bed.getStatus())) {
+        if ("OCCUPIED".equalsIgnoreCase(giuong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Giường đang có người ở (OCCUPIED). Vui lòng cập nhật hoặc thanh lý hợp đồng trước");
         }
-        if ("RESERVED".equalsIgnoreCase(bed.getStatus()) && !newStatus.equalsIgnoreCase(bed.getStatus())) {
+        if ("RESERVED".equalsIgnoreCase(giuong.getStatus()) && !newStatus.equalsIgnoreCase(giuong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Giường đang được giữ chỗ (RESERVED) cho đơn đăng ký chờ xét duyệt. Vui lòng phê duyệt hoặc từ chối đơn trước khi đổi trạng thái");
         }
 
-        bed.setStatus(newStatus);
-        bed = bedRepository.save(bed);
-        syncRoomStatus(bed.getRoom());
-        return bedMapper.toResponse(bed);
+        giuong.setStatus(newStatus);
+        giuong = bedRepository.save(giuong);
+        syncRoomStatus(giuong.getRoom());
+        return bedMapper.toResponse(giuong);
     }
 
     // Xóa giường: kiểm tra giường có người ở hoặc đã có dữ liệu hợp đồng ràng buộc
     @Transactional
     public void delete(String bedId) {
-        Bed bed = bedRepository.findById(bedId)
+        Bed giuong = bedRepository.findById(bedId)
                 .orElseThrow(() -> new AppException(ErrorCode.BED_NOT_FOUND));
 
-        if ("OCCUPIED".equalsIgnoreCase(bed.getStatus())) {
+        if ("OCCUPIED".equalsIgnoreCase(giuong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Không thể xóa giường đang có người ở (OCCUPIED)");
         }
-        if ("RESERVED".equalsIgnoreCase(bed.getStatus())) {
+        if ("RESERVED".equalsIgnoreCase(giuong.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không thể xóa giường đang được giữ chỗ (RESERVED) cho đơn chờ duyệt");
         }
@@ -236,9 +236,9 @@ public class Bed_Service {
                     "Không thể xóa giường đã có dữ liệu hợp đồng lưu trú. Vui lòng chuyển trạng thái sang MAINTENANCE");
         }
 
-        Room room = bed.getRoom();
-        bedRepository.delete(bed);
-        syncRoomStatus(room);
+        Room phong = giuong.getRoom();
+        bedRepository.delete(giuong);
+        syncRoomStatus(phong);
     }
 
     // Tự động đồng bộ trạng thái phòng dựa trên trạng thái các giường

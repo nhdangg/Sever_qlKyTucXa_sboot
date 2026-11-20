@@ -43,23 +43,23 @@ public class RoomType_Service {
         if (roomTypeRepository.existsByTypeName(request.getTypeName())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Loại phòng '" + request.getTypeName() + "' đã tồn tại");
         }
-        RoomType roomType = roomTypeMapper.toEntity(request);
-        roomType = roomTypeRepository.save(roomType);
-        return roomTypeMapper.toResponse(roomType);
+        RoomType loai_phong = roomTypeMapper.toEntity(request);
+        loai_phong = roomTypeRepository.save(loai_phong);
+        return roomTypeMapper.toResponse(loai_phong);
     }
 
     @Transactional(readOnly = true)
     public RoomType_Response getById(String roomTypeId) {
-        RoomType roomType = roomTypeRepository.findById(roomTypeId)
+        RoomType loai_phong = roomTypeRepository.findById(roomTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại phòng"));
 
-        return roomTypeMapper.toResponse(roomType);
+        return roomTypeMapper.toResponse(loai_phong);
     }
 
     @Transactional(readOnly = true)
     public List<RoomType_Response> getAll() {
-        List<RoomType> list = roomTypeRepository.findAll();
-        return roomTypeMapper.toResponseList(list);
+        List<RoomType> danh_sach_loai_phong = roomTypeRepository.findAll();
+        return roomTypeMapper.toResponseList(danh_sach_loai_phong);
     }
 
     @Transactional(readOnly = true)
@@ -71,46 +71,46 @@ public class RoomType_Service {
                 : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<RoomType> pageResult = roomTypeRepository.findAll(pageable);
-        List<RoomType_Response> data = roomTypeMapper.toResponseList(pageResult.getContent());
+        Page<RoomType> trang_loai_phong = roomTypeRepository.findAll(pageable);
+        List<RoomType_Response> data = roomTypeMapper.toResponseList(trang_loai_phong.getContent());
 
         return Page_Response.<RoomType_Response>builder()
-                .currentPage(pageResult.getNumber() + 1)
+                .currentPage(trang_loai_phong.getNumber() + 1)
                 .pageSize(safeSize)
-                .totalPages(pageResult.getTotalPages())
-                .totalElements(pageResult.getTotalElements())
-                .hasPrevious(pageResult.hasPrevious())
-                .hasNext(pageResult.hasNext())
-                .isFirst(pageResult.isFirst())
-                .isLast(pageResult.isLast())
+                .totalPages(trang_loai_phong.getTotalPages())
+                .totalElements(trang_loai_phong.getTotalElements())
+                .hasPrevious(trang_loai_phong.hasPrevious())
+                .hasNext(trang_loai_phong.hasNext())
+                .isFirst(trang_loai_phong.isFirst())
+                .isLast(trang_loai_phong.isLast())
                 .data(data)
                 .build();
     }
 
     @Transactional
     public RoomType_Response update(String roomTypeId, RoomType_Request request) {
-        RoomType roomType = roomTypeRepository.findById(roomTypeId)
+        RoomType loai_phong = roomTypeRepository.findById(roomTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại phòng"));
 
-        if (!roomType.getTypeName().equalsIgnoreCase(request.getTypeName())
+        if (!loai_phong.getTypeName().equalsIgnoreCase(request.getTypeName())
                 && roomTypeRepository.existsByTypeName(request.getTypeName())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Loại phòng '" + request.getTypeName() + "' đã tồn tại");
         }
 
-        roomTypeMapper.updateEntityFromRequest(roomType, request);
-        roomType = roomTypeRepository.save(roomType);
-        return roomTypeMapper.toResponse(roomType);
+        roomTypeMapper.updateEntityFromRequest(loai_phong, request);
+        loai_phong = roomTypeRepository.save(loai_phong);
+        return roomTypeMapper.toResponse(loai_phong);
     }
 
     @Transactional
     public void delete(String roomTypeId) {
-        RoomType roomType = roomTypeRepository.findById(roomTypeId)
+        RoomType loai_phong = roomTypeRepository.findById(roomTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy loại phòng"));
 
         if (room_Repository.existsByRoomType_RoomTypeId(roomTypeId)) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Loại phòng '" + roomType.getTypeName() + "' đang được sử dụng ở phòng khác");
+                    "Loại phòng '" + loai_phong.getTypeName() + "' đang được sử dụng ở phòng khác");
         }
-        roomTypeRepository.delete(roomType);
+        roomTypeRepository.delete(loai_phong);
     }
 }
