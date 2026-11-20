@@ -34,10 +34,7 @@ public class TelegramService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy");
 
-    /**
-     * Escape ký tự đặc biệt theo chuẩn HTML của Telegram Bot API (&, <, >)
-     * Tránh lỗi HTTP 400 Bad Request do chuỗi chứa thẻ không hợp lệ (nhất là User-Agent hoặc tên đăng nhập)
-     */
+    // Escape ký tự đặc biệt theo chuẩn HTML của Telegram Bot API (&, <, >)
     public static String escapeHtml(String text) {
         if (text == null) return "";
         return text.replace("&", "&amp;")
@@ -45,9 +42,7 @@ public class TelegramService {
                 .replace(">", "&gt;");
     }
 
-    /**
-     * Che giấu bot token trong chuỗi thông báo lỗi để tránh rò rỉ vào log
-     */
+    // Che giấu bot token trong chuỗi thông báo lỗi để tránh rò rỉ vào log
     public String sanitizeError(String msg) {
         if (msg == null) return "Unknown error";
         String token = telegramProperties.getToken();
@@ -57,9 +52,7 @@ public class TelegramService {
         return msg;
     }
 
-    /**
-     * Gửi tin nhắn xác thực đăng nhập 2FA kèm 2 nút bấm 'Đúng' và 'Sai'
-     */
+    // Gửi tin nhắn xác thực đăng nhập 2FA kèm 2 nút bấm 'Đúng' và 'Sai'
     public Integer sendLoginVerificationMessage(LoginVerificationSession session, String chatId) {
         String targetChatId = (chatId != null && !chatId.isBlank()) ? chatId : telegramProperties.getAdminChatId();
 
@@ -146,9 +139,7 @@ public class TelegramService {
         }
     }
 
-    /**
-     * Phản hồi sự kiện nhấn nút trên Telegram (CallbackQuery)
-     */
+    // Phản hồi sự kiện nhấn nút trên Telegram (CallbackQuery)
     public void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert) {
         if (!telegramProperties.isConfigured() || callbackQueryId == null || callbackQueryId.isBlank()) return;
 
@@ -168,9 +159,7 @@ public class TelegramService {
         }
     }
 
-    /**
-     * Chỉnh sửa nội dung tin nhắn sau khi Admin đã bấm (ẩn nút bấm đi để tránh bấm nhiều lần)
-     */
+    // Chỉnh sửa nội dung tin nhắn sau khi Admin đã bấm (ẩn nút bấm đi để tránh bấm nhiều lần)
     public void editMessageText(String chatId, Integer messageId, String newText) {
         if (!telegramProperties.isConfigured() || chatId == null || messageId == null) return;
 
@@ -192,9 +181,7 @@ public class TelegramService {
         }
     }
 
-    /**
-     * Gửi tin nhắn thông thường (ví dụ chào mừng hoặc báo Chat ID)
-     */
+    // Gửi tin nhắn thông thường (ví dụ chào mừng hoặc báo Chat ID)
     public void sendMessage(String chatId, String text) {
         if (!telegramProperties.isConfigured() || chatId == null || chatId.isBlank()) return;
 

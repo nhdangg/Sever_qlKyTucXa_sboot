@@ -12,9 +12,7 @@ import vn.QL_KyTucXa.Repository.Staff_Repository;
 import vn.QL_KyTucXa.Repository.Student_Repository;
 import vn.QL_KyTucXa.Repository.User_Repository;
 
-/**
- * Service lấy thông tin chi tiết hồ sơ đại diện cho từng loại vai trò.
- */
+// Service lấy thông tin chi tiết hồ sơ đại diện cho từng loại vai trò
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

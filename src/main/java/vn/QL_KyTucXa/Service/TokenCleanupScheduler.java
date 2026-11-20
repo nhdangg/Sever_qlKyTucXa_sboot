@@ -11,9 +11,7 @@ import vn.QL_KyTucXa.Repository.LogoutToken_Repository;
 
 import java.time.LocalDateTime;
 
-/**
- * Job định kỳ dọn dẹp các Refresh Token và Logout Token (Blacklist) đã hết hạn khỏi CSDL.
- */
+// Job định kỳ dọn dẹp các Refresh Token và Logout Token hết hạn khỏi CSDL
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,9 +21,7 @@ public class TokenCleanupScheduler {
     RefreshTokenService refreshTokenService;
     LogoutToken_Repository logoutTokenRepository;
 
-    /**
-     * Chạy định kỳ mỗi giờ một lần (3600000 ms) để dọn dẹp các token đã quá hạn
-     */
+    // Chạy định kỳ mỗi giờ một lần (3600000 ms) để dọn dẹp các token đã quá hạn
     @Scheduled(fixedDelay = 3600000, initialDelay = 60000)
     @Transactional
     public void cleanupExpiredTokens() {

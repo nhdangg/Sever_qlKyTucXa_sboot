@@ -126,12 +126,11 @@ public class Feedback_Service {
         return feedbackMapper.toResponseList(danh_sach_phan_hoi);
     }
 
-    // Kiểm tra quyền sở hữu phản hồi: sinh viên chỉ được xem phản hồi của chính
-    // mình
-    private void checkOwnership(Feedback feedback) {
+    // Kiểm tra quyền sở hữu phản hồi: sinh viên chỉ được xem phản hồi của chính mình
+    private void checkOwnership(Feedback phan_hoi) {
         if (currentUserService.hasRole("STUDENT")) {
             String currentStudentId = currentUserService.studentId();
-            if (feedback.getStudent() == null || !currentStudentId.equals(feedback.getStudent().getStudentId())) {
+            if (phan_hoi.getStudent() == null || !currentStudentId.equals(phan_hoi.getStudent().getStudentId())) {
                 throw new AppException(ErrorCode.UNAUTHORIZED, "Bạn không có quyền xem phản hồi này");
             }
         }
@@ -143,8 +142,7 @@ public class Feedback_Service {
         return getAll(page, size, null, null, null, sortBy, sortDir);
     }
 
-    // Lấy danh sách phản hồi có tìm kiếm theo từ khóa trạng thái danh mục và phân
-    // trang
+    // Lấy danh sách phản hồi có tìm kiếm theo từ khóa trạng thái danh mục và phân trang
     @Transactional(readOnly = true)
     public Page_Response<Feedback_Response> getAll(
             int page,
@@ -223,8 +221,7 @@ public class Feedback_Service {
         return feedbackMapper.toResponse(phan_hoi);
     }
 
-    // Xác định nhân viên trả lời phản hồi: lấy từ JWT, chỉ ADMIN mới được chỉ định
-    // staffId khác
+    // Xác định nhân viên trả lời phản hồi: lấy từ JWT, chỉ ADMIN mới được chỉ định staffId khác
     private Staff resolveStaff(String staffId) {
         if (currentUserService != null && currentUserService.hasRole("ADMIN") && staffId != null
                 && !staffId.isBlank()) {

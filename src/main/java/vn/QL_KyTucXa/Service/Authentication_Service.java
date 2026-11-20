@@ -68,8 +68,7 @@ public class Authentication_Service {
     public static final int maxMkFail = 5;
     public static final int Lock_Hours = 12;
 
-    // Xác thực thông tin đăng nhập và cấp token (hoặc kích hoạt 2FA nếu được yêu
-    // cầu)
+    // Xác thực thông tin đăng nhập và cấp token (hoặc kích hoạt 2FA nếu được yêu cầu)
     @Transactional(noRollbackFor = AppException.class)
     public Token_Response login(Authentication_Request request) {
         log.info("Xử lý đăng nhập cho tài khoản: {}", request.getUsername());
@@ -223,8 +222,7 @@ public class Authentication_Service {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Nếu isRevoked = true: token đã xoay vòng bị dùng lại -> kiểm tra khoảng ân
-        // hạn
+        // Nếu isRevoked = true: token đã xoay vòng bị dùng lại -> kiểm tra khoảng ân hạn
         if (Boolean.TRUE.equals(ma_lam_moi.getIsRevoked())) {
             boolean recentlyRotated = ma_lam_moi.getRevokedAt() != null
                     && ma_lam_moi.getRevokedAt().isAfter(now.minusSeconds(reuseGraceSeconds));
@@ -240,7 +238,8 @@ public class Authentication_Service {
         String newAccess = tokenService.generateToken(nguoi_dung);
         String newRefresh = tokenService.rotateRefreshToken(nguoi_dung, request.getToken());
         Date accessExp = tokenService.extractExpiration(newAccess);
-        Token_Response tokenResponse = tokenResponseFactory.buildTokenResponse(nguoi_dung, newAccess, newRefresh, accessExp,
+        Token_Response tokenResponse = tokenResponseFactory.buildTokenResponse(nguoi_dung, newAccess, newRefresh,
+                accessExp,
                 "Làm mới phiên đăng nhập thành công");
 
         // Ghi thông tin thu hồi và lưu token mới vào CSDL
@@ -252,8 +251,7 @@ public class Authentication_Service {
         return tokenResponse;
     }
 
-    // Đăng xuất khỏi hệ thống: Thu hồi refresh token và đưa jti access token vào
-    // blacklist
+    // Đăng xuất khỏi hệ thống: Thu hồi refresh token và đưa jti access token vào blacklist
     @Transactional
     public void logout(LogoutToken_Request request) {
         log.info("Xử lý đăng xuất tài khoản");
@@ -262,7 +260,8 @@ public class Authentication_Service {
 
         String rawToken = (request != null) ? request.getToken() : null;
         if (!StringUtils.hasText(rawToken)) {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest httpRequest = attributes.getRequest();
                 String authHeader = httpRequest.getHeader("Authorization");
@@ -272,8 +271,7 @@ public class Authentication_Service {
             }
         }
 
-        // Nếu có access token: đưa jti vào blacklist và trích xuất userId của người
-        // đang logout
+        // Nếu có access token: đưa jti vào blacklist và trích xuất userId của người đang logout
         if (StringUtils.hasText(rawToken)) {
             try {
                 SignedJWT signedJWT = tokenService.verifyToken(rawToken, false);
@@ -281,11 +279,11 @@ public class Authentication_Service {
                 String jti = claims.getJWTID();
                 Date expiryTime = claims.getExpirationTime();
                 currentUserId = (String) claims.getClaim("userId");
-                User nguoi_dung = (StringUtils.hasText(currentUserId)) ? userRepository.findById(currentUserId).orElse(null)
+                User nguoi_dung = (StringUtils.hasText(currentUserId))
+                        ? userRepository.findById(currentUserId).orElse(null)
                         : null;
 
-                // Kiểm tra existsByToken trước khi lưu để tránh vi phạm Unique Constraint khi
-                // có 2 request logout đồng thời
+                // Kiểm tra existsByToken trước khi lưu để tránh vi phạm Unique Constraint khi có 2 request logout đồng thời
                 if (StringUtils.hasText(jti) && !logoutTokenRepository.existsByToken(jti)) {
                     LogoutToken token_dang_xuat = LogoutToken.builder()
                             .tokenId(jti)
@@ -311,8 +309,7 @@ public class Authentication_Service {
             }
         }
 
-        // Thu hồi refresh token trong refresh_tokens: chỉ xóa nếu refresh token thuộc
-        // quyền sở hữu của người đang logout
+        // Thu hồi refresh token trong refresh_tokens: chỉ xóa nếu thuộc quyền sở hữu của người đang logout
         if (request != null && StringUtils.hasText(request.getRefreshToken())) {
             if (currentUserId != null) {
                 refreshTokenService.deleteIfExists(request.getRefreshToken(), currentUserId);
@@ -349,7 +346,6 @@ public class Authentication_Service {
     }
 
     // Kiểm tra trạng thái phê duyệt từ Telegram và xóa tokenResponse khỏi session
-    // để không bị lấy lại nhiều lần
     public Token_Response checkLoginStatus(String verificationId) {
         LoginVerificationSession session = twoFactorAuthService.getSession(verificationId);
 
@@ -376,8 +372,7 @@ public class Authentication_Service {
                 .build();
     }
 
-    // Phê duyệt hoặc từ chối đăng nhập (dùng cho Webhook hoặc Link xác nhận trực
-    // tiếp)
+    // Phê duyệt hoặc từ chối đăng nhập (dùng cho Webhook hoặc Link xác nhận trực tiếp)
     public String confirmLoginFromTelegram(String verificationId, String action) {
         if ("APPROVE".equalsIgnoreCase(action) || "YES".equalsIgnoreCase(action) || "DUNG".equalsIgnoreCase(action)) {
             twoFactorAuthService.approve(verificationId);

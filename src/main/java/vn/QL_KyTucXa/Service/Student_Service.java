@@ -157,12 +157,7 @@ public class Student_Service {
         return studentMapper.toResponse(sinh_vien);
     }
 
-    /**
-     * Nhập hàng loạt hồ sơ sinh viên từ file Excel / danh sách
-     * Tự động khởi tạo tài khoản đăng nhập cho từng sinh viên hợp lệ
-     * Thu thập danh sách lỗi cụ thể theo từng dòng để phản hồi chi tiết cho Quản
-     * trị viên
-     */
+    // Nhập hàng loạt hồ sơ sinh viên từ file Excel hoặc danh sách
     public StudentBatch_Response createBatch(List<Student_Request> requests) {
         if (requests == null || requests.isEmpty()) {
             return StudentBatch_Response.builder()
@@ -416,11 +411,7 @@ public class Student_Service {
                 .build();
     }
 
-    /**
-     * Dành riêng cho sinh viên tự cập nhật thông tin cá nhân (chỉ liên hệ, địa chỉ,
-     * người thân, CCCD)
-     * Ngăn chặn việc tự đổi studentCode, status, className, faculty, gender, userId
-     */
+    // Dành riêng cho sinh viên tự cập nhật thông tin cá nhân cơ bản
     @Transactional
     public Student_Response updateMyProfile(StudentSelfUpdate_Request request) {
         String currentUserId = currentUserService != null ? currentUserService.userId() : null;
@@ -631,9 +622,7 @@ public class Student_Service {
         return studentMapper.toResponse(sinh_vien);
     }
 
-    /**
-     * Ngừng hoạt động hồ sơ sinh viên (Soft delete: INACTIVE)
-     */
+    // Ngừng hoạt động hồ sơ sinh viên (Soft delete: INACTIVE)
     public void delete(String studentId) {
         Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
@@ -657,10 +646,7 @@ public class Student_Service {
         }
     }
 
-    /**
-     * Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được
-     * xem
-     */
+    // Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được xem
     private void checkViewPermission(Student sinh_vien) {
         if (currentUserService == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -686,11 +672,7 @@ public class Student_Service {
         }
     }
 
-    /**
-     * Lưu file ảnh đại diện sinh viên vào thư mục upload được cấu hình
-     * (app.upload.dir)
-     * Trả về đường dẫn tương đối để lưu vào CSDL (ví dụ: /uploads/avatars/uuid.png)
-     */
+    // Lưu file ảnh đại diện sinh viên vào thư mục upload được cấu hình
     public String saveAvatarFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return null;
@@ -729,11 +711,7 @@ public class Student_Service {
         }
     }
 
-    /**
-     * Tự động xóa file ảnh đại diện cũ trên ổ đĩa khi sinh viên đổi ảnh mới hoặc gỡ
-     * ảnh
-     * Tránh tình trạng lưu ảnh mồ côi (orphan files) gây rác bộ nhớ máy chủ
-     */
+    // Tự động xóa file ảnh đại diện cũ trên ổ đĩa khi sinh viên đổi ảnh mới hoặc gỡ ảnh
     public void deleteOldAvatarFile(String avatarUrl) {
         if (avatarUrl == null || avatarUrl.isBlank()) {
             return;

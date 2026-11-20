@@ -10,9 +10,7 @@ import vn.QL_KyTucXa.Entity.User;
 
 import java.util.Date;
 
-/**
- * Component xây dựng Token_Response chuẩn hóa, thống nhất dữ liệu người dùng từ UserProfileService.
- */
+// Component xây dựng Token_Response chuẩn hóa từ UserProfileService
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -22,9 +20,7 @@ public class TokenResponseFactory {
     Jwt_Service jwtService;
     RefreshTokenService refreshTokenService;
 
-    /**
-     * Cấp phiên đăng nhập mới (tạo Access Token, Refresh Token, lưu DB và trả Token_Response)
-     */
+    // Cấp phiên đăng nhập mới (tạo Access Token, Refresh Token, lưu DB và trả Token_Response)
     public Token_Response issueSession(User user, String ip, String userAgent, String message) {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -35,9 +31,7 @@ public class TokenResponseFactory {
         return buildTokenResponse(user, accessToken, refreshToken, expiryTime, message);
     }
 
-    /**
-     * Dựng Token_Response với đầy đủ thông tin định danh và vai trò lấy từ UserProfileService.
-     */
+    // Dựng Token_Response với đầy đủ thông tin định danh và vai trò lấy từ UserProfileService
     public Token_Response buildTokenResponse(User user, String accessToken, String refreshToken, Date expiry, String message) {
         UserProfileDTO ho_so = userProfileService.resolveUserProfile(user);
 

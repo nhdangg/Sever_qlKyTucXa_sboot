@@ -44,9 +44,7 @@ public class User_Service {
     Staff_Repository staffRepository;
     AuditLog_Service auditLogService;
 
-    /**
-     * Tạo mới tài khoản người dùng từ trang Quản lý Người dùng
-     */
+    // Tạo mới tài khoản người dùng từ trang Quản lý Người dùng
     @Transactional
     public User_Response create(User_Request request) {
         log.info("Bắt đầu tạo tài khoản người dùng: {}", request.getUsername());
@@ -103,10 +101,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
-    /**
-     * Tạo tài khoản từ luồng Đăng ký công khai (ghi đè role STUDENT, status ACTIVE,
-     * cấm gán telegramChatId)
-     */
+    // Tạo tài khoản từ luồng Đăng ký công khai
     @Transactional
     public User_Response createFromRegistration(User_Request request) {
         log.info("Đăng ký tài khoản công khai: {}", request.getUsername());
@@ -145,9 +140,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
-    /**
-     * Lấy thông tin chi tiết người dùng theo ID
-     */
+    // Lấy thông tin chi tiết người dùng theo ID
     @Transactional(readOnly = true)
     public User_Response getById(String userId) {
         log.info("Lấy thông tin người dùng theo ID: {}", userId);
@@ -158,9 +151,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
-    /**
-     * Lấy danh sách tất cả người dùng
-     */
+    // Lấy danh sách tất cả người dùng
     @Transactional(readOnly = true)
     public List<User_Response> getAll() {
         log.info("Lấy danh sách tất cả người dùng");
@@ -172,9 +163,7 @@ public class User_Service {
                 .toList();
     }
 
-    /**
-     * Tìm kiếm và phân trang người dùng theo từ khóa, vai trò và trạng thái
-     */
+    // Tìm kiếm và phân trang người dùng theo từ khóa, vai trò và trạng thái
     @Transactional(readOnly = true)
     public Page_Response<User_Response> searchUsers(String keyword, String roleId, String status, int page, int size) {
         int safePage = Math.max(1, page);
@@ -204,10 +193,7 @@ public class User_Service {
                 .build();
     }
 
-    /**
-     * Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu
-     * hồi token khi đổi vai trò)
-     */
+    // Cập nhật thông tin người dùng (kiểm tra quyền bảo vệ ADMIN, tự hạ quyền, thu hồi token khi đổi vai trò)
     @Transactional
     public User_Response update(String userId, User_Request request) {
         log.info("Cập nhật thông tin người dùng: {}", userId);
@@ -320,9 +306,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(nguoi_dung), nguoi_dung.getUserId());
     }
 
-    /**
-     * Khóa (BANNED/LOCKED) hoặc mở khóa (ACTIVE) tài khoản
-     */
+    // Khóa (BANNED/LOCKED) hoặc mở khóa (ACTIVE) tài khoản
     @Transactional
     public User_Response updateStatus(String userId, String status, boolean callerIsAdmin) {
         String normalized = status == null ? "" : status.trim().toUpperCase();
@@ -375,9 +359,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(nguoi_dung_da_luu), nguoi_dung.getUserId());
     }
 
-    /**
-     * Người dùng tự cập nhật email, số điện thoại, mật khẩu của chính mình
-     */
+    // Người dùng tự cập nhật email, số điện thoại của chính mình
     @Transactional
     public User_Response updateSelf(String userId, UserSelfUpdate_Request request) {
         User nguoi_dung = userRepository.findById(userId)
@@ -405,9 +387,7 @@ public class User_Service {
         return sanitizeUserResponse(userMapper.toResponse(userRepository.save(nguoi_dung)), nguoi_dung.getUserId());
     }
 
-    /**
-     * Đổi mật khẩu cá nhân có xác thực mật khẩu hiện tại
-     */
+    // Đổi mật khẩu cá nhân có xác thực mật khẩu hiện tại
     @Transactional
     public void changePassword(String userId, vn.QL_KyTucXa.DTO.Request.ChangePassword_Request request) {
         User nguoi_dung = userRepository.findById(userId)
@@ -426,12 +406,7 @@ public class User_Service {
         }
     }
 
-    /**
-     * Cập nhật Telegram Chat ID phục vụ xác thực 2FA (Chỉ chính chủ hoặc Quản trị
-     * viên được đổi)
-     * Đối với tài khoản Quản trị viên (ADMIN), bắt buộc nhập lại mật khẩu hiện tại
-     * để xác thực bảo mật
-     */
+    // Cập nhật Telegram Chat ID phục vụ xác thực 2FA (chỉ chính chủ hoặc Quản trị viên được đổi)
     @Transactional
     public User_Response updateTelegram2FA(String userId, String telegramChatId, String confirmPassword) {
         User nguoi_dung = userRepository.findById(userId)
@@ -480,10 +455,7 @@ public class User_Service {
         return updateTelegram2FA(userId, telegramChatId, null);
     }
 
-    /**
-     * Xóa tài khoản người dùng theo ID (Kiểm tra ràng buộc sinh viên, nhân viên,
-     * quản trị viên)
-     */
+    // Xóa tài khoản người dùng theo ID (kiểm tra ràng buộc sinh viên, nhân viên, quản trị viên)
     @Transactional
     public void delete(String userId) {
         log.info("Xóa người dùng có ID: {}", userId);
@@ -539,10 +511,7 @@ public class User_Service {
         }
     }
 
-    /**
-     * Ẩn các trường nhạy cảm (failedLoginAttempts, telegramChatId) đối với người
-     * không có quyền quản trị
-     */
+    // Ẩn các trường nhạy cảm đối với người không có quyền quản trị
     private User_Response sanitizeUserResponse(User_Response response, String targetUserId) {
         if (response == null)
             return null;

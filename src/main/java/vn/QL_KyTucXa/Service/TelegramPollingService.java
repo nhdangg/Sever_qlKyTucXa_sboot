@@ -28,9 +28,7 @@ public class TelegramPollingService {
     boolean isInitialized = false;
     boolean isLoggedNotConfigured = false;
 
-    /**
-     * Đồng bộ lastUpdateId khi khởi động bot (bỏ qua bản tin cũ tích tụ trong 24h khi server offline)
-     */
+    // Đồng bộ lastUpdateId khi khởi động bot (bỏ qua bản tin cũ tích tụ trong 24h khi server offline)
     private void initializeLastUpdateId() {
         try {
             // Dùng offset=-1 để lấy bản tin mới nhất từ Telegram
@@ -58,9 +56,7 @@ public class TelegramPollingService {
         isInitialized = true;
     }
 
-    /**
-     * Tiến trình chạy ngầm nhận phản hồi từ Telegram bằng Long Polling chuẩn
-     */
+    // Tiến trình chạy ngầm nhận phản hồi từ Telegram bằng Long Polling chuẩn
     @Scheduled(fixedDelayString = "${telegram.bot.polling-interval-ms:1000}")
     public void pollTelegramUpdates() {
         if (!telegramProperties.isConfigured() || !telegramProperties.isPollingEnabled()) {

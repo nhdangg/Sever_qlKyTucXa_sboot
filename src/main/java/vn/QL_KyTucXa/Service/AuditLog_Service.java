@@ -35,19 +35,15 @@ public class AuditLog_Service {
     HttpRequestClientInfoResolver clientInfoResolver;
     ObjectMapper objectMapper;
 
-    /**
-     * Ghi nhận một hành vi thay đổi dữ liệu vào bảng nhật ký hệ thống.
-     * Sử dụng Propagation.REQUIRES_NEW để đảm bảo dù nghiệp vụ chính gặp lỗi hoặc hoàn tất,
-     * nhật ký kiểm toán vẫn được xử lý độc lập, không làm gián đoạn luồng nghiệp vụ chính.
-     */
+    // Ghi nhận một hành vi thay đổi dữ liệu vào bảng nhật ký hệ thống độc lập
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordAction(String action, String tableName, String recordId, Object oldValueObj, Object newValueObj) {
         try {
-            User currentUser = null;
+            User nguoi_dung_hien_tai = null;
             try {
                 String currentUserId = currentUserService.userId();
                 if (currentUserId != null) {
-                    currentUser = userRepository.findById(currentUserId).orElse(null);
+                    nguoi_dung_hien_tai = userRepository.findById(currentUserId).orElse(null);
                 }
             } catch (Exception ignored) {
                 // Có thể là request không cần đăng nhập hoặc unauthenticated
@@ -74,8 +70,8 @@ public class AuditLog_Service {
             } catch (Exception ignored) {
             }
 
-            AuditLog logEntry = AuditLog.builder()
-                    .user(currentUser)
+            AuditLog nhat_ky = AuditLog.builder()
+                    .user(nguoi_dung_hien_tai)
                     .action(action)
                     .tableName(tableName)
                     .recordId(recordId)
@@ -86,27 +82,25 @@ public class AuditLog_Service {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            auditLogRepository.save(logEntry);
+            auditLogRepository.save(nhat_ky);
             log.debug("[AUDIT] Đã ghi nhật ký: action={}, table={}, recordId={}", action, tableName, recordId);
         } catch (Exception ex) {
             log.error("[AUDIT ERROR] Không thể ghi nhật ký kiểm toán: {}", ex.getMessage());
         }
     }
 
-    /**
-     * Tra cứu danh sách nhật ký kiểm toán (phục vụ Admin xem trên Dashboard)
-     */
+    // Tra cứu danh sách nhật ký kiểm toán phục vụ Admin xem trên Dashboard
     @Transactional(readOnly = true)
     public Page_Response<AuditLog_Response> getAllLogs(int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by("createdAt").descending());
-        Page<AuditLog> logPage = auditLogRepository.findAll(pageable);
+        Page<AuditLog> trang_nhat_ky = auditLogRepository.findAll(pageable);
 
         return Page_Response.<AuditLog_Response>builder()
                 .currentPage(page)
                 .pageSize(size)
-                .totalPages(logPage.getTotalPages())
-                .totalElements(logPage.getTotalElements())
-                .data(auditLogMapper.toResponseList(logPage.getContent()))
+                .totalPages(trang_nhat_ky.getTotalPages())
+                .totalElements(trang_nhat_ky.getTotalElements())
+                .data(auditLogMapper.toResponseList(trang_nhat_ky.getContent()))
                 .build();
     }
 }

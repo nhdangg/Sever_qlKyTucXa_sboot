@@ -5,10 +5,7 @@ import vn.QL_KyTucXa.Entity.User;
 import vn.QL_KyTucXa.Exception.AppException;
 import vn.QL_KyTucXa.Exception.ErrorCode;
 
-/**
- * Chính sách kiểm tra trạng thái hoạt động của tài khoản người dùng:
- * Chặn các tài khoản chưa kích hoạt (INACTIVE) hoặc đã bị khóa (BANNED).
- */
+// Chính sách kiểm tra trạng thái hoạt động của tài khoản người dùng
 @Component
 public class AccountStatusPolicy {
 

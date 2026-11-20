@@ -502,9 +502,7 @@ public class Payment_Service {
         return configuredToken.equals(auth);
     }
 
-    /**
-     * Xử lý Webhook tự động nhận thông báo biến động số dư từ SePay (VietinBank / MB / VCB)
-     */
+    // Xử lý Webhook tự động nhận thông báo biến động số dư từ SePay (VietinBank / MB / VCB)
     @Transactional
     public Map<String, Object> processSepayWebhook(SepayWebhook_Request webhook) {
         if (webhook == null) {
