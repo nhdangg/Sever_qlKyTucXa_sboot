@@ -49,66 +49,66 @@ public class Role_Service {
         }
 
         request.setRoleCode(roleCode);
-        Role role = roleMapper.toEntity(request);
-        role.setRoleCode(roleCode);
-        role = roleRepository.save(role);
+        Role vai_tro = roleMapper.toEntity(request);
+        vai_tro.setRoleCode(roleCode);
+        vai_tro = roleRepository.save(vai_tro);
 
-        return roleMapper.toResponse(role);
+        return roleMapper.toResponse(vai_tro);
     }
 
     // Lấy chi tiết vai trò theo ID
     @Transactional(readOnly = true)
     public Role_Response getById(String roleId) {
-        Role role = roleRepository.findById(roleId)
+        Role vai_tro = roleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
-        Role_Response response = roleMapper.toResponse(role);
-        response.setPermissions(rolePermissionRepository.findPermissionCodesByRoleId(role.getRoleId()));
-        return response;
+        Role_Response ket_qua = roleMapper.toResponse(vai_tro);
+        ket_qua.setPermissions(rolePermissionRepository.findPermissionCodesByRoleId(vai_tro.getRoleId()));
+        return ket_qua;
     }
 
     // Lấy danh sách tất cả vai trò (kèm danh sách mã quyền từ bảng vaiTroQuyen)
     @Transactional(readOnly = true)
     public List<Role_Response> getAll() {
-        List<Role> list = roleRepository.findAll();
-        return list.stream().map(role -> {
-            Role_Response response = roleMapper.toResponse(role);
-            response.setPermissions(rolePermissionRepository.findPermissionCodesByRoleId(role.getRoleId()));
-            return response;
+        List<Role> danh_sach_vai_tro = roleRepository.findAll();
+        return danh_sach_vai_tro.stream().map(vai_tro -> {
+            Role_Response ket_qua = roleMapper.toResponse(vai_tro);
+            ket_qua.setPermissions(rolePermissionRepository.findPermissionCodesByRoleId(vai_tro.getRoleId()));
+            return ket_qua;
         }).toList();
     }
 
     // Cập nhật thông tin vai trò (không cho phép thay đổi roleCode)
     @Transactional
     public Role_Response update(String roleId, Role_Request request) {
-        Role role = roleRepository.findById(roleId)
+        Role vai_tro = roleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         // Chặn đổi mã vai trò để bảo vệ tính nhất quán của hệ thống phân quyền và các quy tắc nghiệp vụ
         if (request.getRoleCode() != null &&
-                !role.getRoleCode().equalsIgnoreCase(request.getRoleCode().trim())) {
+                !vai_tro.getRoleCode().equalsIgnoreCase(request.getRoleCode().trim())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không được phép thay đổi mã code vai trò (roleCode) vì ảnh hưởng đến các quy tắc bảo mật hệ thống");
         }
 
-        String originalRoleCode = role.getRoleCode();
-        roleMapper.updateEntityFromRequest(role, request);
-        role.setRoleCode(originalRoleCode);
-        role = roleRepository.save(role);
+        String originalRoleCode = vai_tro.getRoleCode();
+        roleMapper.updateEntityFromRequest(vai_tro, request);
+        vai_tro.setRoleCode(originalRoleCode);
+        vai_tro = roleRepository.save(vai_tro);
 
-        return roleMapper.toResponse(role);
+        return roleMapper.toResponse(vai_tro);
     }
 
     // Xóa vai trò: chặn xóa vai trò hệ thống, chặn xóa khi còn người dùng
     @Transactional
     public void delete(String roleId) {
-        Role role = roleRepository.findById(roleId)
+        Role vai_tro = roleRepository.findById(roleId)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         // Chặn xóa các vai trò hệ thống cố định
-        if (SYSTEM_ROLE_CODES.contains(role.getRoleCode().toUpperCase())) {
+        if (SYSTEM_ROLE_CODES.contains(vai_tro.getRoleCode().toUpperCase())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Không được phép xóa vai trò hệ thống cố định: " + role.getRoleCode());
+                    "Không được phép xóa vai trò hệ thống cố định: " + vai_tro.getRoleCode());
         }
 
         // Chặn xóa vai trò nếu đang có tài khoản người dùng gắn với vai trò này
@@ -120,8 +120,8 @@ public class Role_Service {
         // Dọn dẹp phân quyền của vai trò trong bảng vaiTroQuyen trước khi xóa
         rolePermissionRepository.deleteByRoleId(roleId);
 
-        roleRepository.delete(role);
-        log.info("Đã xóa vai trò: {} ({})", role.getRoleName(), role.getRoleCode());
+        roleRepository.delete(vai_tro);
+        log.info("Đã xóa vai trò: {} ({})", vai_tro.getRoleName(), vai_tro.getRoleCode());
     }
 }
 

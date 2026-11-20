@@ -114,14 +114,14 @@ public class LoginVerificationService {
             }
 
             // Lấy thông tin User và tạo token
-            User user = userRepository.findById(session.getUserId())
+            User nguoi_dung = userRepository.findById(session.getUserId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             // Kiểm tra tài khoản có bị khóa/inactive trong thời gian chờ duyệt không
-            accountStatusPolicy.assertAccountUsable(user);
+            accountStatusPolicy.assertAccountUsable(nguoi_dung);
 
             Token_Response tokenResponse = tokenResponseFactory.issueSession(
-                    user, session.getIpAddress(), session.getUserAgent(), "Đăng nhập thành công");
+                    nguoi_dung, session.getIpAddress(), session.getUserAgent(), "Đăng nhập thành công");
 
             session.setStatus("APPROVED");
             session.setTokenResponse(tokenResponse);

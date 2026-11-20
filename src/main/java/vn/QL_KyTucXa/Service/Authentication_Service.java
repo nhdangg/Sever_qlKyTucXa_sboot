@@ -70,76 +70,76 @@ public class Authentication_Service {
     public Token_Response login(Authentication_Request request) {
         log.info("Xử lý đăng nhập cho tài khoản: {}", request.getUsername());
 
-        User user = userRepository.findByUsername(request.getUsername())
+        User nguoi_dung = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
         // Mở khóa sau 12 tiếng từ lúc cập nhật khóa tài khoản
-        if ("LOCKED".equalsIgnoreCase(user.getStatus()) && user.getFailedLoginAttempts() != null
-                && user.getFailedLoginAttempts() >= maxMkFail) {
-            LocalDateTime LockTime = user.getUpdatedAt();
+        if ("LOCKED".equalsIgnoreCase(nguoi_dung.getStatus()) && nguoi_dung.getFailedLoginAttempts() != null
+                && nguoi_dung.getFailedLoginAttempts() >= maxMkFail) {
+            LocalDateTime LockTime = nguoi_dung.getUpdatedAt();
             LocalDateTime unlockTime = LockTime.plusHours(Lock_Hours);
             if (LocalDateTime.now().isAfter(unlockTime)) {
-                user.setStatus("ACTIVE");
-                user.setFailedLoginAttempts(0);
-                userRepository.save(user);
+                nguoi_dung.setStatus("ACTIVE");
+                nguoi_dung.setFailedLoginAttempts(0);
+                userRepository.save(nguoi_dung);
             } else {
                 throw new AppException(ErrorCode.ACCOUNT_LOCKED);
             }
         }
         // Kiểm tra trạng thái tài khoản
-        accountStatusPolicy.assertAccountUsable(user);
+        accountStatusPolicy.assertAccountUsable(nguoi_dung);
 
         // Kiểm tra mật khẩu đăng nhập
-        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
+        boolean authenticated = passwordEncoder.matches(request.getPassword(), nguoi_dung.getPasswordHash());
         if (!authenticated) {
-            int attemps = ((user.getFailedLoginAttempts() != null) ? user.getFailedLoginAttempts() : 0) + 1;
-            user.setFailedLoginAttempts(attemps);
+            int attemps = ((nguoi_dung.getFailedLoginAttempts() != null) ? nguoi_dung.getFailedLoginAttempts() : 0) + 1;
+            nguoi_dung.setFailedLoginAttempts(attemps);
             // Khóa tài khoản sau khi nhập sai 5 lần liên tiếp
             if (attemps >= maxMkFail) {
-                user.setStatus("LOCKED");
-                userRepository.save(user);
+                nguoi_dung.setStatus("LOCKED");
+                userRepository.save(nguoi_dung);
 
                 throw new AppException(ErrorCode.ACCOUNT_LOCKED);
             }
-            userRepository.save(user);
+            userRepository.save(nguoi_dung);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         // Đăng nhập đúng thông tin: đặt lại số lần sai về 0
-        user.setFailedLoginAttempts(0);
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+        nguoi_dung.setFailedLoginAttempts(0);
+        nguoi_dung.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(nguoi_dung);
 
         // Kiểm tra yêu cầu 2FA đối với tài khoản quản trị (RoleBasedTwoFactorPolicy)
-        if (twoFactorPolicy.requiresTwoFactorAuth(user)) {
+        if (twoFactorPolicy.requiresTwoFactorAuth(nguoi_dung)) {
             // 1. Phương án dự phòng khẩn cấp: nếu người dùng gửi kèm backupCode hợp lệ
             if (request.getBackupCode() != null && !request.getBackupCode().isBlank()) {
                 String expectedBackup = telegramProperties.getBackupCode();
                 if (expectedBackup != null && !expectedBackup.isBlank()
                         && expectedBackup.trim().equals(request.getBackupCode().trim())) {
                     log.warn("[2FA BACKUP] Quản trị viên '{}' đăng nhập thành công bằng Mã dự phòng khẩn cấp!",
-                            user.getUsername());
-                    return tokenResponseFactory.issueSession(user,
+                            nguoi_dung.getUsername());
+                    return tokenResponseFactory.issueSession(nguoi_dung,
                             clientInfoResolver.getClientIpAddress(),
                             clientInfoResolver.getClientUserAgent(),
                             "Đăng nhập thành công bằng mã xác thực dự phòng");
                 } else {
-                    int fails = user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() : 0;
-                    user.setFailedLoginAttempts(fails + 1);
-                    userRepository.save(user);
+                    int fails = nguoi_dung.getFailedLoginAttempts() != null ? nguoi_dung.getFailedLoginAttempts() : 0;
+                    nguoi_dung.setFailedLoginAttempts(fails + 1);
+                    userRepository.save(nguoi_dung);
                     throw new AppException(ErrorCode.OPERATION_FAILED, "Mã dự phòng khẩn cấp không chính xác");
                 }
             }
 
             // 2. Không được fail-open: Luôn kích hoạt quy trình 2FA
-            String targetChatId = (user.getTelegramChatId() != null && !user.getTelegramChatId().isBlank())
-                    ? user.getTelegramChatId().trim()
+            String targetChatId = (nguoi_dung.getTelegramChatId() != null && !nguoi_dung.getTelegramChatId().isBlank())
+                    ? nguoi_dung.getTelegramChatId().trim()
                     : telegramProperties.getAdminChatId();
 
             String ipAddress = clientInfoResolver.getClientIpAddress();
             String userAgent = clientInfoResolver.getClientUserAgent();
 
-            LoginVerificationSession session = twoFactorAuthService.createSession(user, ipAddress, userAgent,
+            LoginVerificationSession session = twoFactorAuthService.createSession(nguoi_dung, ipAddress, userAgent,
                     targetChatId);
 
             try {
@@ -147,7 +147,7 @@ public class Authentication_Service {
                 boolean isDev = environment != null && environment
                         .acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "test", "default"));
                 if (messageId == null && !isDev) {
-                    log.error("Không thể gửi thông báo xác thực Telegram cho tài khoản {}", user.getUsername());
+                    log.error("Không thể gửi thông báo xác thực Telegram cho tài khoản {}", nguoi_dung.getUsername());
                     twoFactorAuthService.cancelSession(session.getVerificationId());
                     throw new AppException(ErrorCode.OPERATION_FAILED,
                             "Không thể gửi tin nhắn xác thực 2FA qua Telegram. Vui lòng thử lại sau hoặc sử dụng mã dự phòng.");
@@ -177,7 +177,7 @@ public class Authentication_Service {
         }
 
         // Cấp Access Token và Refresh Token mới cho phiên đăng nhập thông thường
-        return tokenResponseFactory.issueSession(user,
+        return tokenResponseFactory.issueSession(nguoi_dung,
                 clientInfoResolver.getClientIpAddress(),
                 clientInfoResolver.getClientUserAgent(),
                 "Đăng nhập thành công");
@@ -206,14 +206,14 @@ public class Authentication_Service {
             throw new AppException(ErrorCode.TOKEN_INVALID);
         }
 
-        User user = userRepository.findByUsername(username)
+        User nguoi_dung = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         // Kiểm tra trạng thái tài khoản
-        accountStatusPolicy.assertAccountUsable(user);
+        accountStatusPolicy.assertAccountUsable(nguoi_dung);
 
         // Tìm RefreshToken theo chuỗi token (khóa bi quan chống race condition)
-        RefreshToken storedToken = refreshTokenService.findByToken(request.getToken())
+        RefreshToken ma_lam_moi = refreshTokenService.findByToken(request.getToken())
                 .orElseThrow(
                         () -> new AppException(ErrorCode.TOKEN_INVALID, "Refresh token không tồn tại trong hệ thống"));
 
@@ -221,29 +221,29 @@ public class Authentication_Service {
 
         // Nếu isRevoked = true: token đã xoay vòng bị dùng lại -> kiểm tra khoảng ân
         // hạn
-        if (Boolean.TRUE.equals(storedToken.getIsRevoked())) {
-            boolean recentlyRotated = storedToken.getRevokedAt() != null
-                    && storedToken.getRevokedAt().isAfter(now.minusSeconds(reuseGraceSeconds));
+        if (Boolean.TRUE.equals(ma_lam_moi.getIsRevoked())) {
+            boolean recentlyRotated = ma_lam_moi.getRevokedAt() != null
+                    && ma_lam_moi.getRevokedAt().isAfter(now.minusSeconds(reuseGraceSeconds));
             if (recentlyRotated) {
                 throw new AppException(ErrorCode.TOKEN_INVALID, "Yêu cầu làm mới đang được xử lý, vui lòng thử lại");
             }
-            int revokedCount = refreshTokenService.revokeAllActiveByUserId(user.getUserId());
+            int revokedCount = refreshTokenService.revokeAllActiveByUserId(nguoi_dung.getUserId());
             log.warn("Tái sử dụng refresh token của '{}', đã thu hồi {} phiên", username, revokedCount);
             throw new AppException(ErrorCode.UNAUTHENTICATED, "Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại");
         }
 
         // Chuẩn bị dữ liệu token mới trước khi ghi vào CSDL
-        String newAccess = tokenService.generateToken(user);
-        String newRefresh = tokenService.rotateRefreshToken(user, request.getToken());
+        String newAccess = tokenService.generateToken(nguoi_dung);
+        String newRefresh = tokenService.rotateRefreshToken(nguoi_dung, request.getToken());
         Date accessExp = tokenService.extractExpiration(newAccess);
-        Token_Response tokenResponse = tokenResponseFactory.buildTokenResponse(user, newAccess, newRefresh, accessExp,
+        Token_Response tokenResponse = tokenResponseFactory.buildTokenResponse(nguoi_dung, newAccess, newRefresh, accessExp,
                 "Làm mới phiên đăng nhập thành công");
 
         // Ghi thông tin thu hồi và lưu token mới vào CSDL
-        storedToken.setIsRevoked(true);
-        storedToken.setRevokedAt(now);
-        refreshTokenService.save(storedToken);
-        saveRefreshToken(user, newRefresh);
+        ma_lam_moi.setIsRevoked(true);
+        ma_lam_moi.setRevokedAt(now);
+        refreshTokenService.save(ma_lam_moi);
+        saveRefreshToken(nguoi_dung, newRefresh);
 
         return tokenResponse;
     }
@@ -265,23 +265,23 @@ public class Authentication_Service {
                 String jti = claims.getJWTID();
                 Date expiryTime = claims.getExpirationTime();
                 currentUserId = (String) claims.getClaim("userId");
-                User user = (StringUtils.hasText(currentUserId)) ? userRepository.findById(currentUserId).orElse(null)
+                User nguoi_dung = (StringUtils.hasText(currentUserId)) ? userRepository.findById(currentUserId).orElse(null)
                         : null;
 
                 // Kiểm tra existsByToken trước khi lưu để tránh vi phạm Unique Constraint khi
                 // có 2 request logout đồng thời
                 if (StringUtils.hasText(jti) && !logoutTokenRepository.existsByToken(jti)) {
-                    LogoutToken logoutToken = LogoutToken.builder()
+                    LogoutToken token_dang_xuat = LogoutToken.builder()
                             .tokenId(jti)
                             .token(jti)
-                            .user(user)
+                            .user(nguoi_dung)
                             .expiresAt(Jwt_Service.toLocalDateTime(expiryTime))
                             .deviceInfo(Jwt_Service.limit(clientInfoResolver.getClientUserAgent(), 255))
                             .ipAddress(Jwt_Service.limit(clientInfoResolver.getClientIpAddress(), 45))
                             .logoutAt(now)
                             .build();
 
-                    logoutTokenRepository.save(logoutToken);
+                    logoutTokenRepository.save(token_dang_xuat);
                 }
             } catch (AppException | JOSEException | ParseException e) {
                 log.info("Bỏ qua access token khi logout (hết hạn hoặc không hợp lệ): {}", e.getMessage());

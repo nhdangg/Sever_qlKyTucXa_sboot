@@ -39,7 +39,7 @@ public class TokenResponseFactory {
      * Dựng Token_Response với đầy đủ thông tin định danh và vai trò lấy từ UserProfileService.
      */
     public Token_Response buildTokenResponse(User user, String accessToken, String refreshToken, Date expiry, String message) {
-        UserProfileDTO profile = userProfileService.resolveUserProfile(user);
+        UserProfileDTO ho_so = userProfileService.resolveUserProfile(user);
 
         return Token_Response.builder()
                 .token(accessToken)
@@ -49,11 +49,11 @@ public class TokenResponseFactory {
                 .status("APPROVED")
                 .requires2FA(false)
                 .mustChangePassword(Boolean.TRUE.equals(user.getMustChangePassword()))
-                .role(profile.getRoleCode())
-                .roleName(profile.getRoleName())
+                .role(ho_so.getRoleCode())
+                .roleName(ho_so.getRoleName())
                 .username(user.getUsername())
-                .fullName(profile.getFullName())
-                .userCode(profile.getUserCode())
+                .fullName(ho_so.getFullName())
+                .userCode(ho_so.getUserCode())
                 .message(message)
                 .build();
     }

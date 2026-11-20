@@ -178,8 +178,8 @@ public class Jwt_Service {
         if (userRepository != null) {
             String username = jwt.getJWTClaimsSet().getSubject();
             if (username != null) {
-                Optional<User> userOpt = userRepository.findByUsername(username);
-                if (userOpt.isEmpty() || !"ACTIVE".equalsIgnoreCase(userOpt.get().getStatus())) {
+                Optional<User> nguoi_dung_tuy_chon = userRepository.findByUsername(username);
+                if (nguoi_dung_tuy_chon.isEmpty() || !"ACTIVE".equalsIgnoreCase(nguoi_dung_tuy_chon.get().getStatus())) {
                     isAccountActive = false;
                 }
             }
@@ -265,8 +265,8 @@ public class Jwt_Service {
         if (userRepository != null) {
             String username = claims.getSubject();
             if (username != null) {
-                Optional<User> userOpt = userRepository.findByUsername(username);
-                if (userOpt.isEmpty() || !"ACTIVE".equalsIgnoreCase(userOpt.get().getStatus())) {
+                Optional<User> nguoi_dung_tuy_chon = userRepository.findByUsername(username);
+                if (nguoi_dung_tuy_chon.isEmpty() || !"ACTIVE".equalsIgnoreCase(nguoi_dung_tuy_chon.get().getStatus())) {
                     throw new AppException(ErrorCode.UNAUTHENTICATED,
                             "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt");
                 }

@@ -34,7 +34,7 @@ public class RefreshTokenService {
     public RefreshToken save(User user, String token, String ip, String userAgent) {
         Date exp = jwtService.extractExpiration(token);
         String hashedToken = hashToken(token);
-        RefreshToken refreshToken = RefreshToken.builder()
+        RefreshToken ma_lam_moi = RefreshToken.builder()
                 .user(user)
                 .token(hashedToken)
                 .expiresAt(Jwt_Service.toLocalDateTime(exp))
@@ -42,7 +42,7 @@ public class RefreshTokenService {
                 .deviceInfo(Jwt_Service.limit(userAgent, 255))
                 .isRevoked(false)
                 .build();
-        return refreshTokenRepository.save(refreshToken);
+        return refreshTokenRepository.save(ma_lam_moi);
     }
 
     // Tìm Refresh Token theo mã băm SHA-256 (khóa bi quan PESSIMISTIC_WRITE yêu cầu transaction bắt buộc)

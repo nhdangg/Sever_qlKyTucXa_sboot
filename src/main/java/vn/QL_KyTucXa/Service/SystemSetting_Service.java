@@ -48,10 +48,10 @@ public class SystemSetting_Service {
     @PostConstruct
     public void initSettingsCache() {
         try {
-            List<SystemSetting> allSettings = settingRepository.findAll();
-            for (SystemSetting s : allSettings) {
-                if (s.getSettingKey() != null && s.getSettingValue() != null) {
-                    settingCache.put(s.getSettingKey().toUpperCase(), s.getSettingValue());
+            List<SystemSetting> tat_ca_cai_dat = settingRepository.findAll();
+            for (SystemSetting cai_dat : tat_ca_cai_dat) {
+                if (cai_dat.getSettingKey() != null && cai_dat.getSettingValue() != null) {
+                    settingCache.put(cai_dat.getSettingKey().toUpperCase(), cai_dat.getSettingValue());
                 }
             }
             log.info("Đã nạp thành công {} cấu hình hệ thống vào Cache", settingCache.size());
@@ -83,26 +83,26 @@ public class SystemSetting_Service {
 
         log.info("Lưu hoặc cập nhật cài đặt hệ thống: {} = {}", rawKey, rawValue);
 
-        SystemSetting setting = settingRepository.findById(rawKey).orElse(null);
-        if (setting == null) {
-            setting = SystemSetting.builder()
+        SystemSetting cai_dat = settingRepository.findById(rawKey).orElse(null);
+        if (cai_dat == null) {
+            cai_dat = SystemSetting.builder()
                     .settingKey(rawKey)
                     .settingValue(rawValue)
                     .description(description)
                     .build();
         } else {
-            setting.setSettingValue(rawValue);
+            cai_dat.setSettingValue(rawValue);
             if (description != null && !description.isBlank()) {
-                setting.setDescription(description);
+                cai_dat.setDescription(description);
             }
         }
 
-        setting = settingRepository.save(setting);
+        cai_dat = settingRepository.save(cai_dat);
 
         // 3. Cập nhật cache đồng bộ
         settingCache.put(rawKey, rawValue);
 
-        return settingMapper.toResponse(setting);
+        return settingMapper.toResponse(cai_dat);
     }
 
     // Tra cứu cài đặt theo khóa
@@ -112,17 +112,17 @@ public class SystemSetting_Service {
             throw new AppException(ErrorCode.SETTING_KEY_BLANK);
         }
         String key = settingKey.trim().toUpperCase();
-        SystemSetting setting = settingRepository.findById(key)
+        SystemSetting cai_dat = settingRepository.findById(key)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy cấu hình: " + key));
 
-        return settingMapper.toResponse(setting);
+        return settingMapper.toResponse(cai_dat);
     }
 
     // Lấy toàn bộ danh sách cài đặt hệ thống (không cần phân trang/tìm kiếm)
     @Transactional(readOnly = true)
     public List<SystemSetting_Response> getAll() {
-        List<SystemSetting> list = settingRepository.findAll();
-        return settingMapper.toResponseList(list);
+        List<SystemSetting> danh_sach_cai_dat = settingRepository.findAll();
+        return settingMapper.toResponseList(danh_sach_cai_dat);
     }
 
     // Xóa cài đặt hệ thống (Chỉ ADMIN được xóa)
@@ -134,10 +134,10 @@ public class SystemSetting_Service {
         }
         String key = settingKey.trim().toUpperCase();
 
-        SystemSetting setting = settingRepository.findById(key)
+        SystemSetting cai_dat = settingRepository.findById(key)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy cấu hình: " + key));
 
-        settingRepository.delete(setting);
+        settingRepository.delete(cai_dat);
         settingCache.remove(key);
         log.info("Đã xóa thành công cài đặt hệ thống: {}", key);
     }

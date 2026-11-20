@@ -42,61 +42,61 @@ public class Permission_Service {
         }
 
         request.setPermissionCode(code);
-        Permission permission = permissionMapper.toEntity(request);
-        permission.setPermissionCode(code);
-        permission = permissionRepository.save(permission);
+        Permission quyen = permissionMapper.toEntity(request);
+        quyen.setPermissionCode(code);
+        quyen = permissionRepository.save(quyen);
 
-        return permissionMapper.toResponse(permission);
+        return permissionMapper.toResponse(quyen);
     }
 
     // Lấy chi tiết quyền hạn theo mã ID
     @Transactional(readOnly = true)
     public Permission_Response getById(String permissionId) {
-        Permission permission = permissionRepository.findById(permissionId)
+        Permission quyen = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy quyền hạn"));
 
-        return permissionMapper.toResponse(permission);
+        return permissionMapper.toResponse(quyen);
     }
 
     // Lấy danh sách quyền hạn theo phân hệ chức năng
     @Transactional(readOnly = true)
     public List<Permission_Response> getByModule(String module) {
-        List<Permission> list = permissionRepository.findByModule(module);
-        return permissionMapper.toResponseList(list);
+        List<Permission> danh_sach_quyen = permissionRepository.findByModule(module);
+        return permissionMapper.toResponseList(danh_sach_quyen);
     }
 
     // Lấy tất cả danh mục quyền hạn hệ thống
     @Transactional(readOnly = true)
     public List<Permission_Response> getAll() {
-        List<Permission> list = permissionRepository.findAll();
-        return permissionMapper.toResponseList(list);
+        List<Permission> danh_sach_quyen = permissionRepository.findAll();
+        return permissionMapper.toResponseList(danh_sach_quyen);
     }
 
     // Cập nhật thông tin quyền hạn không cho phép đổi permissionCode vì đã gắn với @PreAuthorize và JWT token
     @Transactional
     public Permission_Response update(String permissionId, Permission_Request request) {
-        Permission permission = permissionRepository.findById(permissionId)
+        Permission quyen = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy quyền hạn"));
 
         // Chặn đổi mã quyền vì permissionCode được tham chiếu trong mã nguồn @PreAuthorize và JWT scope đã phát hành
         if (request.getPermissionCode() != null &&
-                !permission.getPermissionCode().equalsIgnoreCase(request.getPermissionCode().trim())) {
+                !quyen.getPermissionCode().equalsIgnoreCase(request.getPermissionCode().trim())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không được phép thay đổi mã quyền hạn (permissionCode) vì đang được sử dụng trong hệ thống phân quyền");
         }
 
-        String immutableCode = permission.getPermissionCode();
-        permissionMapper.updateEntityFromRequest(permission, request);
-        permission.setPermissionCode(immutableCode);
-        permission = permissionRepository.save(permission);
+        String immutableCode = quyen.getPermissionCode();
+        permissionMapper.updateEntityFromRequest(quyen, request);
+        quyen.setPermissionCode(immutableCode);
+        quyen = permissionRepository.save(quyen);
 
-        return permissionMapper.toResponse(permission);
+        return permissionMapper.toResponse(quyen);
     }
 
     // Xóa quyền hạn có kiểm tra ràng buộc vai trò để tránh lỗi khóa ngoại FK
     @Transactional
     public void delete(String permissionId) {
-        Permission permission = permissionRepository.findById(permissionId)
+        Permission quyen = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy quyền hạn"));
 
         // Kiểm tra quyền hạn đã được gán cho vai trò nào chưa
@@ -105,6 +105,6 @@ public class Permission_Service {
                     "Không thể xóa quyền hạn đang được gán cho vai trò trong hệ thống");
         }
 
-        permissionRepository.delete(permission);
+        permissionRepository.delete(quyen);
     }
 }
