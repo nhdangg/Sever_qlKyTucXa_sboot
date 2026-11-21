@@ -447,7 +447,7 @@
                 if (usersBadgeEl) {
                     usersBadgeEl.textContent = (res && res.pageInfo && res.pageInfo.totalElements !== undefined) ? res.pageInfo.totalElements : list.length;
                 }
-                renderPaginationBar('userPaginationBar', res.pageInfo, 'loadUsers');
+                renderPaginationBar('userPaginationBar', res.pageInfo || res.result, 'loadUsers');
 
                 if (list.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-5">Không tìm thấy tài khoản nào phù hợp.</td></tr>';

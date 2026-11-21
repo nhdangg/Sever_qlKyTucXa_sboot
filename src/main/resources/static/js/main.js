@@ -217,6 +217,9 @@ async function apiFetch(endpoint, options = {}, isRetry = false) {
         if (data && data.result && !Array.isArray(data.result) && Array.isArray(data.result.data)) {
             data.pageInfo = data.result;
             data.result = data.result.data;
+            try {
+                data.result.pageInfo = data.pageInfo;
+            } catch (e) {}
         }
 
         return data;
@@ -338,6 +341,15 @@ function resolveAvatarUrl(url) {
 function renderPaginationBar(containerId, pageInfo, onPageChangeFnName) {
     const el = document.getElementById(containerId);
     if (!el) return;
+    if (pageInfo && pageInfo.pageInfo) pageInfo = pageInfo.pageInfo;
+    if (Array.isArray(pageInfo)) {
+        pageInfo = {
+            currentPage: 1,
+            totalPages: 1,
+            totalElements: pageInfo.length,
+            pageSize: pageInfo.length || 10
+        };
+    }
     if (!pageInfo || pageInfo.totalElements === undefined) {
         el.innerHTML = '';
         return;

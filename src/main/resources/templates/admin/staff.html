@@ -238,7 +238,7 @@
 
             if (list.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5">Không tìm thấy hồ sơ nhân viên phù hợp.</td></tr>';
-                renderPaginationBar('staffPaginationBar', res.result, 'loadStaffList');
+                renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
                 return;
             }
 
@@ -274,7 +274,7 @@
                 </tr>
             `}).join('');
 
-            renderPaginationBar('staffPaginationBar', res.result, 'loadStaffList');
+            renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
         }

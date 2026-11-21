@@ -3102,8 +3102,10 @@
         async function loadOpenRegistrationPeriods() {
             try {
                 const res = await apiFetch('/registration-periods/all?status=OPEN');
-                openRegistrationPeriods = unwrapList(res);
-                if (!openRegistrationPeriods || openRegistrationPeriods.length === 0) {
+                const list = unwrapList(res);
+                if (list && list.length > 0) {
+                    openRegistrationPeriods = list;
+                } else {
                     const allRes = await apiFetch('/registration-periods/all');
                     const allPeriods = unwrapList(allRes);
                     openRegistrationPeriods = allPeriods.filter(p => p.status === 'OPEN');
@@ -3113,23 +3115,26 @@
             }
         }
 
-        async function openOnlineContractModal(preselectedRoomId, preselectedBuildingId) {
-            await loadOpenRegistrationPeriods();
-
-            // 1. Đổ đợt đăng ký
+        function populateRegistrationPeriodsUI() {
             const pSel = document.getElementById('onlineApplyPeriodSelect');
+            if (!pSel) return;
             if (openRegistrationPeriods && openRegistrationPeriods.length > 0) {
                 pSel.innerHTML = openRegistrationPeriods.map(p => `
-                <option value="${p.periodId}" data-start="${p.startDate || ''}" data-end="${p.endDate || ''}">
-                    ${p.periodName} (${p.academicYear || ''})
-                </option>
-            `).join('');
+                    <option value="${p.periodId}" data-start="${p.startDate || ''}" data-end="${p.endDate || ''}">
+                        ${p.periodName} (${p.academicYear || ''})
+                    </option>
+                `).join('');
             } else {
                 pSel.innerHTML = '<option value="">-- Hiện chưa có đợt đăng ký nào đang mở --</option>';
             }
             onPeriodChange();
+        }
 
-            // 2. Đổ danh sách tòa nhà
+        async function openOnlineContractModal(preselectedRoomId, preselectedBuildingId) {
+            // Mở modal ngay lập tức để người dùng có phản hồi tức thì (< 1ms)
+            onlineContractModal.show();
+
+            // 1. Đổ danh sách tòa nhà ngay lập tức từ dữ liệu đã nạp sẵn
             const bSel = document.getElementById('onlineApplyBuildingSelect');
             bSel.innerHTML = '<option value="">-- Chọn tòa nhà --</option>' +
                 studentBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
@@ -3142,7 +3147,15 @@
 
             onBuildingChange(preselectedRoomId);
 
-            onlineContractModal.show();
+            // 2. Đổ đợt đăng ký: nếu đã có sẵn thì hiển thị ngay, nếu chưa thì tải nhanh
+            if (openRegistrationPeriods && openRegistrationPeriods.length > 0) {
+                populateRegistrationPeriodsUI();
+            } else {
+                const pSel = document.getElementById('onlineApplyPeriodSelect');
+                if (pSel) pSel.innerHTML = '<option value="">Đang tải thông tin đợt đăng ký...</option>';
+                await loadOpenRegistrationPeriods();
+                populateRegistrationPeriodsUI();
+            }
         }
 
         function onPeriodChange() {

@@ -510,7 +510,7 @@
             const res = await apiFetch(`/students?${params.toString()}`);
             currentStudents = unwrapList(res);
             renderStudents(currentStudents);
-            renderPaginationBar('studentPaginationBar', res.result, 'loadStudents');
+            renderPaginationBar('studentPaginationBar', res.pageInfo || res.result, 'loadStudents');
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
         }

@@ -42,12 +42,12 @@ jwt:
 
 telegram:
   bot:
-    token: "8618706792:AAFVvRqPukDp3EuD-7sGq9C_RMTQVcJd2LY" # token từ @BotFather
-    admin-chat-id: "6269527548" # id lấy từ botchat (/start)
-    polling-enabled: true
+    token: ${TELEGRAM_BOT_TOKEN:8618706792:AAFVvRqPukDp3EuD-7sGq9C_RMTQVcJd2LY} # token từ @BotFather
+    admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID:6269527548} # id lấy từ botchat (/start)
+    polling-enabled: ${TELEGRAM_POLLING_ENABLED:true}
     polling-interval-ms: 500
     server-url: "http://localhost:8912/QLyKyTucXa"
-    backup-code: ${TELEGRAM_BACKUP_CODE:"KTX@Emergency2FA2026"}
+    backup-code: ${TELEGRAM_BACKUP_CODE:KTX@Emergency2FA2026}
 
 app:
   upload:

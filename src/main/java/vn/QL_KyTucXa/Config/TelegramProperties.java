@@ -22,6 +22,27 @@ public class TelegramProperties {
      */
     String adminChatId = "";
 
+    public String getToken() {
+        if (token != null) {
+            return token.replace("\"", "").replace("'", "").trim();
+        }
+        return "";
+    }
+
+    public String getAdminChatId() {
+        if (adminChatId != null) {
+            return adminChatId.replace("\"", "").replace("'", "").trim();
+        }
+        return "";
+    }
+
+    public String getBackupCode() {
+        if (backupCode != null) {
+            return backupCode.replace("\"", "").replace("'", "").trim();
+        }
+        return "KTX@Emergency2FA2026";
+    }
+
     /**
      * Bật/tắt tiến trình Long Polling nhận tương tác nút bấm
      */
