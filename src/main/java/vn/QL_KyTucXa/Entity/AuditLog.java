@@ -20,6 +20,16 @@ public class AuditLog {
     @Column(name = "maNhatKy", length = 36)
     private String logId;
 
+    @PrePersist
+    public void ensureIdAndTimestamp() {
+        if (this.logId == null || this.logId.isBlank()) {
+            this.logId = java.util.UUID.randomUUID().toString();
+        }
+        if (this.createdAt == null) {
+            this.createdAt = java.time.LocalDateTime.now();
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nguoiDung")
     private User user;

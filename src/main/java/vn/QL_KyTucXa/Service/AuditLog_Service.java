@@ -71,6 +71,7 @@ public class AuditLog_Service {
             }
 
             AuditLog nhat_ky = AuditLog.builder()
+                    .logId(java.util.UUID.randomUUID().toString())
                     .user(nguoi_dung_hien_tai)
                     .action(action)
                     .tableName(tableName)
@@ -82,7 +83,7 @@ public class AuditLog_Service {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            auditLogRepository.save(nhat_ky);
+            auditLogRepository.saveAndFlush(nhat_ky);
             log.debug("[AUDIT] Đã ghi nhật ký: action={}, table={}, recordId={}", action, tableName, recordId);
         } catch (Exception ex) {
             log.error("[AUDIT ERROR] Không thể ghi nhật ký kiểm toán: {}", ex.getMessage());
@@ -97,13 +98,15 @@ public class AuditLog_Service {
 
     // Tra cứu danh sách nhật ký kiểm toán có lọc và phân trang
     @Transactional(readOnly = true)
-    public Page_Response<AuditLog_Response> getAllLogs(int page, int size, String tu_khoa, String hanh_dong, String ten_bang) {
+    public Page_Response<AuditLog_Response> getAllLogs(int page, int size, String tu_khoa, String hanh_dong,
+            String ten_bang) {
         Pageable phan_trang = PageRequest.of(Math.max(0, page - 1), size, Sort.by("createdAt").descending());
         String tu_khoa_chuan_hoa = (tu_khoa != null && !tu_khoa.isBlank()) ? tu_khoa.trim() : null;
         String hanh_dong_chuan_hoa = (hanh_dong != null && !hanh_dong.isBlank()) ? hanh_dong.trim() : null;
         String ten_bang_chuan_hoa = (ten_bang != null && !ten_bang.isBlank()) ? ten_bang.trim() : null;
 
-        Page<AuditLog> trang_nhat_ky = auditLogRepository.searchLogs(tu_khoa_chuan_hoa, hanh_dong_chuan_hoa, ten_bang_chuan_hoa, phan_trang);
+        Page<AuditLog> trang_nhat_ky = auditLogRepository.searchLogs(tu_khoa_chuan_hoa, hanh_dong_chuan_hoa,
+                ten_bang_chuan_hoa, phan_trang);
 
         return Page_Response.<AuditLog_Response>builder()
                 .currentPage(page)
