@@ -402,7 +402,8 @@ public class Notification_Service {
                 break;
         }
 
-        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì lặp N lần
+        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì
+        // lặp N lần
         Set<String> existingUserIds = new HashSet<>();
         if (notificationRecipientRepository != null) {
             existingUserIds.addAll(notificationRecipientRepository

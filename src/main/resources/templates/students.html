@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Quản lý Sinh viên')}"></head>
+
+<style>
+    /* Chống mũi tên sổ xuống đè lên chữ trong select trên toàn trang */
+    .form-select, .form-select-sm {
+        padding-right: 1.95rem !important;
+        background-position: right 0.55rem center !important;
+    }
+    .student-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    @media (min-width: 1200px) {
+        .student-filter-bar {
+            flex-wrap: nowrap;
+        }
+    }
+</style>
 <body>
 
 <aside th:replace="~{fragments/layout :: sidebar('students')}"></aside>
@@ -31,49 +50,49 @@
                 </div>
             </div>
 
-            <!-- Thanh Tìm kiếm & Bộ lọc Server-side (Giữ nguyên toàn bộ thuộc tính, nằm gọn trên 1 hàng) -->
-            <div class="row g-2 align-items-center">
-                <div class="col-12 col-lg-3">
+            <!-- Thanh Tìm kiếm & Bộ lọc Server-side (Nằm gọn trên 1 hàng, tự động co giãn) -->
+            <div class="student-filter-bar mb-1">
+                <div class="flex-grow-1" style="min-width: 180px;">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Tìm MSSV, Họ tên, SĐT, CCCD..." oninput="debouncedSearchStudents()">
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-2">
-                    <input type="text" id="filterFaculty" class="form-control form-control-sm" placeholder="Lọc theo Khoa/Lớp..." oninput="debouncedSearchStudents()">
+                <div style="width: 140px; min-width: 120px;">
+                    <input type="text" id="filterFaculty" class="form-control form-control-sm" placeholder="Khoa / Lớp..." oninput="debouncedSearchStudents()">
                 </div>
-                <div class="col-6 col-md-4 col-lg-auto" style="min-width: 125px;">
+                <div style="width: 120px; min-width: 110px;">
                     <select id="filterGender" class="form-select form-select-sm" onchange="loadStudents(1)">
                         <option value="">-- Giới tính --</option>
                         <option value="MALE">Nam</option>
                         <option value="FEMALE">Nữ</option>
                     </select>
                 </div>
-                <div class="col-6 col-md-4 col-lg-auto flex-grow-1" style="min-width: 150px;">
+                <div style="width: 135px; min-width: 125px;">
                     <select id="filterResident" class="form-select form-select-sm" onchange="loadStudents(1)">
                         <option value="">-- Chỗ ở KTX --</option>
-                        <option value="true">Đang ở KTX (Có hợp đồng)</option>
-                        <option value="false">Chưa có chỗ / Chưa xếp phòng</option>
+                        <option value="true">Đang ở KTX</option>
+                        <option value="false">Chưa có chỗ</option>
                     </select>
                 </div>
-                <div class="col-6 col-md-4 col-lg-auto flex-grow-1" style="min-width: 150px;">
+                <div style="width: 135px; min-width: 125px;">
                     <select id="filterStatus" class="form-select form-select-sm" onchange="loadStudents(1)">
                         <option value="">-- Trạng thái --</option>
-                        <option value="ACTIVE">Hoạt động (ACTIVE)</option>
-                        <option value="PENDING">Chờ nhận phòng (PENDING)</option>
-                        <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="PENDING">Chờ nhận phòng</option>
+                        <option value="INACTIVE">Ngừng hoạt động</option>
                         <option value="GRADUATED">Đã tốt nghiệp</option>
                     </select>
                 </div>
-                <div class="col-8 col-md-4 col-lg-auto" style="min-width: 135px;">
+                <div style="width: 135px; min-width: 125px;">
                     <select id="pageSizeSelect" class="form-select form-select-sm" onchange="loadStudents(1)">
                         <option value="10">10 dòng / trang</option>
                         <option value="20" selected>20 dòng / trang</option>
                         <option value="50">50 dòng / trang</option>
                     </select>
                 </div>
-                <div class="col-4 col-md-2 col-lg-auto">
-                    <button class="btn btn-light border btn-sm px-2 w-100" onclick="resetStudentFilters()" title="Đặt lại bộ lọc">
+                <div style="width: 36px; min-width: 36px;">
+                    <button class="btn btn-light border btn-sm w-100 d-flex align-items-center justify-content-center" onclick="resetStudentFilters()" title="Đặt lại bộ lọc" style="height: 31px;">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
                 </div>

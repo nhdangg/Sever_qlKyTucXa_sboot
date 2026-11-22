@@ -712,7 +712,8 @@ public class Contract_Service {
         return contractMapper.toResponse(hop_dong);
     }
 
-    // Thực thi tác vụ sau khi transaction đã commit thành công (tránh rollback-only do side-effects)
+    // Thực thi tác vụ sau khi transaction đã commit thành công (tránh rollback-only
+    // do side-effects)
     private void executeAfterCommitOrNow(Runnable action) {
         if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
             org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
@@ -723,13 +724,15 @@ public class Contract_Service {
                                 action.run();
                             } catch (Exception e) {
                                 log.warn("Lỗi thực thi tác vụ sau commit: {}", e.getMessage());
-                            }
-                        }
-                    });
-        } else {
-            try {
-                action.run();
-            } catch (Exception e) {
+             
+
+     
+             
+                });
+        se {
+            {
+         
+        } catch (Exception e) {
                 log.warn("Lỗi thực thi tác vụ: {}", e.getMessage());
             }
         }

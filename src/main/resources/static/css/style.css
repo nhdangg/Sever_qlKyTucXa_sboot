@@ -762,6 +762,11 @@ body {
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
 }
 
+.form-select {
+    padding-right: 2.25rem !important;
+    background-position: right 0.65rem center !important;
+}
+
 .form-control:focus, .form-select:focus {
     border-color: var(--univ-navy, #003366) !important;
     box-shadow: 0 0 0 0.2rem rgba(0, 51, 102, 0.15) !important;
@@ -777,6 +782,11 @@ body {
     padding: 0.3rem 0.55rem !important;
     font-size: 0.82rem !important;
     border-radius: 5px !important;
+}
+
+.form-select-sm {
+    padding-right: 1.85rem !important;
+    background-position: right 0.5rem center !important;
 }
 
 .input-group-text {
