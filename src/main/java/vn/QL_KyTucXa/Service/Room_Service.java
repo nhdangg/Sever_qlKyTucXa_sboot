@@ -337,6 +337,7 @@ public class Room_Service {
             }
         }
 
+        phong.setStatus(normalizedStatus);
         phong = roomRepository.save(phong);
         if (auditLogService != null) {
             auditLogService.recordAction("UPDATE_ROOM_STATUS", "phong", phong.getRoomId(), null, Map.of("status", normalizedStatus));
