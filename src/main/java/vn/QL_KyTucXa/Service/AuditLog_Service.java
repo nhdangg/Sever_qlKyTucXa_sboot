@@ -81,7 +81,8 @@ public class AuditLog_Service {
         } catch (Exception ex) {
             log.error("[AUDIT ERROR] Không thể ghi nhật ký kiểm toán: {}", ex.getMessage());
             try {
-                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus()
+                        .setRollbackOnly();
             } catch (Exception ignored) {
             }
         }
