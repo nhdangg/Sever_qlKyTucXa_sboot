@@ -1916,9 +1916,216 @@
                     </div>
                 </div>
             `,
-                confirmButtonText: 'Đóng',
-                confirmButtonColor: '#003366'
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-printer-fill me-1"></i> In bản hợp đồng A4',
+                cancelButtonText: 'Đóng',
+                confirmButtonColor: '#003366',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    printStudentContractA4(c);
+                }
             });
+        }
+
+        function printStudentContractA4(c) {
+            const signedDateObj = c.signedDate ? new Date(c.signedDate) : (c.startDate ? new Date(c.startDate) : new Date());
+            const day = String(signedDateObj.getDate()).padStart(2, '0');
+            const month = String(signedDateObj.getMonth() + 1).padStart(2, '0');
+            const year = signedDateObj.getFullYear();
+            const periodName = c.periodName || 'Năm học 2026 - 2027';
+            const approver = c.approvedByStaffName || 'Ban Quản lý Ký túc xá';
+
+            const printWindow = window.open('', '_blank', 'width=950,height=1050');
+            if (!printWindow) {
+                window.print();
+                return;
+            }
+            const fullHtml = `
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                    <meta charset="utf-8">
+                    <title>Hop_Dong_${c.contractCode || 'KTX'}</title>
+                    <style>
+                        @page {
+                            size: A4 portrait;
+                            margin: 20mm 15mm 20mm 20mm;
+                        }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            background: #fff;
+                            font-family: 'Times New Roman', Times, serif;
+                            font-size: 13pt;
+                            line-height: 1.45;
+                            color: #000;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        .official-contract-sheet { padding: 0; margin: 0; width: 100%; }
+                        .contract-header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+                        .contract-header-table td { padding: 0; vertical-align: top; }
+                        .header-unit-top { font-size: 11pt; font-weight: 500; text-transform: uppercase; }
+                        .header-unit-name { font-size: 11.5pt; font-weight: bold; text-transform: uppercase; }
+                        .header-unit-sub { font-size: 11pt; text-transform: uppercase; }
+                        .header-line { font-size: 11pt; letter-spacing: -1px; margin-top: -3px; margin-bottom: 3px; }
+                        .header-code { font-size: 11pt; margin-top: 4px; }
+                        .header-country-title { font-size: 11.5pt; font-weight: bold; text-transform: uppercase; }
+                        .header-motto { font-size: 12pt; font-weight: bold; }
+                        .header-date { font-size: 11.5pt; margin-top: 4px; }
+                        .contract-main-title { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-top: 18px; margin-bottom: 3px; color: #000; }
+                        .contract-sub-title { font-size: 12pt; text-align: center; margin-bottom: 14px; }
+                        .contract-intro p { margin: 3px 0; font-size: 11.5pt; text-align: justify; }
+                        .party-block { margin-top: 10px; margin-bottom: 10px; }
+                        .party-title { font-weight: bold; text-transform: uppercase; font-size: 12pt; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px; }
+                        .party-table { width: 100%; border-collapse: collapse; font-size: 12.5pt; }
+                        .party-table td { padding: 3px 0; vertical-align: top; }
+                        .contract-p { margin: 8px 0; font-style: italic; font-size: 12pt; }
+                        .article-block { margin-bottom: 8px; }
+                        .article-title { font-weight: bold; font-size: 12.5pt; margin-bottom: 2px; }
+                        .article-content { margin: 2px 0; text-align: justify; font-size: 12pt; text-indent: 15px; }
+                        .contract-sign-table { width: 100%; border-collapse: collapse; margin-top: 30px; page-break-inside: avoid; }
+                        .contract-sign-table td { vertical-align: top; }
+                        .sign-role { font-size: 12.5pt; text-transform: uppercase; }
+                        .sign-sub { font-size: 11pt; }
+                        .sign-space { height: 80px; }
+                        .sign-name { font-size: 12.5pt; }
+                    </style>
+                </head>
+                <body onload="window.focus(); window.print();">
+                    <div class="official-contract-sheet">
+                        <table class="contract-header-table">
+                            <tr>
+                                <td style="width: 44%; text-align: center; vertical-align: top;">
+                                    <div class="header-unit-top">BỘ CÔNG THƯƠNG</div>
+                                    <div class="header-unit-name">TRƯỜNG ĐH CÔNG NGHIỆP VIỆT TRÌ</div>
+                                    <div class="header-unit-sub"><b>BAN QUẢN LÝ KÝ TÚC XÁ</b></div>
+                                    <div class="header-line">-------------------</div>
+                                    <div class="header-code">Số: <b>${c.contractCode || '...'}</b>/HĐ-KTX</div>
+                                </td>
+                                <td style="width: 56%; text-align: center; vertical-align: top;">
+                                    <div class="header-country-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                                    <div class="header-motto">Độc lập - Tự do - Hạnh phúc</div>
+                                    <div class="header-line">-------------------------</div>
+                                    <div class="header-date"><i>Phú Thọ, ngày ${day} tháng ${month} năm ${year}</i></div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="contract-main-title">HỢP ĐỒNG THUÊ CHỖ Ở NỘI TRÚ KÝ TÚC XÁ</div>
+                        <div class="contract-sub-title"><i>(Đợt lưu trú: ${periodName})</i></div>
+
+                        <div class="contract-intro">
+                            <p><i>- Căn cứ Quy chế Công tác Sinh viên đối với học sinh, sinh viên các cơ sở giáo dục đại học của Bộ Giáo dục và Đào tạo;</i></p>
+                            <p><i>- Căn cứ Nội quy Ký túc xá và Quy định Quản lý sinh viên nội trú của Trường Đại học Công nghiệp Việt Trì;</i></p>
+                            <p><i>- Căn cứ đơn đăng ký nguyện vọng thuê phòng nội trú của sinh viên và khả năng bố trí chỗ ở thực tế của Ký túc xá;</i></p>
+                            <p>Hôm nay, ngày ${day} tháng ${month} năm ${year}, tại Văn phòng Ban Quản lý Ký túc xá Trường Đại học Công nghiệp Việt Trì, hai bên chúng tôi gồm có:</p>
+                        </div>
+
+                        <div class="party-block">
+                            <div class="party-title">BÊN CHO THUÊ (BÊN A): BAN QUẢN LÝ KÝ TÚC XÁ - TRƯỜNG ĐH CÔNG NGHIỆP VIỆT TRÌ</div>
+                            <table class="party-table">
+                                <tr>
+                                    <td style="width: 25%;">Đại diện bởi Ông/Bà:</td>
+                                    <td style="width: 45%;"><b>${approver}</b></td>
+                                    <td style="width: 12%;">Chức vụ:</td>
+                                    <td><b>Cán bộ Quản lý KTX</b></td>
+                                </tr>
+                                <tr>
+                                    <td>Trụ sở làm việc:</td>
+                                    <td colspan="3">Đường Tiên Dung, Phường Tiên Cát, TP. Việt Trì, Tỉnh Phú Thọ</td>
+                                </tr>
+                                <tr>
+                                    <td>Điện thoại liên hệ:</td>
+                                    <td>0210.3846.471</td>
+                                    <td>Email:</td>
+                                    <td>kytucxa@vui.edu.vn</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="party-block">
+                            <div class="party-title">BÊN THUÊ CHỖ Ở (BÊN B): SINH VIÊN NỘI TRÚ</div>
+                            <table class="party-table">
+                                <tr>
+                                    <td style="width: 25%;">Họ và tên sinh viên:</td>
+                                    <td style="width: 45%;"><b class="text-uppercase">${c.studentFullName || (Auth.getUser() && Auth.getUser().fullName) || '-'}</b></td>
+                                    <td style="width: 12%;">Mã số SV:</td>
+                                    <td><b>${c.studentCode || (Auth.getUser() && Auth.getUser().userCode) || '-'}</b></td>
+                                </tr>
+                                <tr>
+                                    <td>Vị trí bố trí phòng:</td>
+                                    <td><b>Phòng ${c.roomNumber || '-'}</b></td>
+                                    <td>Vị trí giường:</td>
+                                    <td><b>Giường số ${c.bedNumber || '-'}</b></td>
+                                </tr>
+                                <tr>
+                                    <td>Đợt đăng ký nội trú:</td>
+                                    <td colspan="3">${periodName}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <p class="contract-p">Sau khi bàn bạc thống nhất, hai bên cùng ký kết Hợp đồng thuê chỗ ở nội trú với các điều khoản cụ thể sau đây:</p>
+
+                        <div class="article-block">
+                            <div class="article-title">Điều 1. Vị trí chỗ ở và thời hạn hợp đồng</div>
+                            <p class="article-content">1.1. Bên A đồng ý bố trí cho Bên B được quyền lưu trú tại: <b>Giường số ${c.bedNumber || '-'}, Buồng phòng ${c.roomNumber || '-'}</b> thuộc Ký túc xá Trường Đại học Công nghiệp Việt Trì.</p>
+                            <p class="article-content">1.2. Thời hạn thuê chỗ ở: Kể từ ngày <b>${formatDate(c.startDate)}</b> đến hết ngày <b>${formatDate(c.endDate)}</b>.</p>
+                        </div>
+
+                        <div class="article-block">
+                            <div class="article-title">Điều 2. Đơn giá thuê phòng, tiền đặt cọc và phương thức thanh toán</div>
+                            <p class="article-content">2.1. Đơn giá thuê phòng: <b>${formatCurrency(c.monthlyFee || 0)}/tháng</b> (Đơn giá trên chưa bao gồm chi phí sử dụng điện, nước sinh hoạt hàng tháng).</p>
+                            <p class="article-content">2.2. Tiền đặt cọc bảo đảm tài sản: <b>${formatCurrency(c.depositAmount || 0)}</b>. Khoản tiền cọc này sẽ được Bên A hoàn trả cho Bên B sau khi hai bên thanh lý hợp đồng và bàn giao đầy đủ hiện trạng cơ sở vật chất phòng ở.</p>
+                            <p class="article-content">2.3. Tiền sử dụng điện, nước sinh hoạt hàng tháng được tính theo chỉ số công tơ thực tế của phòng và chia đều cho toàn bộ sinh viên đang lưu trú hợp lệ theo khung giá quy định của Nhà trường.</p>
+                            <p class="article-content">2.4. Phương thức thanh toán: Sinh viên thanh toán chuyển khoản qua mã VietQR động tích hợp trên Cổng sinh viên hoặc nộp trực tiếp tại Văn phòng Ban Quản lý trước ngày 10 hàng tháng.</p>
+                        </div>
+
+                        <div class="article-block">
+                            <div class="article-title">Điều 3. Quyền và nghĩa vụ của Bên A (Ban Quản lý KTX)</div>
+                            <p class="article-content">3.1. Bàn giao chỗ ở, trang thiết bị buồng phòng theo đúng tiêu chuẩn; đảm bảo cung cấp dịch vụ điện, nước, internet và an ninh trật tự 24/7 trong khuôn viên KTX.</p>
+                            <p class="article-content">3.2. Kiểm tra định kỳ, đột xuất việc chấp hành Nội quy Ký túc xá; có quyền lập biên bản và chấm dứt hợp đồng trước hạn nếu Bên B vi phạm nghiêm trọng kỷ luật nội trú.</p>
+                        </div>
+
+                        <div class="article-block">
+                            <div class="article-title">Điều 4. Quyền và nghĩa vụ của Bên B (Sinh viên nội trú)</div>
+                            <p class="article-content">4.1. Sử dụng đúng phòng, đúng vị trí giường được phân bổ; không tự ý chuyển nhượng, cho người ngoài ở nhờ khi chưa được phép của Bên A.</p>
+                            <p class="article-content">4.2. Chấp hành nghiêm túc Nội quy Ký túc xá: không nấu ăn trái phép trong phòng, không tàng trữ chất cấm, chất cháy nổ; thực hiện nếp sống văn minh, giữ gìn vệ sinh chung.</p>
+                            <p class="article-content">4.3. Thanh toán đầy đủ các khoản phí đúng thời hạn. Có trách nhiệm bồi thường nếu làm hư hại, mất mát tài sản trong phòng.</p>
+                            <p class="article-content">4.4. Khi kết thúc hợp đồng hoặc có nguyện vọng thôi ở, phải làm thủ tục bàn giao tài sản và thanh lý hợp đồng theo đúng quy định.</p>
+                        </div>
+
+                        <div class="article-block">
+                            <div class="article-title">Điều 5. Điều khoản thi hành</div>
+                            <p class="article-content">5.1. Hai bên cam kết thực hiện đúng và đầy đủ các điều khoản trong hợp đồng này. Mọi phát sinh tranh chấp sẽ được giải quyết trên tinh thần thương lượng và tuân thủ Nội quy của Nhà trường.</p>
+                            <p class="article-content">5.2. Hợp đồng có hiệu lực kể từ ngày ký và được lập thành 02 (hai) bản có giá trị pháp lý như nhau, Bên A giữ 01 bản để quản lý lưu trữ, Bên B giữ 01 bản để theo dõi thực hiện.</p>
+                        </div>
+
+                        <table class="contract-sign-table">
+                            <tr>
+                                <td style="width: 50%; text-align: center; vertical-align: top;">
+                                    <div class="sign-role"><b>ĐẠI DIỆN BÊN B</b></div>
+                                    <div class="sign-sub"><i>(Sinh viên ký và ghi rõ họ tên)</i></div>
+                                    <div class="sign-space"></div>
+                                    <div class="sign-name"><b>${c.studentFullName || (Auth.getUser() && Auth.getUser().fullName) || ''}</b></div>
+                                </td>
+                                <td style="width: 50%; text-align: center; vertical-align: top;">
+                                    <div class="sign-role"><b>ĐẠI DIỆN BÊN A</b></div>
+                                    <div class="sign-sub"><i>(Ký, ghi rõ họ tên và đóng dấu)</i></div>
+                                    <div class="sign-space"></div>
+                                    <div class="sign-name"><b>${approver}</b></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </body>
+                </html>
+            `;
+            printWindow.document.open();
+            printWindow.document.write(fullHtml);
+            printWindow.document.close();
         }
 
         async function cancelMyContract(contractId) {

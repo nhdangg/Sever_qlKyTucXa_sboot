@@ -402,21 +402,21 @@ public class Notification_Service {
                 break;
         }
 
-        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì
-        // lặp N lần
-        Set<String> existingUserIds = Collections.emptySet();
+        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì lặp N lần
+        Set<String> existingUserIds = new HashSet<>();
         if (notificationRecipientRepository != null) {
-            existingUserIds = notificationRecipientRepository
+            existingUserIds.addAll(notificationRecipientRepository
                     .findByNotification_NotificationId(notification.getNotificationId()).stream()
                     .filter(nr -> nr.getUser() != null && nr.getUser().getUserId() != null)
                     .map(nr -> nr.getUser().getUserId())
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toSet()));
         }
 
         List<NotificationRecipient> danh_sach_nguoi_nhan_moi = new ArrayList<>();
         for (User nguoi_nhan : tap_nguoi_nhan) {
             if (nguoi_nhan != null && nguoi_nhan.getUserId() != null
                     && !existingUserIds.contains(nguoi_nhan.getUserId())) {
+                existingUserIds.add(nguoi_nhan.getUserId()); // Đánh dấu đã thêm để chặn trùng lặp tuyệt đối
                 danh_sach_nguoi_nhan_moi.add(NotificationRecipient.builder()
                         .recipientId(java.util.UUID.randomUUID().toString())
                         .notification(notification)

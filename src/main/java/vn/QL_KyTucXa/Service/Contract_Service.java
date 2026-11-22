@@ -248,23 +248,25 @@ public class Contract_Service {
         log.info("Sinh viên {} nộp đơn đăng ký hợp đồng online: {}", sinh_vien.getStudentCode(),
                 hop_dong.getContractCode());
 
-        // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX
+        // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX sau khi commit
         if (notificationService != null) {
-            try {
-                String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
-                String bedNum = (giuong.getBedNumber() != null) ? giuong.getBedNumber() : "";
-                String title = "Đơn đăng ký KTX mới từ SV " + sinh_vien.getFullName();
+            String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
+            String bedNum = (giuong.getBedNumber() != null) ? giuong.getBedNumber() : "";
+            String studentName = sinh_vien.getFullName();
+            String studentCode = sinh_vien.getStudentCode();
+            String finalContractCode = hop_dong.getContractCode();
+            User studentUser = sinh_vien.getUser();
+            executeAfterCommitOrNow(() -> {
+                String title = "Đơn đăng ký KTX mới từ SV " + studentName;
                 String content = String.format(
                         "Sinh viên %s (MSSV: %s) vừa nộp đơn đăng ký thuê phòng tại phòng %s, giường %s. Mã HĐ tạm: %s. Vui lòng vào duyệt hợp đồng.",
-                        sinh_vien.getFullName(),
-                        sinh_vien.getStudentCode(),
+                        studentName,
+                        studentCode,
                         roomNum,
                         bedNum,
-                        hop_dong.getContractCode());
-                notificationService.notifyStaffAndAdmins(title, content, sinh_vien.getUser(), null);
-            } catch (Exception e) {
-                log.warn("Không thể gửi thông báo nộp đơn đăng ký online: {}", e.getMessage());
-            }
+                        finalContractCode);
+                notificationService.notifyStaffAndAdmins(title, content, studentUser, null);
+            });
         }
 
         return contractMapper.toResponse(hop_dong);
@@ -500,20 +502,20 @@ public class Contract_Service {
             }
         }
 
-        // Bắn thông báo cho sinh viên được duyệt hợp đồng
+        // Bắn thông báo cho sinh viên được duyệt hợp đồng sau khi commit thành công
         if (notificationService != null && hop_dong.getStudent() != null) {
-            try {
-                String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
+            Student student = hop_dong.getStudent();
+            User approverUser = (nhan_vien != null) ? nhan_vien.getUser() : null;
+            String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
+            String bedNum = (giuong.getBedNumber() != null) ? giuong.getBedNumber() : "";
+            String contractCode = hop_dong.getContractCode();
+            executeAfterCommitOrNow(() -> {
                 String title = "Hợp đồng KTX của bạn đã được phê duyệt!";
                 String content = String.format(
                         "Đơn đăng ký hợp đồng mã %s tại phòng %s (giường %s) đã được Ban Quản lý phê duyệt thành công. Chúc bạn có kỳ lưu trú thuận lợi!",
-                        hop_dong.getContractCode(), roomNum,
-                        giuong.getBedNumber() != null ? giuong.getBedNumber() : "");
-                notificationService.notifyStudent(hop_dong.getStudent(), title, content,
-                        nhan_vien != null ? nhan_vien.getUser() : null);
-            } catch (Exception e) {
-                log.warn("Không thể gửi thông báo phê duyệt hợp đồng tới sinh viên: {}", e.getMessage());
-            }
+                        contractCode, roomNum, bedNum);
+                notificationService.notifyStudent(student, title, content, approverUser);
+            });
         }
 
         return contractMapper.toResponse(hop_dong);
@@ -692,20 +694,45 @@ public class Contract_Service {
 
         hop_dong = contractRepository.save(hop_dong);
 
-        // Bắn thông báo cho sinh viên khi bị từ chối duyệt
+        // Bắn thông báo cho sinh viên khi bị từ chối duyệt sau khi commit thành công
         if (notificationService != null && hop_dong.getStudent() != null) {
-            try {
+            Student student = hop_dong.getStudent();
+            User approverUser = (nhan_vien != null) ? nhan_vien.getUser() : null;
+            String contractCode = hop_dong.getContractCode();
+            String reasonText = (hop_dong.getTerminationReason() != null && !hop_dong.getTerminationReason().isBlank())
+                    ? hop_dong.getTerminationReason() : "Từ chối duyệt đơn";
+            executeAfterCommitOrNow(() -> {
                 String title = "Hồ sơ đăng ký KTX không được phê duyệt";
                 String content = String.format("Đơn đăng ký hợp đồng mã %s đã bị từ chối duyệt. Lý do: %s",
-                        hop_dong.getContractCode(),
-                        hop_dong.getTerminationReason() != null ? hop_dong.getTerminationReason() : "Từ chối duyệt đơn");
-                notificationService.notifyStudent(hop_dong.getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
-            } catch (Exception e) {
-                log.warn("Không thể gửi thông báo từ chối hợp đồng: {}", e.getMessage());
-            }
+                        contractCode, reasonText);
+                notificationService.notifyStudent(student, title, content, approverUser);
+            });
         }
 
         return contractMapper.toResponse(hop_dong);
+    }
+
+    // Thực thi tác vụ sau khi transaction đã commit thành công (tránh rollback-only do side-effects)
+    private void executeAfterCommitOrNow(Runnable action) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            try {
+                                action.run();
+                            } catch (Exception e) {
+                                log.warn("Lỗi thực thi tác vụ sau commit: {}", e.getMessage());
+                            }
+                        }
+                    });
+        } else {
+            try {
+                action.run();
+            } catch (Exception e) {
+                log.warn("Lỗi thực thi tác vụ: {}", e.getMessage());
+            }
+        }
     }
 
     // Sinh viên tự hủy đơn đăng ký hợp đồng PENDING của chính mình
