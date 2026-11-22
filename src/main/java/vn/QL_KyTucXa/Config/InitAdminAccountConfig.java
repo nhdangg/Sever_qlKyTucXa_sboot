@@ -12,8 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.QL_KyTucXa.Entity.*;
 import vn.QL_KyTucXa.Repository.*;
 
-// import java.math.BigDecimal;
+import java.math.BigDecimal;
 // import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,6 +26,7 @@ public class InitAdminAccountConfig implements ApplicationRunner {
 
         User_Repository userRepository;
         Role_Repository roleRepository;
+        ServiceType_Repository serviceTypeRepository;
         // Staff_Repository staffRepository;
         // Student_Repository studentRepository;
         // ViolationType_Repository violationTypeRepository;
@@ -53,6 +55,9 @@ public class InitAdminAccountConfig implements ApplicationRunner {
 
                 // 2. Khởi tạo tài khoản Quản trị viên: admin / admin (Có xác thực 2FA Telegram)
                 initAdminAccount(adminRole);
+
+                // 2b. Đảm bảo danh mục dịch vụ Điện & Nước mặc định luôn tồn tại để ghi chỉ số công tơ
+                initDefaultServiceTypes();
 
                 // // 3. Khởi tạo tài khoản Quản lý để test: manager / manager
                 // initStaffAccount("manager", "manager", "QL001", "Phạm Quốc Quản Lý",
@@ -153,6 +158,45 @@ public class InitAdminAccountConfig implements ApplicationRunner {
                                 userRepository.save(existingAdmin);
                                 log.info("=> Đã cập nhật quyền ADMIN cho tài khoản 'admin'");
                         }
+                }
+        }
+
+        private void initDefaultServiceTypes() {
+                try {
+                        List<ServiceType> allServices = serviceTypeRepository.findAll();
+                        boolean hasElectricity = allServices.stream().anyMatch(s ->
+                                "METERED".equalsIgnoreCase(s.getBillingType()) &&
+                                ((s.getServiceCode() != null && s.getServiceCode().toUpperCase().contains("DIEN")) ||
+                                 (s.getServiceName() != null && s.getServiceName().toLowerCase().contains("điện"))));
+                        if (!hasElectricity && !serviceTypeRepository.existsByServiceCode("DIEN_SH")) {
+                                serviceTypeRepository.save(ServiceType.builder()
+                                                .serviceCode("DIEN_SH")
+                                                .serviceName("Điện sinh hoạt")
+                                                .unit("kWh")
+                                                .unitPrice(new BigDecimal("3500.00"))
+                                                .billingType("METERED")
+                                                .description("Điện sinh hoạt tính theo chỉ số công tơ phòng")
+                                                .build());
+                                log.info("=> Đã khởi tạo dịch vụ mặc định: DIEN_SH (3.500 đ/kWh)");
+                        }
+
+                        boolean hasWater = allServices.stream().anyMatch(s ->
+                                "METERED".equalsIgnoreCase(s.getBillingType()) &&
+                                ((s.getServiceCode() != null && s.getServiceCode().toUpperCase().contains("NUOC")) ||
+                                 (s.getServiceName() != null && s.getServiceName().toLowerCase().contains("nước"))));
+                        if (!hasWater && !serviceTypeRepository.existsByServiceCode("NUOC_SH")) {
+                                serviceTypeRepository.save(ServiceType.builder()
+                                                .serviceCode("NUOC_SH")
+                                                .serviceName("Nước sạch sinh hoạt")
+                                                .unit("m³")
+                                                .unitPrice(new BigDecimal("12000.00"))
+                                                .billingType("METERED")
+                                                .description("Nước sạch sinh hoạt tính theo đồng hồ đo của phòng")
+                                                .build());
+                                log.info("=> Đã khởi tạo dịch vụ mặc định: NUOC_SH (12.000 đ/m³)");
+                        }
+                } catch (Exception e) {
+                        log.warn("Không thể khởi tạo danh mục dịch vụ Điện/Nước mặc định: {}", e.getMessage());
                 }
         }
 }

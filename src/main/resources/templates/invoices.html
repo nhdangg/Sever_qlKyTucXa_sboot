@@ -1094,6 +1094,10 @@
                 allServiceTypes = unwrapList(servicesRes);
                 allContracts = unwrapList(contractsRes);
 
+                if (canManageCatalog) {
+                    await ensureMeteredServicesExist();
+                }
+
                 const roomFilter = document.getElementById('readingFilterRoom');
                 roomFilter.innerHTML = '<option value="">-- Tất cả Phòng ở --</option>' +
                     allRooms.map(r => `<option value="${r.roomId}">Phòng ${r.roomNumber} (${r.buildingName || 'KTX'})</option>`).join('');
@@ -1345,9 +1349,60 @@
         }
 
         function getMeteredServices() {
-            const elec = allServiceTypes.find(s => s.billingType === 'METERED' && ((s.serviceCode || '').includes('DIEN') || (s.serviceName || '').toLowerCase().includes('điện')));
-            const water = allServiceTypes.find(s => s.billingType === 'METERED' && ((s.serviceCode || '').includes('NUOC') || (s.serviceName || '').toLowerCase().includes('nước')));
+            const elec = allServiceTypes.find(s => (s.billingType === 'METERED' || !s.billingType) && ((s.serviceCode || '').toUpperCase().includes('DIEN') || (s.serviceName || '').toLowerCase().includes('điện')));
+            const water = allServiceTypes.find(s => (s.billingType === 'METERED' || !s.billingType) && ((s.serviceCode || '').toUpperCase().includes('NUOC') || (s.serviceName || '').toLowerCase().includes('nước')));
             return { elec, water };
+        }
+
+        async function ensureMeteredServicesExist() {
+            let { elec, water } = getMeteredServices();
+            let createdAny = false;
+            if (!elec) {
+                try {
+                    await apiFetch('/service-types', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            serviceCode: 'DIEN_SH',
+                            serviceName: 'Điện sinh hoạt',
+                            unit: 'kWh',
+                            unitPrice: 3500,
+                            billingType: 'METERED',
+                            description: 'Điện sinh hoạt tính theo chỉ số công tơ phòng'
+                        })
+                    });
+                    createdAny = true;
+                } catch (e) {
+                    console.warn('Không thể tự động tạo dịch vụ Điện mặc định:', e);
+                }
+            }
+            if (!water) {
+                try {
+                    await apiFetch('/service-types', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            serviceCode: 'NUOC_SH',
+                            serviceName: 'Nước sạch sinh hoạt',
+                            unit: 'm³',
+                            unitPrice: 12000,
+                            billingType: 'METERED',
+                            description: 'Nước sạch sinh hoạt tính theo đồng hồ đo của phòng'
+                        })
+                    });
+                    createdAny = true;
+                } catch (e) {
+                    console.warn('Không thể tự động tạo dịch vụ Nước mặc định:', e);
+                }
+            }
+            if (createdAny) {
+                try {
+                    const servicesRes = await apiFetch('/service-types');
+                    allServiceTypes = unwrapList(servicesRes);
+                    renderServiceTypes();
+                } catch (e) {
+                    console.warn(e);
+                }
+            }
+            return getMeteredServices();
         }
 
         function populateRoomModalSelect(keyword = '') {
@@ -1594,7 +1649,7 @@
 
             const readingMonth = (rawMonth.length === 7) ? `${rawMonth}-01` : rawMonth;
 
-            const { elec, water } = getMeteredServices();
+            const { elec, water } = await ensureMeteredServicesExist();
             const requests = [];
 
             const elecPrev = parseFloat(document.getElementById('elecPrevIndex').value || 0);
