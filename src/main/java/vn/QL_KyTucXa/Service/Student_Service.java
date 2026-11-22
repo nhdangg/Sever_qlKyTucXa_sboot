@@ -16,18 +16,12 @@ import vn.QL_KyTucXa.DTO.Request.Student_Request;
 import vn.QL_KyTucXa.DTO.Response.Page_Response;
 import vn.QL_KyTucXa.DTO.Response.StudentBatch_Response;
 import vn.QL_KyTucXa.DTO.Response.Student_Response;
-import vn.QL_KyTucXa.Entity.Role;
-import vn.QL_KyTucXa.Entity.Student;
-import vn.QL_KyTucXa.Entity.User;
+import vn.QL_KyTucXa.Entity.*;
 import vn.QL_KyTucXa.Exception.AppException;
 import vn.QL_KyTucXa.Exception.ErrorCode;
 import vn.QL_KyTucXa.Mapper.Student_Mapper;
-import vn.QL_KyTucXa.Repository.Contract_Repository;
-import vn.QL_KyTucXa.Repository.Role_Repository;
-import vn.QL_KyTucXa.Repository.Student_Repository;
-import vn.QL_KyTucXa.Repository.User_Repository;
+import vn.QL_KyTucXa.Repository.*;
 import vn.QL_KyTucXa.Config.WebMvcConfig;
-import vn.QL_KyTucXa.Entity.Contract;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -61,62 +55,20 @@ public class Student_Service {
     CurrentUser_Service currentUserService;
     Contract_Repository contractRepository;
     RefreshTokenService refreshTokenService;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Bed_Repository bedRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.RoomTransfer_Repository roomTransferRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Invoice_Repository invoiceRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Payment_Repository paymentRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Feedback_Repository feedbackRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.VehicleRegistration_Repository vehicleRegistrationRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Violation_Repository violationRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Visitor_Repository visitorRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.NotificationRecipient_Repository notificationRecipientRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.Notification_Repository notificationRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.RefreshToken_Repository refreshTokenRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.LogoutToken_Repository logoutTokenRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.AuditLog_Repository auditLogRepository;
-
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    @lombok.experimental.NonFinal
-    vn.QL_KyTucXa.Repository.MaintenanceRequest_Repository maintenanceRequestRepository;
+    Bed_Repository bedRepository;
+    RoomTransfer_Repository roomTransferRepository;
+    Invoice_Repository invoiceRepository;
+    Payment_Repository paymentRepository;
+    Feedback_Repository feedbackRepository;
+    VehicleRegistration_Repository vehicleRegistrationRepository;
+    Violation_Repository violationRepository;
+    Visitor_Repository visitorRepository;
+    NotificationRecipient_Repository notificationRecipientRepository;
+    Notification_Repository notificationRepository;
+    RefreshToken_Repository refreshTokenRepository;
+    LogoutToken_Repository logoutTokenRepository;
+    AuditLog_Repository auditLogRepository;
+    MaintenanceRequest_Repository maintenanceRequestRepository;
 
     @Transactional
     public Student_Response create(Student_Request request) {
@@ -701,34 +653,34 @@ public class Student_Service {
 
         // Dọn dẹp các dữ liệu phụ thuộc của sinh viên trước khi xóa cứng
         if (feedbackRepository != null) {
-            List<vn.QL_KyTucXa.Entity.Feedback> feedbacks = feedbackRepository.findByStudent_StudentId(studentId);
+            List<Feedback> feedbacks = feedbackRepository.findByStudent_StudentId(studentId);
             if (!feedbacks.isEmpty()) {
                 feedbackRepository.deleteAll(feedbacks);
             }
         }
         if (vehicleRegistrationRepository != null) {
-            List<vn.QL_KyTucXa.Entity.VehicleRegistration> vehicles = vehicleRegistrationRepository.findByStudent_StudentId(studentId);
+            List<VehicleRegistration> vehicles = vehicleRegistrationRepository.findByStudent_StudentId(studentId);
             if (!vehicles.isEmpty()) {
                 vehicleRegistrationRepository.deleteAll(vehicles);
             }
         }
         if (violationRepository != null) {
-            List<vn.QL_KyTucXa.Entity.Violation> violations = violationRepository.findByStudent_StudentId(studentId);
+            List<Violation> violations = violationRepository.findByStudent_StudentId(studentId);
             if (!violations.isEmpty()) {
                 violationRepository.deleteAll(violations);
             }
         }
         if (visitorRepository != null) {
-            List<vn.QL_KyTucXa.Entity.Visitor> visitors = visitorRepository.findByHostStudent_StudentId(studentId);
+            List<Visitor> visitors = visitorRepository.findByHostStudent_StudentId(studentId);
             if (!visitors.isEmpty()) {
                 visitorRepository.deleteAll(visitors);
             }
         }
         if (invoiceRepository != null) {
-            List<vn.QL_KyTucXa.Entity.Invoice> invoices = invoiceRepository.findByStudent_StudentId(studentId);
-            for (vn.QL_KyTucXa.Entity.Invoice inv : invoices) {
+            List<Invoice> invoices = invoiceRepository.findByStudent_StudentId(studentId);
+            for (Invoice inv : invoices) {
                 if (paymentRepository != null) {
-                    List<vn.QL_KyTucXa.Entity.Payment> payments = paymentRepository.findByInvoice_InvoiceId(inv.getInvoiceId());
+                    List<Payment> payments = paymentRepository.findByInvoice_InvoiceId(inv.getInvoiceId());
                     if (!payments.isEmpty()) {
                         paymentRepository.deleteAll(payments);
                     }
@@ -739,7 +691,7 @@ public class Student_Service {
             }
         }
         if (roomTransferRepository != null) {
-            List<vn.QL_KyTucXa.Entity.RoomTransfer> transfers = roomTransferRepository.findByContract_Student_StudentId(studentId);
+            List<RoomTransfer> transfers = roomTransferRepository.findByContract_Student_StudentId(studentId);
             if (!transfers.isEmpty()) {
                 roomTransferRepository.deleteAll(transfers);
             }
@@ -770,16 +722,16 @@ public class Student_Service {
         if (nguoi_dung != null && nguoi_dung.getUserId() != null) {
             String uid = nguoi_dung.getUserId();
             if (notificationRecipientRepository != null) {
-                List<vn.QL_KyTucXa.Entity.NotificationRecipient> recipients = notificationRecipientRepository.findByUser_UserId(uid);
+                List<NotificationRecipient> recipients = notificationRecipientRepository.findByUser_UserId(uid);
                 if (!recipients.isEmpty()) {
                     notificationRecipientRepository.deleteAll(recipients);
                 }
             }
             if (notificationRepository != null) {
-                List<vn.QL_KyTucXa.Entity.Notification> createdNotifs = notificationRepository.findByCreatedBy_UserId(uid);
-                for (vn.QL_KyTucXa.Entity.Notification n : createdNotifs) {
+                List<Notification> createdNotifs = notificationRepository.findByCreatedBy_UserId(uid);
+                for (Notification n : createdNotifs) {
                     if (notificationRecipientRepository != null) {
-                        List<vn.QL_KyTucXa.Entity.NotificationRecipient> nRecs = notificationRecipientRepository.findByNotification_NotificationId(n.getNotificationId());
+                        List<NotificationRecipient> nRecs = notificationRecipientRepository.findByNotification_NotificationId(n.getNotificationId());
                         if (!nRecs.isEmpty()) {
                             notificationRecipientRepository.deleteAll(nRecs);
                         }
@@ -790,26 +742,26 @@ public class Student_Service {
                 }
             }
             if (refreshTokenRepository != null) {
-                List<vn.QL_KyTucXa.Entity.RefreshToken> tokens = refreshTokenRepository.findByUser_UserId(uid);
+                List<RefreshToken> tokens = refreshTokenRepository.findByUser_UserId(uid);
                 if (!tokens.isEmpty()) {
                     refreshTokenRepository.deleteAll(tokens);
                 }
             }
             if (logoutTokenRepository != null) {
-                List<vn.QL_KyTucXa.Entity.LogoutToken> lTokens = logoutTokenRepository.findByUser_UserId(uid);
+                List<LogoutToken> lTokens = logoutTokenRepository.findByUser_UserId(uid);
                 if (!lTokens.isEmpty()) {
                     logoutTokenRepository.deleteAll(lTokens);
                 }
             }
             if (maintenanceRequestRepository != null) {
-                List<vn.QL_KyTucXa.Entity.MaintenanceRequest> mReqs = maintenanceRequestRepository.findByReportedBy_UserId(uid);
+                List<MaintenanceRequest> mReqs = maintenanceRequestRepository.findByReportedBy_UserId(uid);
                 if (!mReqs.isEmpty()) {
                     maintenanceRequestRepository.deleteAll(mReqs);
                 }
             }
             if (auditLogRepository != null) {
-                List<vn.QL_KyTucXa.Entity.AuditLog> logs = auditLogRepository.findByUser_UserId(uid);
-                for (vn.QL_KyTucXa.Entity.AuditLog logItem : logs) {
+                List<AuditLog> logs = auditLogRepository.findByUser_UserId(uid);
+                for (AuditLog logItem : logs) {
                     logItem.setUser(null);
                 }
                 if (!logs.isEmpty()) {
