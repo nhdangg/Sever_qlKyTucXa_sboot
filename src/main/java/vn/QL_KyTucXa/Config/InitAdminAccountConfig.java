@@ -56,7 +56,8 @@ public class InitAdminAccountConfig implements ApplicationRunner {
                 // 2. Khởi tạo tài khoản Quản trị viên: admin / admin (Có xác thực 2FA Telegram)
                 initAdminAccount(adminRole);
 
-                // 2b. Đảm bảo danh mục dịch vụ Điện & Nước mặc định luôn tồn tại để ghi chỉ số công tơ
+                // 2b. Đảm bảo danh mục dịch vụ Điện & Nước mặc định luôn tồn tại để ghi chỉ số
+                // công tơ
                 initDefaultServiceTypes();
 
                 // // 3. Khởi tạo tài khoản Quản lý để test: manager / manager
@@ -164,10 +165,12 @@ public class InitAdminAccountConfig implements ApplicationRunner {
         private void initDefaultServiceTypes() {
                 try {
                         List<ServiceType> allServices = serviceTypeRepository.findAll();
-                        boolean hasElectricity = allServices.stream().anyMatch(s ->
-                                "METERED".equalsIgnoreCase(s.getBillingType()) &&
-                                ((s.getServiceCode() != null && s.getServiceCode().toUpperCase().contains("DIEN")) ||
-                                 (s.getServiceName() != null && s.getServiceName().toLowerCase().contains("điện"))));
+                        boolean hasElectricity = allServices.stream().anyMatch(s -> "METERED"
+                                        .equalsIgnoreCase(s.getBillingType()) &&
+                                        ((s.getServiceCode() != null
+                                                        && s.getServiceCode().toUpperCase().contains("DIEN")) ||
+                                                        (s.getServiceName() != null && s.getServiceName().toLowerCase()
+                                                                        .contains("điện"))));
                         if (!hasElectricity && !serviceTypeRepository.existsByServiceCode("DIEN_SH")) {
                                 serviceTypeRepository.save(ServiceType.builder()
                                                 .serviceCode("DIEN_SH")
@@ -180,10 +183,12 @@ public class InitAdminAccountConfig implements ApplicationRunner {
                                 log.info("=> Đã khởi tạo dịch vụ mặc định: DIEN_SH (3.500 đ/kWh)");
                         }
 
-                        boolean hasWater = allServices.stream().anyMatch(s ->
-                                "METERED".equalsIgnoreCase(s.getBillingType()) &&
-                                ((s.getServiceCode() != null && s.getServiceCode().toUpperCase().contains("NUOC")) ||
-                                 (s.getServiceName() != null && s.getServiceName().toLowerCase().contains("nước"))));
+                        boolean hasWater = allServices.stream().anyMatch(s -> "METERED"
+                                        .equalsIgnoreCase(s.getBillingType()) &&
+                                        ((s.getServiceCode() != null
+                                                        && s.getServiceCode().toUpperCase().contains("NUOC")) ||
+                                                        (s.getServiceName() != null && s.getServiceName().toLowerCase()
+                                                                        .contains("nước"))));
                         if (!hasWater && !serviceTypeRepository.existsByServiceCode("NUOC_SH")) {
                                 serviceTypeRepository.save(ServiceType.builder()
                                                 .serviceCode("NUOC_SH")

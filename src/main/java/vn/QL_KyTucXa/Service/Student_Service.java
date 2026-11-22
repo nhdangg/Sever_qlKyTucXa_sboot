@@ -623,7 +623,8 @@ public class Student_Service {
     }
 
     // Lần 1: Ngừng hoạt động hồ sơ sinh viên (Soft delete sang INACTIVE)
-    // Lần 2 (khi đã INACTIVE): Xóa hoàn toàn hồ sơ sinh viên và tài khoản User nếu không vướng hợp đồng
+    // Lần 2 (khi đã INACTIVE): Xóa hoàn toàn hồ sơ sinh viên và tài khoản User nếu
+    // không vướng hợp đồng
     @Transactional
     public void delete(String studentId) {
         Student sinh_vien = studentRepository.findById(studentId)
@@ -635,7 +636,8 @@ public class Student_Service {
                     "Không thể xóa hoặc ngừng hoạt động sinh viên đang có hợp đồng lưu trú ACTIVE");
         }
 
-        // Click lần 1: Nếu chưa ở trạng thái INACTIVE thì chuyển sang INACTIVE (Đã khóa) như cũ
+        // Click lần 1: Nếu chưa ở trạng thái INACTIVE thì chuyển sang INACTIVE (Đã
+        // khóa) như cũ
         if (!"INACTIVE".equalsIgnoreCase(sinh_vien.getStatus())) {
             sinh_vien.setStatus("INACTIVE");
             studentRepository.save(sinh_vien);
@@ -650,7 +652,8 @@ public class Student_Service {
             return;
         }
 
-        // Click lần 2 (khi đã INACTIVE): Kiểm tra điều kiện hợp đồng trước khi xóa hoàn toàn
+        // Click lần 2 (khi đã INACTIVE): Kiểm tra điều kiện hợp đồng trước khi xóa hoàn
+        // toàn
         if (contractRepository.existsByStudent_StudentIdAndStatus(studentId, "PENDING")) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Không thể xóa hoàn toàn sinh viên đang có hợp đồng chờ phê duyệt");
@@ -658,15 +661,15 @@ public class Student_Service {
 
         List<Contract> danh_sach_hop_dong = contractRepository.findByStudent_StudentId(studentId);
         if (danh_sach_hop_dong != null && !danh_sach_hop_dong.isEmpty()) {
-            boolean hasOngoingContract = danh_sach_hop_dong.stream().anyMatch(c ->
-                    "ACTIVE".equalsIgnoreCase(c.getStatus())
-                    || "PENDING".equalsIgnoreCase(c.getStatus())
-                    || "PENDING_APPROVAL".equalsIgnoreCase(c.getStatus())
-                    || (c.getEndDate() != null && !c.getEndDate().isBefore(java.time.LocalDate.now())
-                        && !"CANCELLED".equalsIgnoreCase(c.getStatus())
-                        && !"REJECTED".equalsIgnoreCase(c.getStatus())
-                        && !"TERMINATED".equalsIgnoreCase(c.getStatus())
-                        && !"EXPIRED".equalsIgnoreCase(c.getStatus())));
+            boolean hasOngoingContract = danh_sach_hop_dong.stream()
+                    .anyMatch(c -> "ACTIVE".equalsIgnoreCase(c.getStatus())
+                            || "PENDING".equalsIgnoreCase(c.getStatus())
+                            || "PENDING_APPROVAL".equalsIgnoreCase(c.getStatus())
+                            || (c.getEndDate() != null && !c.getEndDate().isBefore(java.time.LocalDate.now())
+                                    && !"CANCELLED".equalsIgnoreCase(c.getStatus())
+                                    && !"REJECTED".equalsIgnoreCase(c.getStatus())
+                                    && !"TERMINATED".equalsIgnoreCase(c.getStatus())
+                                    && !"EXPIRED".equalsIgnoreCase(c.getStatus())));
             if (hasOngoingContract) {
                 throw new AppException(ErrorCode.OPERATION_FAILED,
                         "Không thể xóa hoàn toàn sinh viên đã có hợp đồng còn thời hạn hoặc đang chờ phê duyệt");
@@ -685,7 +688,8 @@ public class Student_Service {
         }
     }
 
-    // Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được xem
+    // Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được
+    // xem
     private void checkViewPermission(Student sinh_vien) {
         if (currentUserService == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -750,7 +754,8 @@ public class Student_Service {
         }
     }
 
-    // Tự động xóa file ảnh đại diện cũ trên ổ đĩa khi sinh viên đổi ảnh mới hoặc gỡ ảnh
+    // Tự động xóa file ảnh đại diện cũ trên ổ đĩa khi sinh viên đổi ảnh mới hoặc gỡ
+    // ảnh
     public void deleteOldAvatarFile(String avatarUrl) {
         if (avatarUrl == null || avatarUrl.isBlank()) {
             return;
