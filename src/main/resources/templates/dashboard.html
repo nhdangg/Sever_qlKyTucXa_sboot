@@ -575,30 +575,45 @@
                 const user = Auth.getUser();
                 const role = (user.role || 'ADMIN').toUpperCase();
 
-                // Gọi song song các API cốt lõi (sử dụng /all khi có hỗ trợ hoặc lấy từ Page_Response)
-                const [buildingRes, roomRes, studentRes, contractRes, invoiceRes, maintRes, bedRes] = await Promise.all([
+                const getTotalCount = (res, fallbackList) => {
+                    if (res && res.pageInfo && res.pageInfo.totalElements != null) return res.pageInfo.totalElements;
+                    if (res && res.result && res.result.totalElements != null) return res.result.totalElements;
+                    return fallbackList ? fallbackList.length : 0;
+                };
+
+                // Gọi song song toàn bộ các API trong 1 lượt duy nhất (chỉ lấy đúng số dòng cần hiển thị + totalElements)
+                const [buildingRes, roomRes, studentRes, activeContractRes, invoiceRes, maintRes, uRes, stRes] = await Promise.all([
                     apiFetch('/buildings/all').catch(() => apiFetch('/buildings').catch(() => ({ result: [] }))),
-                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms').catch(() => ({ result: [] }))),
-                    apiFetch('/students/all').catch(() => apiFetch('/students').catch(() => ({ result: [] }))),
-                    apiFetch('/contracts/all').catch(() => apiFetch('/contracts').catch(() => ({ result: [] }))),
+                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms?size=500').catch(() => ({ result: [] }))),
+                    apiFetch('/students?page=1&size=5').catch(() => ({ result: [] })),
+                    apiFetch('/contracts?page=1&size=1&status=ACTIVE').catch(() => ({ result: [] })),
                     apiFetch('/invoices?size=100').catch(() => ({ result: [] })),
-                    apiFetch('/maintenance-requests?size=100').catch(() => ({ result: [] })),
-                    apiFetch('/beds').catch(() => ({ result: [] }))
+                    apiFetch('/maintenance-requests?page=1&size=20').catch(() => ({ result: [] })),
+                    role === 'ADMIN'
+                        ? apiFetch('/users/paged?page=1&size=1').catch(() => apiFetch('/users').catch(() => ({ result: [] })))
+                        : Promise.resolve({ result: [] }),
+                    role === 'ADMIN'
+                        ? apiFetch('/staffs?page=1&size=1').catch(() => ({ result: [] }))
+                        : Promise.resolve({ result: [] }),
+                    loadDashboardNotifications(role)
                 ]);
 
                 const buildings = unwrapList(buildingRes);
                 const rooms = unwrapList(roomRes);
                 const students = unwrapList(studentRes);
-                const contracts = unwrapList(contractRes);
+                const activeContractsList = unwrapList(activeContractRes);
                 const invoices = unwrapList(invoiceRes);
                 const requests = unwrapList(maintRes);
-                const beds = unwrapList(bedRes);
+
+                const totalStudentsCount = getTotalCount(studentRes, students);
+                const activeContractsCount = getTotalCount(activeContractRes, activeContractsList);
+                const totalMaintCount = getTotalCount(maintRes, requests);
 
                 // 1. Thống kê Tòa nhà & Phòng
-                document.getElementById('statBuildings').textContent = buildings.length;
+                document.getElementById('statBuildings').textContent = getTotalCount(buildingRes, buildings);
                 document.getElementById('statRooms').textContent = rooms.length;
 
-                // Tính toán chính xác phân loại phòng dựa trên giường thực tế
+                // Tính toán nhanh phân loại phòng từ currentOccupancy & capacity đã được tính sẵn từ /rooms/all
                 let roomCountAvailable = 0;
                 let roomCountOccupied = 0;
                 let roomCountFull = 0;
@@ -609,23 +624,11 @@
                         roomCountMaintenance++;
                         return;
                     }
-                    const rBeds = beds.filter(b => b.roomId === r.roomId);
-                    if (rBeds.length > 0) {
-                        const occ = rBeds.filter(b => b.status === 'OCCUPIED').length;
-                        if (occ === 0) {
-                            roomCountAvailable++;
-                        } else if (occ === rBeds.length) {
-                            roomCountFull++;
-                        } else {
-                            roomCountOccupied++;
-                        }
-                    } else {
-                        const occ = Number(r.currentOccupancy) || 0;
-                        const cap = Number(r.capacity) || 4;
-                        if (occ === 0) roomCountAvailable++;
-                        else if (occ >= cap) roomCountFull++;
-                        else roomCountOccupied++;
-                    }
+                    const occ = Number(r.currentOccupancy) || 0;
+                    const cap = Number(r.capacity) || 4;
+                    if (occ === 0) roomCountAvailable++;
+                    else if (occ >= cap) roomCountFull++;
+                    else roomCountOccupied++;
                 });
 
                 document.getElementById('statRoomsAvailable').textContent = `${roomCountAvailable} phòng trống`;
@@ -634,11 +637,9 @@
                 document.getElementById('roomCountFull').textContent = roomCountFull;
                 document.getElementById('roomCountMaintenance').textContent = roomCountMaintenance;
 
-                // 2. Tính công suất giường thực tế từ CSDL (bảng giuong)
-                const totalBeds = beds.length > 0 ? beds.length : rooms.reduce((sum, r) => sum + (r.capacity || 4), 0);
-                const occupiedBeds = beds.length > 0
-                    ? beds.filter(b => b.status === 'OCCUPIED').length
-                    : rooms.reduce((sum, r) => sum + (r.currentOccupancy || 0), 0);
+                // 2. Tính công suất giường từ dữ liệu phòng
+                const totalBeds = rooms.reduce((sum, r) => sum + (Number(r.capacity) || 4), 0);
+                const occupiedBeds = rooms.reduce((sum, r) => sum + (Number(r.currentOccupancy) || 0), 0);
                 const pct = totalBeds > 0 ? Math.min(100, Math.round((occupiedBeds / totalBeds) * 100)) : 0;
                 document.getElementById('occupancyPercentBadge').textContent = `${pct}% lấp đầy`;
                 document.getElementById('bedUsageText').textContent = `${occupiedBeds} / ${totalBeds} chỗ`;
@@ -669,14 +670,13 @@
                 }
 
                 // 4. Thống kê Sinh viên & Hợp đồng
-                document.getElementById('statStudents').textContent = students.length;
-                const activeContracts = contracts.filter(c => c.status === 'ACTIVE').length;
-                document.getElementById('statActiveContracts').textContent = `${activeContracts || contracts.length} hợp đồng lưu trú`;
+                document.getElementById('statStudents').textContent = totalStudentsCount;
+                document.getElementById('statActiveContracts').textContent = `${activeContractsCount} hợp đồng lưu trú`;
 
                 const studentTbody = document.getElementById('studentTableBody');
                 const studentLimitBadge = document.getElementById('studentLimitBadge');
                 if (studentLimitBadge) {
-                    studentLimitBadge.textContent = `Hiển thị ${Math.min(5, students.length)} / ${students.length}`;
+                    studentLimitBadge.textContent = `Hiển thị ${Math.min(5, students.length)} / ${totalStudentsCount}`;
                 }
                 if (students.length === 0) {
                     studentTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Chưa có hồ sơ sinh viên</td></tr>';
@@ -715,12 +715,12 @@
                 // 6. Thống kê Bảo trì
                 const pendingMaint = requests.filter(m => m.status !== 'COMPLETED').length;
                 document.getElementById('statMaintPending').textContent = pendingMaint;
-                document.getElementById('statMaintTotal').textContent = `Tổng: ${requests.length} yêu cầu`;
+                document.getElementById('statMaintTotal').textContent = `Tổng: ${totalMaintCount} yêu cầu`;
 
                 const maintTbody = document.getElementById('maintenanceTableBody');
                 const maintLimitBadge = document.getElementById('maintLimitBadge');
                 if (maintLimitBadge) {
-                    maintLimitBadge.textContent = `Hiển thị ${Math.min(5, requests.length)} / ${requests.length}`;
+                    maintLimitBadge.textContent = `Hiển thị ${Math.min(5, requests.length)} / ${totalMaintCount}`;
                 }
                 if (requests.length === 0) {
                     maintTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Không có sự cố tồn đọng</td></tr>';
@@ -748,19 +748,13 @@
                     }).join('');
                 }
 
-                // 7. Nếu là ADMIN: tải thêm số lượng User và Nhân sự
+                // 7. Nếu là ADMIN: hiển thị tổng số lượng User và Nhân sự
                 if (role === 'ADMIN') {
-                    const [uRes, stRes] = await Promise.all([
-                        apiFetch('/users').catch(() => ({ result: [] })),
-                        apiFetch('/staffs/all').catch(() => apiFetch('/staffs').catch(() => ({ result: [] })))
-                    ]);
                     const users = unwrapList(uRes);
                     const staffs = unwrapList(stRes);
-                    document.getElementById('adminStatUsers').textContent = users.length;
-                    document.getElementById('adminStatStaffs').textContent = staffs.length;
+                    document.getElementById('adminStatUsers').textContent = getTotalCount(uRes, users);
+                    document.getElementById('adminStatStaffs').textContent = getTotalCount(stRes, staffs);
                 }
-
-                await loadDashboardNotifications(role);
 
                 if (showToast) {
                     showToastSuccess('Đã cập nhật dữ liệu mới nhất!');
