@@ -464,18 +464,17 @@ class Student_ServiceTest {
     // ==================== DELETE TESTS ====================
 
     @Test
-    @DisplayName("delete - Xóa hồ sơ sinh viên và tài khoản User khi không còn hợp đồng ACTIVE")
+    @DisplayName("delete - Xóa hồ sơ sinh viên và khóa User khi không còn hợp đồng ACTIVE")
     void delete_success_softDeleteAndLockUser() {
         when(studentRepository.findById("stu-01")).thenReturn(Optional.of(student));
         when(contractRepository.existsByStudent_StudentIdAndStatus("stu-01", "ACTIVE")).thenReturn(false);
 
         studentService.delete("stu-01");
 
-        assertThat(student.getStatus()).isEqualTo("INACTIVE");
         assertThat(user.getStatus()).isEqualTo("INACTIVE");
+        verify(userRepository).save(user);
         verify(refreshTokenService).revokeAllActiveByUserId("u-01");
         verify(studentRepository).delete(student);
-        verify(userRepository).delete(user);
     }
 
     @Test

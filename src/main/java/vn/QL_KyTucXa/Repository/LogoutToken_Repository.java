@@ -8,14 +8,12 @@ import org.springframework.stereotype.Repository;
 import vn.QL_KyTucXa.Entity.LogoutToken;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface LogoutToken_Repository extends JpaRepository<LogoutToken, String> {
     Optional<LogoutToken> findByToken(String token);
     boolean existsByToken(String token);
-    List<LogoutToken> findByUser_UserId(String userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from LogoutToken l where l.expiresAt < :dateTime")

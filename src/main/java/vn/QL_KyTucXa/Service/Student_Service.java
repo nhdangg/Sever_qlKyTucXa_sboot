@@ -16,12 +16,18 @@ import vn.QL_KyTucXa.DTO.Request.Student_Request;
 import vn.QL_KyTucXa.DTO.Response.Page_Response;
 import vn.QL_KyTucXa.DTO.Response.StudentBatch_Response;
 import vn.QL_KyTucXa.DTO.Response.Student_Response;
-import vn.QL_KyTucXa.Entity.*;
+import vn.QL_KyTucXa.Entity.Role;
+import vn.QL_KyTucXa.Entity.Student;
+import vn.QL_KyTucXa.Entity.User;
 import vn.QL_KyTucXa.Exception.AppException;
 import vn.QL_KyTucXa.Exception.ErrorCode;
 import vn.QL_KyTucXa.Mapper.Student_Mapper;
-import vn.QL_KyTucXa.Repository.*;
+import vn.QL_KyTucXa.Repository.Contract_Repository;
+import vn.QL_KyTucXa.Repository.Role_Repository;
+import vn.QL_KyTucXa.Repository.Student_Repository;
+import vn.QL_KyTucXa.Repository.User_Repository;
 import vn.QL_KyTucXa.Config.WebMvcConfig;
+import vn.QL_KyTucXa.Entity.Contract;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -55,20 +61,6 @@ public class Student_Service {
     CurrentUser_Service currentUserService;
     Contract_Repository contractRepository;
     RefreshTokenService refreshTokenService;
-    Bed_Repository bedRepository;
-    RoomTransfer_Repository roomTransferRepository;
-    Invoice_Repository invoiceRepository;
-    Payment_Repository paymentRepository;
-    Feedback_Repository feedbackRepository;
-    VehicleRegistration_Repository vehicleRegistrationRepository;
-    Violation_Repository violationRepository;
-    Visitor_Repository visitorRepository;
-    NotificationRecipient_Repository notificationRecipientRepository;
-    Notification_Repository notificationRepository;
-    RefreshToken_Repository refreshTokenRepository;
-    LogoutToken_Repository logoutTokenRepository;
-    AuditLog_Repository auditLogRepository;
-    MaintenanceRequest_Repository maintenanceRequestRepository;
 
     @Transactional
     public Student_Response create(Student_Request request) {
@@ -630,7 +622,7 @@ public class Student_Service {
         return studentMapper.toResponse(sinh_vien);
     }
 
-    // Xóa hồ sơ sinh viên (Hard delete khi không có hợp đồng ACTIVE)
+    // Xóa hồ sơ sinh viên và khóa tài khoản đăng nhập
     @Transactional
     public void delete(String studentId) {
         Student sinh_vien = studentRepository.findById(studentId)
@@ -642,134 +634,15 @@ public class Student_Service {
                     "Không thể xóa hoặc ngừng hoạt động sinh viên đang có hợp đồng lưu trú ACTIVE");
         }
 
-        User nguoi_dung = sinh_vien.getUser();
-        sinh_vien.setStatus("INACTIVE");
-        if (nguoi_dung != null) {
-            nguoi_dung.setStatus("INACTIVE");
+        if (sinh_vien.getUser() != null) {
+            sinh_vien.getUser().setStatus("INACTIVE");
+            userRepository.save(sinh_vien.getUser());
             if (refreshTokenService != null) {
-                refreshTokenService.revokeAllActiveByUserId(nguoi_dung.getUserId());
+                refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
             }
         }
 
-        // Dọn dẹp các dữ liệu phụ thuộc của sinh viên trước khi xóa cứng
-        if (feedbackRepository != null) {
-            List<Feedback> feedbacks = feedbackRepository.findByStudent_StudentId(studentId);
-            if (!feedbacks.isEmpty()) {
-                feedbackRepository.deleteAll(feedbacks);
-            }
-        }
-        if (vehicleRegistrationRepository != null) {
-            List<VehicleRegistration> vehicles = vehicleRegistrationRepository.findByStudent_StudentId(studentId);
-            if (!vehicles.isEmpty()) {
-                vehicleRegistrationRepository.deleteAll(vehicles);
-            }
-        }
-        if (violationRepository != null) {
-            List<Violation> violations = violationRepository.findByStudent_StudentId(studentId);
-            if (!violations.isEmpty()) {
-                violationRepository.deleteAll(violations);
-            }
-        }
-        if (visitorRepository != null) {
-            List<Visitor> visitors = visitorRepository.findByHostStudent_StudentId(studentId);
-            if (!visitors.isEmpty()) {
-                visitorRepository.deleteAll(visitors);
-            }
-        }
-        if (invoiceRepository != null) {
-            List<Invoice> invoices = invoiceRepository.findByStudent_StudentId(studentId);
-            for (Invoice inv : invoices) {
-                if (paymentRepository != null) {
-                    List<Payment> payments = paymentRepository.findByInvoice_InvoiceId(inv.getInvoiceId());
-                    if (!payments.isEmpty()) {
-                        paymentRepository.deleteAll(payments);
-                    }
-                }
-            }
-            if (!invoices.isEmpty()) {
-                invoiceRepository.deleteAll(invoices);
-            }
-        }
-        if (roomTransferRepository != null) {
-            List<RoomTransfer> transfers = roomTransferRepository.findByContract_Student_StudentId(studentId);
-            if (!transfers.isEmpty()) {
-                roomTransferRepository.deleteAll(transfers);
-            }
-        }
-        if (contractRepository != null) {
-            List<Contract> contracts = contractRepository.findByStudent_StudentId(studentId);
-            if (contracts != null && !contracts.isEmpty()) {
-                for (Contract c : contracts) {
-                    if (c.getBed() != null && "RESERVED".equalsIgnoreCase(c.getBed().getStatus()) && bedRepository != null) {
-                        c.getBed().setStatus("AVAILABLE");
-                        bedRepository.save(c.getBed());
-                    }
-                }
-                contractRepository.deleteAll(contracts);
-            }
-        }
-
-        // Xóa file ảnh đại diện cũ nếu có
-        try {
-            deleteOldAvatarFile(sinh_vien.getAvatarUrl());
-        } catch (Exception ignored) {
-        }
-
-        // Xóa cứng bản ghi sinh viên khỏi CSDL
         studentRepository.delete(sinh_vien);
-
-        // Dọn dẹp và xóa tài khoản User liên kết của sinh viên
-        if (nguoi_dung != null && nguoi_dung.getUserId() != null) {
-            String uid = nguoi_dung.getUserId();
-            if (notificationRecipientRepository != null) {
-                List<NotificationRecipient> recipients = notificationRecipientRepository.findByUser_UserId(uid);
-                if (!recipients.isEmpty()) {
-                    notificationRecipientRepository.deleteAll(recipients);
-                }
-            }
-            if (notificationRepository != null) {
-                List<Notification> createdNotifs = notificationRepository.findByCreatedBy_UserId(uid);
-                for (Notification n : createdNotifs) {
-                    if (notificationRecipientRepository != null) {
-                        List<NotificationRecipient> nRecs = notificationRecipientRepository.findByNotification_NotificationId(n.getNotificationId());
-                        if (!nRecs.isEmpty()) {
-                            notificationRecipientRepository.deleteAll(nRecs);
-                        }
-                    }
-                }
-                if (!createdNotifs.isEmpty()) {
-                    notificationRepository.deleteAll(createdNotifs);
-                }
-            }
-            if (refreshTokenRepository != null) {
-                List<RefreshToken> tokens = refreshTokenRepository.findByUser_UserId(uid);
-                if (!tokens.isEmpty()) {
-                    refreshTokenRepository.deleteAll(tokens);
-                }
-            }
-            if (logoutTokenRepository != null) {
-                List<LogoutToken> lTokens = logoutTokenRepository.findByUser_UserId(uid);
-                if (!lTokens.isEmpty()) {
-                    logoutTokenRepository.deleteAll(lTokens);
-                }
-            }
-            if (maintenanceRequestRepository != null) {
-                List<MaintenanceRequest> mReqs = maintenanceRequestRepository.findByReportedBy_UserId(uid);
-                if (!mReqs.isEmpty()) {
-                    maintenanceRequestRepository.deleteAll(mReqs);
-                }
-            }
-            if (auditLogRepository != null) {
-                List<AuditLog> logs = auditLogRepository.findByUser_UserId(uid);
-                for (AuditLog logItem : logs) {
-                    logItem.setUser(null);
-                }
-                if (!logs.isEmpty()) {
-                    auditLogRepository.saveAll(logs);
-                }
-            }
-            userRepository.delete(nguoi_dung);
-        }
     }
 
     // Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được xem
