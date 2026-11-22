@@ -104,7 +104,8 @@ public class Contract_Service {
         if (!"OPEN".equalsIgnoreCase(dot_dang_ky.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Đợt đăng ký hiện không mở");
         }
-        if (dot_dang_ky.getRegistrationDeadline() != null && LocalDate.now().isAfter(dot_dang_ky.getRegistrationDeadline())) {
+        if (dot_dang_ky.getRegistrationDeadline() != null
+                && LocalDate.now().isAfter(dot_dang_ky.getRegistrationDeadline())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Đã hết hạn đăng ký cho đợt này");
         }
 
@@ -141,7 +142,8 @@ public class Contract_Service {
 
         hop_dong = contractRepository.save(hop_dong);
         if (auditLogService != null) {
-            auditLogService.recordAction("CREATE_CONTRACT", "hopDong", hop_dong.getContractId(), null, "Created code: " + hop_dong.getContractCode());
+            auditLogService.recordAction("CREATE_CONTRACT", "hopDong", hop_dong.getContractId(), null,
+                    "Created code: " + hop_dong.getContractCode());
         }
         return contractMapper.toResponse(hop_dong);
     }
@@ -176,7 +178,8 @@ public class Contract_Service {
         if (!"OPEN".equalsIgnoreCase(dot_dang_ky.getStatus())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Đợt đăng ký hiện không mở");
         }
-        if (dot_dang_ky.getRegistrationDeadline() != null && LocalDate.now().isAfter(dot_dang_ky.getRegistrationDeadline())) {
+        if (dot_dang_ky.getRegistrationDeadline() != null
+                && LocalDate.now().isAfter(dot_dang_ky.getRegistrationDeadline())) {
             throw new AppException(ErrorCode.OPERATION_FAILED, "Đã hết hạn đăng ký cho đợt này");
         }
 
@@ -247,17 +250,21 @@ public class Contract_Service {
 
         // Bắn thông báo tự động cho Ban Quản trị / Nhân viên KTX
         if (notificationService != null) {
-            String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
-            String bedNum = (giuong.getBedNumber() != null) ? giuong.getBedNumber() : "";
-            String title = "Đơn đăng ký KTX mới từ SV " + sinh_vien.getFullName();
-            String content = String.format(
-                    "Sinh viên %s (MSSV: %s) vừa nộp đơn đăng ký thuê phòng tại phòng %s, giường %s. Mã HĐ tạm: %s. Vui lòng vào duyệt hợp đồng.",
-                    sinh_vien.getFullName(),
-                    sinh_vien.getStudentCode(),
-                    roomNum,
-                    bedNum,
-                    hop_dong.getContractCode());
-            notificationService.notifyStaffAndAdmins(title, content, sinh_vien.getUser(), hop_dong.getContractCode());
+            try {
+                String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
+                String bedNum = (giuong.getBedNumber() != null) ? giuong.getBedNumber() : "";
+                String title = "Đơn đăng ký KTX mới từ SV " + sinh_vien.getFullName();
+                String content = String.format(
+                        "Sinh viên %s (MSSV: %s) vừa nộp đơn đăng ký thuê phòng tại phòng %s, giường %s. Mã HĐ tạm: %s. Vui lòng vào duyệt hợp đồng.",
+                        sinh_vien.getFullName(),
+                        sinh_vien.getStudentCode(),
+                        roomNum,
+                        bedNum,
+                        hop_dong.getContractCode());
+                notificationService.notifyStaffAndAdmins(title, content, sinh_vien.getUser(), null);
+            } catch (Exception e) {
+                log.warn("Không thể gửi thông báo nộp đơn đăng ký online: {}", e.getMessage());
+            }
         }
 
         return contractMapper.toResponse(hop_dong);
@@ -477,7 +484,8 @@ public class Contract_Service {
             }
         }
 
-        // Tự động đồng bộ trạng thái hồ sơ sinh viên sang ACTIVE khi hợp đồng có hiệu lực
+        // Tự động đồng bộ trạng thái hồ sơ sinh viên sang ACTIVE khi hợp đồng có hiệu
+        // lực
         if (hop_dong.getStudent() != null) {
             Student sinh_vien = hop_dong.getStudent();
             if (!"ACTIVE".equalsIgnoreCase(sinh_vien.getStatus())) {
@@ -499,7 +507,8 @@ public class Contract_Service {
                 String title = "Hợp đồng KTX của bạn đã được phê duyệt!";
                 String content = String.format(
                         "Đơn đăng ký hợp đồng mã %s tại phòng %s (giường %s) đã được Ban Quản lý phê duyệt thành công. Chúc bạn có kỳ lưu trú thuận lợi!",
-                        hop_dong.getContractCode(), roomNum, giuong.getBedNumber() != null ? giuong.getBedNumber() : "");
+                        hop_dong.getContractCode(), roomNum,
+                        giuong.getBedNumber() != null ? giuong.getBedNumber() : "");
                 notificationService.notifyStudent(hop_dong.getStudent(), title, content,
                         nhan_vien != null ? nhan_vien.getUser() : null);
             } catch (Exception e) {
@@ -568,17 +577,20 @@ public class Contract_Service {
             }
         }
 
-        // Tự động chuyển trạng thái sinh viên sang INACTIVE nếu không còn hợp đồng ACTIVE nào khác
+        // Tự động chuyển trạng thái sinh viên sang INACTIVE nếu không còn hợp đồng
+        // ACTIVE nào khác
         if (hop_dong.getStudent() != null) {
             Student sinh_vien = hop_dong.getStudent();
             final String currentContractId = hop_dong.getContractId();
-            boolean hasOtherActiveContract = contractRepository.findByStudent_StudentIdAndStatus(sinh_vien.getStudentId(), "ACTIVE")
+            boolean hasOtherActiveContract = contractRepository
+                    .findByStudent_StudentIdAndStatus(sinh_vien.getStudentId(), "ACTIVE")
                     .stream()
                     .anyMatch(c -> !c.getContractId().equals(currentContractId));
             if (!hasOtherActiveContract && "ACTIVE".equalsIgnoreCase(sinh_vien.getStatus())) {
                 sinh_vien.setStatus("INACTIVE");
                 studentRepository.save(sinh_vien);
-                log.info("Sinh viên {} không còn hợp đồng lưu trú ACTIVE, đã chuyển trạng thái sang INACTIVE", sinh_vien.getStudentCode());
+                log.info("Sinh viên {} không còn hợp đồng lưu trú ACTIVE, đã chuyển trạng thái sang INACTIVE",
+                        sinh_vien.getStudentCode());
             }
         }
 
@@ -619,10 +631,12 @@ public class Contract_Service {
                 }
             }
 
-            // Tự động chuyển trạng thái sinh viên sang INACTIVE nếu không còn hợp đồng ACTIVE nào khác
+            // Tự động chuyển trạng thái sinh viên sang INACTIVE nếu không còn hợp đồng
+            // ACTIVE nào khác
             if (hop_dong.getStudent() != null) {
                 Student sinh_vien = hop_dong.getStudent();
-                boolean hasOtherActiveContract = contractRepository.findByStudent_StudentIdAndStatus(sinh_vien.getStudentId(), "ACTIVE")
+                boolean hasOtherActiveContract = contractRepository
+                        .findByStudent_StudentIdAndStatus(sinh_vien.getStudentId(), "ACTIVE")
                         .stream()
                         .anyMatch(c -> !c.getContractId().equals(hop_dong.getContractId()));
                 if (!hasOtherActiveContract && "ACTIVE".equalsIgnoreCase(sinh_vien.getStatus())) {
@@ -680,11 +694,15 @@ public class Contract_Service {
 
         // Bắn thông báo cho sinh viên khi bị từ chối duyệt
         if (notificationService != null && hop_dong.getStudent() != null) {
-            String title = "Hồ sơ đăng ký KTX không được phê duyệt";
-            String content = String.format("Đơn đăng ký hợp đồng mã %s đã bị từ chối duyệt. Lý do: %s",
-                    hop_dong.getContractCode(),
-                    hop_dong.getTerminationReason() != null ? hop_dong.getTerminationReason() : "Từ chối duyệt đơn");
-            notificationService.notifyStudent(hop_dong.getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
+            try {
+                String title = "Hồ sơ đăng ký KTX không được phê duyệt";
+                String content = String.format("Đơn đăng ký hợp đồng mã %s đã bị từ chối duyệt. Lý do: %s",
+                        hop_dong.getContractCode(),
+                        hop_dong.getTerminationReason() != null ? hop_dong.getTerminationReason() : "Từ chối duyệt đơn");
+                notificationService.notifyStudent(hop_dong.getStudent(), title, content, nhan_vien != null ? nhan_vien.getUser() : null);
+            } catch (Exception e) {
+                log.warn("Không thể gửi thông báo từ chối hợp đồng: {}", e.getMessage());
+            }
         }
 
         return contractMapper.toResponse(hop_dong);

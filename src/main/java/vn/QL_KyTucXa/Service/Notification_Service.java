@@ -40,16 +40,13 @@ import java.util.stream.Collectors;
 public class Notification_Service {
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "notificationId", "title", "targetType", "isPublished", "publishedAt", "createdAt"
-    );
+            "notificationId", "title", "targetType", "isPublished", "publishedAt", "createdAt");
 
     private static final Set<String> ALLOWED_TARGET_TYPES = Set.of(
-            "ALL", "USER", "STUDENT", "STAFF", "ROOM", "FLOOR", "BUILDING"
-    );
+            "ALL", "USER", "STUDENT", "STAFF", "ROOM", "FLOOR", "BUILDING");
 
     private static final Set<String> REQUIRE_TARGET_ID_TYPES = Set.of(
-            "USER", "ROOM", "FLOOR", "BUILDING"
-    );
+            "USER", "ROOM", "FLOOR", "BUILDING");
 
     Notification_Repository notificationRepository;
     NotificationRecipient_Repository notificationRecipientRepository;
@@ -120,7 +117,8 @@ public class Notification_Service {
     @Transactional(readOnly = true)
     public Notification_Response getById(String notificationId) {
         if (currentUserService != null && currentUserService.hasRole("STUDENT")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Sinh viên chỉ được xem thông báo qua Hộp thư (/notifications/inbox)");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Sinh viên chỉ được xem thông báo qua Hộp thư (/notifications/inbox)");
         }
 
         Notification thong_bao = notificationRepository.findById(notificationId)
@@ -129,16 +127,20 @@ public class Notification_Service {
         return notificationMapper.toResponse(thong_bao);
     }
 
-    // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) có phân trang
+    // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) có phân
+    // trang
     @Transactional(readOnly = true)
-    public Page_Response<Notification_Response> getPublishedNotifications(int page, int size, String sortBy, String sortDir) {
+    public Page_Response<Notification_Response> getPublishedNotifications(int page, int size, String sortBy,
+            String sortDir) {
         int safeSize = Math.min(Math.max(size, 1), 100);
         int pageIndex = Math.max(page - 1, 0);
         String safeSortBy = (sortBy != null && ALLOWED_SORT_FIELDS.contains(sortBy)) ? sortBy : "publishedAt";
-        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
-        Page<Notification> trang_thong_bao = notificationRepository.findByIsPublishedAndTargetType(true, "ALL", pageable);
+        Page<Notification> trang_thong_bao = notificationRepository.findByIsPublishedAndTargetType(true, "ALL",
+                pageable);
         List<Notification_Response> danh_sach_ket_qua = notificationMapper.toResponseList(trang_thong_bao.getContent());
 
         return Page_Response.<Notification_Response>builder()
@@ -154,7 +156,8 @@ public class Notification_Service {
                 .build();
     }
 
-    // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) không phân trang
+    // Lấy danh sách thông báo đã phát hành đại chúng (targetType = ALL) không phân
+    // trang
     @Transactional(readOnly = true)
     public List<Notification_Response> getPublishedNotifications() {
         List<Notification> danh_sach_thong_bao = notificationRepository.findByIsPublishedAndTargetType(true, "ALL");
@@ -167,7 +170,8 @@ public class Notification_Service {
         return getAll(page, size, null, null, sortBy, sortDir);
     }
 
-    // Tìm kiếm và phân trang danh sách thông báo theo tiêu đề và trạng thái phát hành
+    // Tìm kiếm và phân trang danh sách thông báo theo tiêu đề và trạng thái phát
+    // hành
     @Transactional(readOnly = true)
     public Page_Response<Notification_Response> getAll(
             int page,
@@ -177,18 +181,21 @@ public class Notification_Service {
             String sortBy,
             String sortDir) {
         if (currentUserService != null && currentUserService.hasRole("STUDENT")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Sinh viên chỉ được xem thông báo qua Hộp thư (/notifications/inbox)");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Sinh viên chỉ được xem thông báo qua Hộp thư (/notifications/inbox)");
         }
 
         int safeSize = Math.min(Math.max(size, 1), 100);
         int pageIndex = Math.max(page - 1, 0);
         String safeSortBy = (sortBy != null && ALLOWED_SORT_FIELDS.contains(sortBy)) ? sortBy : "createdAt";
-        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
         String titleFilter = (title != null && !title.isBlank()) ? title.trim() : null;
 
-        Page<Notification> trang_thong_bao = notificationRepository.searchNotifications(titleFilter, isPublished, pageable);
+        Page<Notification> trang_thong_bao = notificationRepository.searchNotifications(titleFilter, isPublished,
+                pageable);
         List<Notification_Response> danh_sach_ket_qua = notificationMapper.toResponseList(trang_thong_bao.getContent());
 
         return Page_Response.<Notification_Response>builder()
@@ -270,13 +277,15 @@ public class Notification_Service {
         return notificationMapper.toResponse(thong_bao);
     }
 
-    // Xóa thông báo và xóa tất cả người nhận liên quan trước để tránh lỗi khóa ngoại
+    // Xóa thông báo và xóa tất cả người nhận liên quan trước để tránh lỗi khóa
+    // ngoại
     @Transactional
     public void delete(String notificationId) {
         Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        List<NotificationRecipient> danh_sach_nguoi_nhan = notificationRecipientRepository.findByNotification_NotificationId(notificationId);
+        List<NotificationRecipient> danh_sach_nguoi_nhan = notificationRecipientRepository
+                .findByNotification_NotificationId(notificationId);
         if (danh_sach_nguoi_nhan != null && !danh_sach_nguoi_nhan.isEmpty()) {
             notificationRecipientRepository.deleteAll(danh_sach_nguoi_nhan);
             log.info("Đã xóa {} người nhận trước khi xóa thông báo {}", danh_sach_nguoi_nhan.size(), notificationId);
@@ -292,7 +301,8 @@ public class Notification_Service {
         }
 
         Set<User> tap_nguoi_nhan = new HashSet<>();
-        String targetType = notification.getTargetType() != null ? notification.getTargetType().trim().toUpperCase() : "ALL";
+        String targetType = notification.getTargetType() != null ? notification.getTargetType().trim().toUpperCase()
+                : "ALL";
         String targetId = notification.getTargetId() != null ? notification.getTargetId().trim() : null;
 
         switch (targetType) {
@@ -392,10 +402,12 @@ public class Notification_Service {
                 break;
         }
 
-        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì lặp N lần
+        // Tối ưu gom tìm kiếm danh sách người nhận đã tồn tại trong 1 truy vấn thay vì
+        // lặp N lần
         Set<String> existingUserIds = Collections.emptySet();
         if (notificationRecipientRepository != null) {
-            existingUserIds = notificationRecipientRepository.findByNotification_NotificationId(notification.getNotificationId()).stream()
+            existingUserIds = notificationRecipientRepository
+                    .findByNotification_NotificationId(notification.getNotificationId()).stream()
                     .filter(nr -> nr.getUser() != null && nr.getUser().getUserId() != null)
                     .map(nr -> nr.getUser().getUserId())
                     .collect(Collectors.toSet());
@@ -403,8 +415,10 @@ public class Notification_Service {
 
         List<NotificationRecipient> danh_sach_nguoi_nhan_moi = new ArrayList<>();
         for (User nguoi_nhan : tap_nguoi_nhan) {
-            if (nguoi_nhan != null && nguoi_nhan.getUserId() != null && !existingUserIds.contains(nguoi_nhan.getUserId())) {
+            if (nguoi_nhan != null && nguoi_nhan.getUserId() != null
+                    && !existingUserIds.contains(nguoi_nhan.getUserId())) {
                 danh_sach_nguoi_nhan_moi.add(NotificationRecipient.builder()
+                        .recipientId(java.util.UUID.randomUUID().toString())
                         .notification(notification)
                         .user(nguoi_nhan)
                         .isRead(false)
@@ -415,14 +429,16 @@ public class Notification_Service {
 
         if (!danh_sach_nguoi_nhan_moi.isEmpty() && notificationRecipientRepository != null) {
             notificationRecipientRepository.saveAll(danh_sach_nguoi_nhan_moi);
-            log.info("Đã tạo {} bản ghi người nhận cho thông báo ID={}", danh_sach_nguoi_nhan_moi.size(), notification.getNotificationId());
+            log.info("Đã tạo {} bản ghi người nhận cho thông báo ID={}", danh_sach_nguoi_nhan_moi.size(),
+                    notification.getNotificationId());
         }
     }
 
     private void validateTarget(String targetType, String targetId) {
         if (targetType == null || !ALLOWED_TARGET_TYPES.contains(targetType)) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Loại đối tượng nhận thông báo '" + targetType + "' không hợp lệ. Cho phép: " + ALLOWED_TARGET_TYPES);
+                    "Loại đối tượng nhận thông báo '" + targetType + "' không hợp lệ. Cho phép: "
+                            + ALLOWED_TARGET_TYPES);
         }
         if (REQUIRE_TARGET_ID_TYPES.contains(targetType) && (targetId == null || targetId.isBlank())) {
             throw new AppException(ErrorCode.INVALID_INPUT,
@@ -430,7 +446,8 @@ public class Notification_Service {
         }
     }
 
-    // Gửi thông báo hệ thống tự động tới toàn bộ Ban Quản lý và Cán bộ / Nhân viên KTX
+    // Gửi thông báo hệ thống tự động tới toàn bộ Ban Quản lý và Cán bộ / Nhân viên
+    // KTX
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStaffAndAdmins(String title, String content, User actor) {
         notifyStaffAndAdmins(title, content, actor, null);
@@ -439,13 +456,18 @@ public class Notification_Service {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStaffAndAdmins(String title, String content, User actor, String targetId) {
         try {
-            if (actor == null && userRepository != null) {
-                actor = userRepository.findAll().stream()
+            User managedActor = null;
+            if (actor != null && actor.getUserId() != null && userRepository != null) {
+                managedActor = userRepository.findById(actor.getUserId()).orElse(null);
+            }
+            if (managedActor == null && userRepository != null) {
+                managedActor = userRepository.findAll().stream()
                         .filter(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getRoleCode()))
                         .findFirst()
                         .orElse(null);
             }
-            if (actor == null) return;
+            if (managedActor == null)
+                return;
 
             Notification thong_bao = Notification.builder()
                     .notificationId(java.util.UUID.randomUUID().toString())
@@ -453,7 +475,7 @@ public class Notification_Service {
                     .content(content)
                     .targetType("STAFF")
                     .targetId(targetId)
-                    .createdBy(actor)
+                    .createdBy(managedActor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())
                     .createdAt(LocalDateTime.now())
@@ -471,18 +493,28 @@ public class Notification_Service {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStudent(Student student, String title, String content, User actor) {
         try {
-            if (student == null || student.getUser() == null) return;
-            User nguoi_dung_sinh_vien = student.getUser();
-            if (!"ACTIVE".equalsIgnoreCase(nguoi_dung_sinh_vien.getStatus())) return;
+            if (student == null || student.getUser() == null)
+                return;
+            String studentUserId = student.getUser().getUserId();
+            if (studentUserId == null || userRepository == null)
+                return;
 
-            if (actor == null && userRepository != null) {
-                actor = userRepository.findAll().stream()
+            User nguoi_dung_sinh_vien = userRepository.findById(studentUserId).orElse(null);
+            if (nguoi_dung_sinh_vien == null || !"ACTIVE".equalsIgnoreCase(nguoi_dung_sinh_vien.getStatus()))
+                return;
+
+            User managedActor = null;
+            if (actor != null && actor.getUserId() != null) {
+                managedActor = userRepository.findById(actor.getUserId()).orElse(null);
+            }
+            if (managedActor == null) {
+                managedActor = userRepository.findAll().stream()
                         .filter(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getRoleCode()))
                         .findFirst()
                         .orElse(nguoi_dung_sinh_vien);
             }
-            if (actor == null) {
-                actor = nguoi_dung_sinh_vien;
+            if (managedActor == null) {
+                managedActor = nguoi_dung_sinh_vien;
             }
 
             Notification thong_bao = Notification.builder()
@@ -491,7 +523,7 @@ public class Notification_Service {
                     .content(content)
                     .targetType("USER")
                     .targetId(nguoi_dung_sinh_vien.getUserId())
-                    .createdBy(actor)
+                    .createdBy(managedActor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())
                     .createdAt(LocalDateTime.now())
