@@ -849,12 +849,24 @@
     }
 
     async function deleteStudent(id) {
-        const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa hồ sơ sinh viên này?');
+        const s = currentStudents.find(item => item.studentId === id);
+        const isAlreadyInactive = s && s.status === 'INACTIVE';
+
+        const title = isAlreadyInactive
+            ? 'Xóa hoàn toàn sinh viên?'
+            : 'Xác nhận xóa?';
+        const message = isAlreadyInactive
+            ? 'Hồ sơ sinh viên này đang ở trạng thái Đã khóa. Bạn có muốn xóa hoàn toàn hồ sơ sinh viên và tài khoản đăng nhập khỏi hệ thống không?'
+            : 'Bạn có chắc chắn muốn xóa (chuyển sang Đã khóa) hồ sơ sinh viên này?';
+
+        const confirmed = await showConfirm(title, message);
         if (!confirmed) return;
 
         try {
             await apiFetch(`/students/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa sinh viên!');
+            showToastSuccess(isAlreadyInactive
+                ? 'Đã xóa hoàn toàn hồ sơ sinh viên và tài khoản!'
+                : 'Đã chuyển hồ sơ sinh viên sang trạng thái Đã khóa!');
             loadStudents(currentStudentPage);
         } catch (e) {
             showToastError(e.message);

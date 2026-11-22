@@ -464,17 +464,36 @@ class Student_ServiceTest {
     // ==================== DELETE TESTS ====================
 
     @Test
-    @DisplayName("delete - Xóa hồ sơ sinh viên và khóa User khi không còn hợp đồng ACTIVE")
+    @DisplayName("delete - Lần 1: Chuyển trạng thái sang INACTIVE và khóa User khi không còn hợp đồng ACTIVE")
     void delete_success_softDeleteAndLockUser() {
         when(studentRepository.findById("stu-01")).thenReturn(Optional.of(student));
         when(contractRepository.existsByStudent_StudentIdAndStatus("stu-01", "ACTIVE")).thenReturn(false);
 
         studentService.delete("stu-01");
 
+        assertThat(student.getStatus()).isEqualTo("INACTIVE");
         assertThat(user.getStatus()).isEqualTo("INACTIVE");
+        verify(studentRepository).save(student);
         verify(userRepository).save(user);
         verify(refreshTokenService).revokeAllActiveByUserId("u-01");
+        verify(studentRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("delete - Lần 2 (khi đã INACTIVE): Xóa hoàn toàn Student và User khi không có hợp đồng hoạt động/chờ duyệt")
+    void delete_whenAlreadyInactive_hardDeletesStudentAndUser() {
+        student.setStatus("INACTIVE");
+        user.setStatus("INACTIVE");
+        when(studentRepository.findById("stu-01")).thenReturn(Optional.of(student));
+        when(contractRepository.existsByStudent_StudentIdAndStatus("stu-01", "ACTIVE")).thenReturn(false);
+        when(contractRepository.existsByStudent_StudentIdAndStatus("stu-01", "PENDING")).thenReturn(false);
+        when(contractRepository.findByStudent_StudentId("stu-01")).thenReturn(List.of());
+
+        studentService.delete("stu-01");
+
         verify(studentRepository).delete(student);
+        verify(refreshTokenService).deleteAllByUserId("u-01");
+        verify(userRepository).delete(user);
     }
 
     @Test

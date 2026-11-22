@@ -622,7 +622,8 @@ public class Student_Service {
         return studentMapper.toResponse(sinh_vien);
     }
 
-    // Xóa hồ sơ sinh viên và khóa tài khoản đăng nhập
+    // Lần 1: Ngừng hoạt động hồ sơ sinh viên (Soft delete sang INACTIVE)
+    // Lần 2 (khi đã INACTIVE): Xóa hoàn toàn hồ sơ sinh viên và tài khoản User nếu không vướng hợp đồng
     @Transactional
     public void delete(String studentId) {
         Student sinh_vien = studentRepository.findById(studentId)
@@ -634,15 +635,54 @@ public class Student_Service {
                     "Không thể xóa hoặc ngừng hoạt động sinh viên đang có hợp đồng lưu trú ACTIVE");
         }
 
-        if (sinh_vien.getUser() != null) {
-            sinh_vien.getUser().setStatus("INACTIVE");
-            userRepository.save(sinh_vien.getUser());
-            if (refreshTokenService != null) {
-                refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
+        // Click lần 1: Nếu chưa ở trạng thái INACTIVE thì chuyển sang INACTIVE (Đã khóa) như cũ
+        if (!"INACTIVE".equalsIgnoreCase(sinh_vien.getStatus())) {
+            sinh_vien.setStatus("INACTIVE");
+            studentRepository.save(sinh_vien);
+
+            if (sinh_vien.getUser() != null) {
+                sinh_vien.getUser().setStatus("INACTIVE");
+                userRepository.save(sinh_vien.getUser());
+                if (refreshTokenService != null) {
+                    refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
+                }
             }
+            return;
         }
 
+        // Click lần 2 (khi đã INACTIVE): Kiểm tra điều kiện hợp đồng trước khi xóa hoàn toàn
+        if (contractRepository.existsByStudent_StudentIdAndStatus(studentId, "PENDING")) {
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Không thể xóa hoàn toàn sinh viên đang có hợp đồng chờ phê duyệt");
+        }
+
+        List<Contract> danh_sach_hop_dong = contractRepository.findByStudent_StudentId(studentId);
+        if (danh_sach_hop_dong != null && !danh_sach_hop_dong.isEmpty()) {
+            boolean hasOngoingContract = danh_sach_hop_dong.stream().anyMatch(c ->
+                    "ACTIVE".equalsIgnoreCase(c.getStatus())
+                    || "PENDING".equalsIgnoreCase(c.getStatus())
+                    || "PENDING_APPROVAL".equalsIgnoreCase(c.getStatus())
+                    || (c.getEndDate() != null && !c.getEndDate().isBefore(java.time.LocalDate.now())
+                        && !"CANCELLED".equalsIgnoreCase(c.getStatus())
+                        && !"REJECTED".equalsIgnoreCase(c.getStatus())
+                        && !"TERMINATED".equalsIgnoreCase(c.getStatus())
+                        && !"EXPIRED".equalsIgnoreCase(c.getStatus())));
+            if (hasOngoingContract) {
+                throw new AppException(ErrorCode.OPERATION_FAILED,
+                        "Không thể xóa hoàn toàn sinh viên đã có hợp đồng còn thời hạn hoặc đang chờ phê duyệt");
+            }
+            contractRepository.deleteAll(danh_sach_hop_dong);
+        }
+
+        User nguoi_dung = sinh_vien.getUser();
         studentRepository.delete(sinh_vien);
+
+        if (nguoi_dung != null) {
+            if (refreshTokenService != null) {
+                refreshTokenService.deleteAllByUserId(nguoi_dung.getUserId());
+            }
+            userRepository.delete(nguoi_dung);
+        }
     }
 
     // Kiểm tra quyền xem: Chỉ chính chủ sinh viên hoặc nhân viên/quản lý mới được xem

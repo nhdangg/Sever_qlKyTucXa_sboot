@@ -82,6 +82,14 @@ public class RefreshTokenService {
         return refreshTokenRepository.revokeAllActiveByUserId(userId, now);
     }
 
+    // Xóa toàn bộ Refresh Token của người dùng trước khi xóa cứng tài khoản User
+    @Transactional
+    public void deleteAllByUserId(String userId) {
+        if (userId != null && !userId.isBlank()) {
+            refreshTokenRepository.deleteByUser_UserId(userId);
+        }
+    }
+
     // Lưu thực thể RefreshToken (tự động băm SHA-256 chuỗi token nếu chưa băm)
     @Transactional
     public RefreshToken save(RefreshToken refreshToken) {
