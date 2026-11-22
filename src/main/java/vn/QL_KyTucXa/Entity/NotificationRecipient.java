@@ -21,6 +21,13 @@ public class NotificationRecipient {
     @Column(name = "maNguoiNhan", length = 36)
     private String recipientId;
 
+    @PrePersist
+    public void ensureId() {
+        if (this.recipientId == null || this.recipientId.isBlank()) {
+            this.recipientId = java.util.UUID.randomUUID().toString();
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "thongBao", nullable = false)
     private Notification notification;

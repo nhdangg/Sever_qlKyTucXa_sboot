@@ -20,6 +20,19 @@ public class Notification {
     @Column(name = "maThongBao", length = 36)
     private String notificationId;
 
+    @PrePersist
+    public void ensureIdAndTimestamp() {
+        if (this.notificationId == null || this.notificationId.isBlank()) {
+            this.notificationId = java.util.UUID.randomUUID().toString();
+        }
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.isPublished == null) {
+            this.isPublished = false;
+        }
+    }
+
     @Column(name = "tieuDe", length = 255, nullable = false)
     private String title;
 

@@ -470,7 +470,11 @@ public class Contract_Service {
 
         hop_dong = contractRepository.save(hop_dong);
         if (auditLogService != null) {
-            auditLogService.recordAction("APPROVE_CONTRACT", "hopDong", hop_dong.getContractId(), null, "ACTIVE");
+            try {
+                auditLogService.recordAction("APPROVE_CONTRACT", "hopDong", hop_dong.getContractId(), null, "ACTIVE");
+            } catch (Exception e) {
+                log.warn("Không thể ghi log phê duyệt hợp đồng: {}", e.getMessage());
+            }
         }
 
         // Tự động đồng bộ trạng thái hồ sơ sinh viên sang ACTIVE khi hợp đồng có hiệu lực
@@ -490,13 +494,17 @@ public class Contract_Service {
 
         // Bắn thông báo cho sinh viên được duyệt hợp đồng
         if (notificationService != null && hop_dong.getStudent() != null) {
-            String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
-            String title = "Hợp đồng KTX của bạn đã được phê duyệt!";
-            String content = String.format(
-                    "Đơn đăng ký hợp đồng mã %s tại phòng %s (giường %s) đã được Ban Quản lý phê duyệt thành công. Chúc bạn có kỳ lưu trú thuận lợi!",
-                    hop_dong.getContractCode(), roomNum, giuong.getBedNumber() != null ? giuong.getBedNumber() : "");
-            notificationService.notifyStudent(hop_dong.getStudent(), title, content,
-                    nhan_vien != null ? nhan_vien.getUser() : null);
+            try {
+                String roomNum = (giuong.getRoom() != null) ? giuong.getRoom().getRoomNumber() : "";
+                String title = "Hợp đồng KTX của bạn đã được phê duyệt!";
+                String content = String.format(
+                        "Đơn đăng ký hợp đồng mã %s tại phòng %s (giường %s) đã được Ban Quản lý phê duyệt thành công. Chúc bạn có kỳ lưu trú thuận lợi!",
+                        hop_dong.getContractCode(), roomNum, giuong.getBedNumber() != null ? giuong.getBedNumber() : "");
+                notificationService.notifyStudent(hop_dong.getStudent(), title, content,
+                        nhan_vien != null ? nhan_vien.getUser() : null);
+            } catch (Exception e) {
+                log.warn("Không thể gửi thông báo phê duyệt hợp đồng tới sinh viên: {}", e.getMessage());
+            }
         }
 
         return contractMapper.toResponse(hop_dong);

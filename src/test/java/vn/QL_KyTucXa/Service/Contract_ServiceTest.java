@@ -127,7 +127,8 @@ class Contract_ServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getContractCode()).isEqualTo("HD2026-001");
         assertThat(contract.getStatus()).isEqualTo("PENDING");
-        verify(bedRepository, never()).save(bed);
+        verify(bedRepository).save(bed);
+        assertThat(bed.getStatus()).isEqualTo("RESERVED");
     }
 
     @Test

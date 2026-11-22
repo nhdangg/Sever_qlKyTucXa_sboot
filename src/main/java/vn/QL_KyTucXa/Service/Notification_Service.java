@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.QL_KyTucXa.DTO.Request.Notification_Request;
 import vn.QL_KyTucXa.DTO.Response.Notification_Response;
@@ -430,12 +431,12 @@ public class Notification_Service {
     }
 
     // Gửi thông báo hệ thống tự động tới toàn bộ Ban Quản lý và Cán bộ / Nhân viên KTX
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStaffAndAdmins(String title, String content, User actor) {
         notifyStaffAndAdmins(title, content, actor, null);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStaffAndAdmins(String title, String content, User actor, String targetId) {
         try {
             if (actor == null && userRepository != null) {
@@ -447,6 +448,7 @@ public class Notification_Service {
             if (actor == null) return;
 
             Notification thong_bao = Notification.builder()
+                    .notificationId(java.util.UUID.randomUUID().toString())
                     .title(title)
                     .content(content)
                     .targetType("STAFF")
@@ -454,9 +456,10 @@ public class Notification_Service {
                     .createdBy(actor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
                     .build();
 
-            thong_bao = notificationRepository.save(thong_bao);
+            thong_bao = notificationRepository.saveAndFlush(thong_bao);
             createRecipientsForNotification(thong_bao);
             log.info("Đã tạo thông báo hệ thống cho Staff/Admin: {}", title);
         } catch (Exception e) {
@@ -465,7 +468,7 @@ public class Notification_Service {
     }
 
     // Gửi thông báo hệ thống trực tiếp cho một sinh viên cụ thể
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStudent(Student student, String title, String content, User actor) {
         try {
             if (student == null || student.getUser() == null) return;
@@ -483,6 +486,7 @@ public class Notification_Service {
             }
 
             Notification thong_bao = Notification.builder()
+                    .notificationId(java.util.UUID.randomUUID().toString())
                     .title(title)
                     .content(content)
                     .targetType("USER")
@@ -490,18 +494,20 @@ public class Notification_Service {
                     .createdBy(actor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())
+                    .createdAt(LocalDateTime.now())
                     .build();
 
-            thong_bao = notificationRepository.save(thong_bao);
+            thong_bao = notificationRepository.saveAndFlush(thong_bao);
 
             NotificationRecipient nguoi_nhan = NotificationRecipient.builder()
+                    .recipientId(java.util.UUID.randomUUID().toString())
                     .notification(thong_bao)
                     .user(nguoi_dung_sinh_vien)
                     .isRead(false)
                     .readAt(null)
                     .build();
 
-            notificationRecipientRepository.save(nguoi_nhan);
+            notificationRecipientRepository.saveAndFlush(nguoi_nhan);
             log.info("Đã gửi thông báo tới sinh viên {}: {}", student.getFullName(), title);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo tới sinh viên: {}", e.getMessage());
