@@ -17,6 +17,7 @@ public interface Notification_Repository extends JpaRepository<Notification, Str
     List<Notification> findByIsPublishedAndTargetType(Boolean isPublished, String targetType);
     Page<Notification> findByIsPublishedAndTargetType(Boolean isPublished, String targetType, Pageable pageable);
     List<Notification> findByTargetType(String targetType);
+    List<Notification> findByCreatedBy_UserId(String userId);
 
     // Tìm kiếm thông báo theo tiêu đề và trạng thái phát hành
     @Query("""

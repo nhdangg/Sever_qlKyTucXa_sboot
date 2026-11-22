@@ -62,6 +62,62 @@ public class Student_Service {
     Contract_Repository contractRepository;
     RefreshTokenService refreshTokenService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Bed_Repository bedRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.RoomTransfer_Repository roomTransferRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Invoice_Repository invoiceRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Payment_Repository paymentRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Feedback_Repository feedbackRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.VehicleRegistration_Repository vehicleRegistrationRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Violation_Repository violationRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Visitor_Repository visitorRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.NotificationRecipient_Repository notificationRecipientRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.Notification_Repository notificationRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.RefreshToken_Repository refreshTokenRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.LogoutToken_Repository logoutTokenRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.AuditLog_Repository auditLogRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @lombok.experimental.NonFinal
+    vn.QL_KyTucXa.Repository.MaintenanceRequest_Repository maintenanceRequestRepository;
+
     @Transactional
     public Student_Response create(Student_Request request) {
         String studentCode = request.getStudentCode().trim();
@@ -622,7 +678,8 @@ public class Student_Service {
         return studentMapper.toResponse(sinh_vien);
     }
 
-    // Ngừng hoạt động hồ sơ sinh viên (Soft delete: INACTIVE)
+    // Xóa hồ sơ sinh viên (Hard delete khi không có hợp đồng ACTIVE)
+    @Transactional
     public void delete(String studentId) {
         Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
@@ -633,16 +690,133 @@ public class Student_Service {
                     "Không thể xóa hoặc ngừng hoạt động sinh viên đang có hợp đồng lưu trú ACTIVE");
         }
 
-        // Chuyển trạng thái sang INACTIVE và khóa tài khoản đăng nhập
+        User nguoi_dung = sinh_vien.getUser();
         sinh_vien.setStatus("INACTIVE");
-        studentRepository.save(sinh_vien);
-
-        if (sinh_vien.getUser() != null) {
-            sinh_vien.getUser().setStatus("INACTIVE");
-            userRepository.save(sinh_vien.getUser());
+        if (nguoi_dung != null) {
+            nguoi_dung.setStatus("INACTIVE");
             if (refreshTokenService != null) {
-                refreshTokenService.revokeAllActiveByUserId(sinh_vien.getUser().getUserId());
+                refreshTokenService.revokeAllActiveByUserId(nguoi_dung.getUserId());
             }
+        }
+
+        // Dọn dẹp các dữ liệu phụ thuộc của sinh viên trước khi xóa cứng
+        if (feedbackRepository != null) {
+            List<vn.QL_KyTucXa.Entity.Feedback> feedbacks = feedbackRepository.findByStudent_StudentId(studentId);
+            if (!feedbacks.isEmpty()) {
+                feedbackRepository.deleteAll(feedbacks);
+            }
+        }
+        if (vehicleRegistrationRepository != null) {
+            List<vn.QL_KyTucXa.Entity.VehicleRegistration> vehicles = vehicleRegistrationRepository.findByStudent_StudentId(studentId);
+            if (!vehicles.isEmpty()) {
+                vehicleRegistrationRepository.deleteAll(vehicles);
+            }
+        }
+        if (violationRepository != null) {
+            List<vn.QL_KyTucXa.Entity.Violation> violations = violationRepository.findByStudent_StudentId(studentId);
+            if (!violations.isEmpty()) {
+                violationRepository.deleteAll(violations);
+            }
+        }
+        if (visitorRepository != null) {
+            List<vn.QL_KyTucXa.Entity.Visitor> visitors = visitorRepository.findByHostStudent_StudentId(studentId);
+            if (!visitors.isEmpty()) {
+                visitorRepository.deleteAll(visitors);
+            }
+        }
+        if (invoiceRepository != null) {
+            List<vn.QL_KyTucXa.Entity.Invoice> invoices = invoiceRepository.findByStudent_StudentId(studentId);
+            for (vn.QL_KyTucXa.Entity.Invoice inv : invoices) {
+                if (paymentRepository != null) {
+                    List<vn.QL_KyTucXa.Entity.Payment> payments = paymentRepository.findByInvoice_InvoiceId(inv.getInvoiceId());
+                    if (!payments.isEmpty()) {
+                        paymentRepository.deleteAll(payments);
+                    }
+                }
+            }
+            if (!invoices.isEmpty()) {
+                invoiceRepository.deleteAll(invoices);
+            }
+        }
+        if (roomTransferRepository != null) {
+            List<vn.QL_KyTucXa.Entity.RoomTransfer> transfers = roomTransferRepository.findByContract_Student_StudentId(studentId);
+            if (!transfers.isEmpty()) {
+                roomTransferRepository.deleteAll(transfers);
+            }
+        }
+        if (contractRepository != null) {
+            List<Contract> contracts = contractRepository.findByStudent_StudentId(studentId);
+            if (contracts != null && !contracts.isEmpty()) {
+                for (Contract c : contracts) {
+                    if (c.getBed() != null && "RESERVED".equalsIgnoreCase(c.getBed().getStatus()) && bedRepository != null) {
+                        c.getBed().setStatus("AVAILABLE");
+                        bedRepository.save(c.getBed());
+                    }
+                }
+                contractRepository.deleteAll(contracts);
+            }
+        }
+
+        // Xóa file ảnh đại diện cũ nếu có
+        try {
+            deleteOldAvatarFile(sinh_vien.getAvatarUrl());
+        } catch (Exception ignored) {
+        }
+
+        // Xóa cứng bản ghi sinh viên khỏi CSDL
+        studentRepository.delete(sinh_vien);
+
+        // Dọn dẹp và xóa tài khoản User liên kết của sinh viên
+        if (nguoi_dung != null && nguoi_dung.getUserId() != null) {
+            String uid = nguoi_dung.getUserId();
+            if (notificationRecipientRepository != null) {
+                List<vn.QL_KyTucXa.Entity.NotificationRecipient> recipients = notificationRecipientRepository.findByUser_UserId(uid);
+                if (!recipients.isEmpty()) {
+                    notificationRecipientRepository.deleteAll(recipients);
+                }
+            }
+            if (notificationRepository != null) {
+                List<vn.QL_KyTucXa.Entity.Notification> createdNotifs = notificationRepository.findByCreatedBy_UserId(uid);
+                for (vn.QL_KyTucXa.Entity.Notification n : createdNotifs) {
+                    if (notificationRecipientRepository != null) {
+                        List<vn.QL_KyTucXa.Entity.NotificationRecipient> nRecs = notificationRecipientRepository.findByNotification_NotificationId(n.getNotificationId());
+                        if (!nRecs.isEmpty()) {
+                            notificationRecipientRepository.deleteAll(nRecs);
+                        }
+                    }
+                }
+                if (!createdNotifs.isEmpty()) {
+                    notificationRepository.deleteAll(createdNotifs);
+                }
+            }
+            if (refreshTokenRepository != null) {
+                List<vn.QL_KyTucXa.Entity.RefreshToken> tokens = refreshTokenRepository.findByUser_UserId(uid);
+                if (!tokens.isEmpty()) {
+                    refreshTokenRepository.deleteAll(tokens);
+                }
+            }
+            if (logoutTokenRepository != null) {
+                List<vn.QL_KyTucXa.Entity.LogoutToken> lTokens = logoutTokenRepository.findByUser_UserId(uid);
+                if (!lTokens.isEmpty()) {
+                    logoutTokenRepository.deleteAll(lTokens);
+                }
+            }
+            if (maintenanceRequestRepository != null) {
+                List<vn.QL_KyTucXa.Entity.MaintenanceRequest> mReqs = maintenanceRequestRepository.findByReportedBy_UserId(uid);
+                if (!mReqs.isEmpty()) {
+                    maintenanceRequestRepository.deleteAll(mReqs);
+                }
+            }
+            if (auditLogRepository != null) {
+                List<vn.QL_KyTucXa.Entity.AuditLog> logs = auditLogRepository.findByUser_UserId(uid);
+                for (vn.QL_KyTucXa.Entity.AuditLog logItem : logs) {
+                    logItem.setUser(null);
+                }
+                if (!logs.isEmpty()) {
+                    auditLogRepository.saveAll(logs);
+                }
+            }
+            userRepository.delete(nguoi_dung);
         }
     }
 
