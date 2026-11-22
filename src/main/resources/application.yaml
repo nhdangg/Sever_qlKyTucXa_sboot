@@ -21,14 +21,19 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+      default-batch-fetch_size:
+      # giảm N+1 bằng cách fetch nhiều object trong 1 query 100 
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQLDialect
 
 server:
   port: 8912
+  # nén GZIP cho json lớn giảm 85% -90% dung lượng truyền tải 
+  compression: 
+    enabled: true
   # servlet:
     # context-path: "/QLyKyTucXa" để khi depl phải có /QLyKyTucXa ở cuối đuôi
   forward-headers-strategy: framework # Tin cay header forwarded khi chay sau reverse proxy da biet
