@@ -148,16 +148,42 @@
             border-color: var(--univ-navy) !important;
         }
 
-        /* 2. THANH TAB PILLS - 1 MÀU CHỦ ĐẠO #003366 DUY NHẤT, KHÔNG CHUYỂN MÀU */
+        /* 2. THANH TAB PILLS - 1 MÀU CHỦ ĐẠO #003366 DUY NHẤT, NẰM GỌN TRÊN 1 HÀNG */
+        .nav-pills-scrollable-container {
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .nav-pills-scrollable-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-pills-custom {
+            display: flex;
+            flex-wrap: nowrap !important;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .nav-pills-custom .nav-item {
+            flex: 1 1 auto;
+        }
+
         .nav-pills-custom .nav-link {
             color: #475569;
             font-weight: 600;
-            padding: 9px 16px;
+            padding: 8px 11px;
             border-radius: 10px;
-            font-size: 0.88rem;
+            font-size: 0.83rem;
+            white-space: nowrap;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
+            width: 100%;
         }
 
         .nav-pills-custom .nav-link:hover {
@@ -601,10 +627,10 @@
             </div>
         </div>
 
-        <!-- Navigation Pills Tabs: Hỗ trợ cuộn ngang êm ái trên mobile & tablet -->
-        <div class="card border-0 shadow-sm rounded-4 p-2 p-md-3 bg-white mb-4">
+        <!-- Navigation Pills Tabs: Hiển thị gọn trên 1 hàng duy nhất -->
+        <div class="card border-0 shadow-sm rounded-4 p-2 bg-white mb-4">
             <div class="nav-pills-scrollable-container">
-                <ul class="nav nav-pills nav-pills-custom gap-2 flex-wrap" id="portalTabs" role="tablist">
+                <ul class="nav nav-pills nav-pills-custom flex-nowrap" id="portalTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabRoom" type="button">
                             <i class="bi bi-people-fill me-1"></i> Phòng ở & Hợp đồng
