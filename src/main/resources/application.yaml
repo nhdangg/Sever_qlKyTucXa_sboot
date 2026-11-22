@@ -21,10 +21,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-      # giảm N+1 bằng cách fetch nhiều object trong 1 query 100 
     show-sql: false
     properties:
       hibernate:
+        # giảm N+1 bằng cách fetch nhiều object trong 1 query 100 
         default_batch_fetch_size: 100
         format_sql: false
         dialect: org.hibernate.dialect.MySQLDialect
