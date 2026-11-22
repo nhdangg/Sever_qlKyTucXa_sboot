@@ -633,6 +633,30 @@
             }
         }
 
+        async function updateContractStats(keyword = '', periodId = '') {
+            try {
+                const allRes = await apiFetch('/contracts/all');
+                let fullList = unwrapList(allRes);
+                if (periodId) {
+                    fullList = fullList.filter(c => c.periodId === periodId);
+                }
+                if (keyword) {
+                    const kw = keyword.toLowerCase();
+                    fullList = fullList.filter(c =>
+                        (c.contractCode && c.contractCode.toLowerCase().includes(kw)) ||
+                        (c.studentCode && c.studentCode.toLowerCase().includes(kw)) ||
+                        (c.studentFullName && c.studentFullName.toLowerCase().includes(kw)) ||
+                        (c.roomNumber && c.roomNumber.toLowerCase().includes(kw))
+                    );
+                }
+                document.getElementById('statTotalContracts').textContent = fullList.length;
+                document.getElementById('statActiveContracts').textContent = fullList.filter(c => c.status === 'ACTIVE').length;
+                document.getElementById('statPendingContracts').textContent = fullList.filter(c => c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT').length;
+            } catch (e) {
+                console.warn('Không thể tải thống kê tổng hợp đồng:', e);
+            }
+        }
+
         async function loadContracts(page = 1) {
             currentContractPage = page;
             const tbody = document.getElementById('contractTableBody');
@@ -652,13 +676,11 @@
                 if (status) params.append('status', status);
                 if (periodId) params.append('periodId', periodId);
 
-                const res = await apiFetch(`/contracts?${params.toString()}`);
+                const [res] = await Promise.all([
+                    apiFetch(`/contracts?${params.toString()}`),
+                    updateContractStats(keyword, periodId)
+                ]);
                 allContracts = unwrapList(res);
-                const totalElements = (res.pageInfo && res.pageInfo.totalElements != null) ? res.pageInfo.totalElements : allContracts.length;
-
-                document.getElementById('statTotalContracts').textContent = totalElements;
-                document.getElementById('statActiveContracts').textContent = allContracts.filter(c => c.status === 'ACTIVE').length;
-                document.getElementById('statPendingContracts').textContent = allContracts.filter(c => c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT').length;
                 renderPaginationBar('contractPaginationBar', res.pageInfo, 'loadContracts');
 
                 if (allContracts.length === 0) {
