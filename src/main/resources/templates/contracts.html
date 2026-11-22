@@ -1127,8 +1127,14 @@
                     await apiFetch(`/contracts/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
                     showToastSuccess('Cập nhật hợp đồng thành công!');
                 } else {
-                    await apiFetch('/contracts', { method: 'POST', body: JSON.stringify(payload) });
-                    showToastSuccess('Tạo hợp đồng thành công!');
+                    const createRes = await apiFetch('/contracts', { method: 'POST', body: JSON.stringify(payload) });
+                    const createdContract = createRes && createRes.result ? createRes.result : createRes;
+                    if (payload.status === 'ACTIVE' && createdContract && createdContract.contractId && currentUserRole !== 'STAFF') {
+                        await apiFetch(`/contracts/${createdContract.contractId}/approve`, { method: 'PUT' });
+                        showToastSuccess('Lập và kích hoạt hợp đồng thành công!');
+                    } else {
+                        showToastSuccess('Tạo hợp đồng thành công!');
+                    }
                 }
                 contractModal.hide();
                 await loadFormSelects();

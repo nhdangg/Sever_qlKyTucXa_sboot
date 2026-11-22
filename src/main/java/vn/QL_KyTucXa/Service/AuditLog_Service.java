@@ -49,15 +49,8 @@ public class AuditLog_Service {
                 // Có thể là request không cần đăng nhập hoặc unauthenticated
             }
 
-            String oldJson = null;
-            if (oldValueObj != null) {
-                oldJson = oldValueObj instanceof String s ? s : objectMapper.writeValueAsString(oldValueObj);
-            }
-
-            String newJson = null;
-            if (newValueObj != null) {
-                newJson = newValueObj instanceof String s ? s : objectMapper.writeValueAsString(newValueObj);
-            }
+            String oldJson = toValidJson(oldValueObj);
+            String newJson = toValidJson(newValueObj);
 
             String ip = "127.0.0.1";
             String userAgent = "Unknown";
@@ -87,6 +80,38 @@ public class AuditLog_Service {
             log.debug("[AUDIT] Đã ghi nhật ký: action={}, table={}, recordId={}", action, tableName, recordId);
         } catch (Exception ex) {
             log.error("[AUDIT ERROR] Không thể ghi nhật ký kiểm toán: {}", ex.getMessage());
+            try {
+                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    // Chuẩn hóa giá trị sang chuỗi JSON hợp lệ cho cột kiểu JSON trong MySQL
+    private String toValidJson(Object valueObj) {
+        if (valueObj == null) {
+            return null;
+        }
+        try {
+            if (valueObj instanceof String s) {
+                String trimmed = s.trim();
+                if (trimmed.isEmpty()) {
+                    return null;
+                }
+                if ((trimmed.startsWith("{") && trimmed.endsWith("}"))
+                        || (trimmed.startsWith("[") && trimmed.endsWith("]"))
+                        || (trimmed.startsWith("\"") && trimmed.endsWith("\""))) {
+                    try {
+                        objectMapper.readTree(trimmed);
+                        return trimmed;
+                    } catch (Exception ignored) {
+                    }
+                }
+                return objectMapper.writeValueAsString(java.util.Map.of("detail", s));
+            }
+            return objectMapper.writeValueAsString(valueObj);
+        } catch (Exception e) {
+            return "{\"detail\":\"[Unserializable]\"}";
         }
     }
 

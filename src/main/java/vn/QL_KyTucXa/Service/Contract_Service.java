@@ -142,8 +142,12 @@ public class Contract_Service {
 
         hop_dong = contractRepository.save(hop_dong);
         if (auditLogService != null) {
-            auditLogService.recordAction("CREATE_CONTRACT", "hopDong", hop_dong.getContractId(), null,
-                    "Created code: " + hop_dong.getContractCode());
+            String createdContractId = hop_dong.getContractId();
+            String createdContractCode = hop_dong.getContractCode();
+            executeAfterCommitOrNow(() -> {
+                auditLogService.recordAction("CREATE_CONTRACT", "hopDong", createdContractId, null,
+                        "Created code: " + createdContractCode);
+            });
         }
         return contractMapper.toResponse(hop_dong);
     }

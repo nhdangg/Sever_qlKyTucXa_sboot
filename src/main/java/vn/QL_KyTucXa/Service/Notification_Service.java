@@ -487,6 +487,10 @@ public class Notification_Service {
             log.info("Đã tạo thông báo hệ thống cho Staff/Admin: {}", title);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo hệ thống tới Staff/Admin: {}", e.getMessage());
+            try {
+                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -544,6 +548,10 @@ public class Notification_Service {
             log.info("Đã gửi thông báo tới sinh viên {}: {}", student.getFullName(), title);
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo tới sinh viên: {}", e.getMessage());
+            try {
+                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            } catch (Exception ignored) {
+            }
         }
     }
 }
