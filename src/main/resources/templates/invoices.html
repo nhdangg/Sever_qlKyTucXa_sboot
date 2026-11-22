@@ -1694,9 +1694,12 @@
                     method: 'POST',
                     body: JSON.stringify(requests)
                 });
-                showToastSuccess('Đã lưu thành công chỉ số Điện & Nước cho phòng!');
                 readingModal.hide();
-                await loadReadings(1);
+                await Promise.all([
+                    loadReadings(1),
+                    loadInvoices(1)
+                ]);
+                showToastSuccess('Đã lưu chỉ số Điện & Nước và tự động lập Hóa đơn (Tiền phòng + Điện nước + Dịch vụ) cho từng sinh viên trong phòng!');
             } catch (e) {
                 showToastError(e.message);
             }
@@ -2031,7 +2034,25 @@
             invoiceModal.show();
         }
 
-        function createInvoiceFromRoomReading(roomId, readingMonth, utilityCost) {
+        async function createInvoiceFromRoomReading(roomId, readingMonth, utilityCost) {
+            const ym = readingMonth ? String(readingMonth).slice(0, 7) : new Date().toISOString().slice(0, 7);
+            const monthParam = `${ym}-01`;
+            try {
+                const res = await apiFetch(`/invoices/generate-by-room?roomId=${encodeURIComponent(roomId)}&readingMonth=${encodeURIComponent(monthParam)}`, {
+                    method: 'POST'
+                });
+                const generatedList = unwrapList(res);
+                if (generatedList && generatedList.length > 0) {
+                    await loadInvoices(1);
+                    const invTabBtn = document.getElementById('tab-invoices-btn');
+                    if (invTabBtn) new bootstrap.Tab(invTabBtn).show();
+                    showToastSuccess(`Đã tự động tính Tiền phòng + Điện nước + Dịch vụ và lập/cập nhật ${generatedList.length} hóa đơn cho các sinh viên trong phòng!`);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Không thể lập hóa đơn tự động theo phòng, mở form thủ công:', e);
+            }
+
             const contract = allContracts.find(c => (c.roomId === roomId || c.roomNumber === roomId) && c.status === 'ACTIVE') ||
                              allContracts.find(c => c.roomId === roomId) ||
                              allContracts[0];
@@ -2044,8 +2065,7 @@
             document.getElementById('dueDate').value = next10Days.toISOString().split('T')[0];
 
             if (readingMonth) {
-                const ym = String(readingMonth).slice(0, 7);
-                document.getElementById('invoiceMonth').value = ym + '-01';
+                document.getElementById('invoiceMonth').value = monthParam;
             }
             if (contract) {
                 document.getElementById('invoiceContractSelect').value = contract.contractId;
@@ -2097,11 +2117,16 @@
             const roomFee = parseFloat(document.getElementById('calcRoomFee').value || (contractObj ? contractObj.monthlyFee : 0) || 0);
 
             // Tìm số sinh viên (hợp đồng ACTIVE) đang ở trong phòng này để chia đều
-            const activeRoomContracts = allContracts.filter(c => c.roomId === roomId && (c.status === 'ACTIVE' || !c.status));
+            const activeRoomContracts = allContracts.filter(c =>
+                (c.roomId === roomId || (roomNumber && c.roomNumber === roomNumber)) &&
+                (c.status === 'ACTIVE' || !c.status)
+            );
             const residentCount = Math.max(1, activeRoomContracts.length);
 
             // 2. Tiền điện & Nước (UTILITY)
-            let roomReadings = allReadings.filter(r => r.roomId === roomId);
+            let roomReadings = allReadings.filter(r =>
+                r.roomId === roomId || (roomNumber && r.roomNumber === roomNumber)
+            );
             if (invMonthStr) {
                 const monthMatches = roomReadings.filter(r => (r.readingMonth || '').startsWith(invMonthStr));
                 if (monthMatches.length > 0) {

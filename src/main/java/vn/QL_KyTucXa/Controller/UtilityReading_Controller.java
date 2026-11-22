@@ -12,10 +12,13 @@ import vn.QL_KyTucXa.DTO.Response.Page_Response;
 import vn.QL_KyTucXa.DTO.Response.Room_Response;
 import vn.QL_KyTucXa.DTO.Response.UtilityReading_Response;
 import vn.QL_KyTucXa.DTO.Response.UtilitySplit_Response;
+import vn.QL_KyTucXa.Service.Invoice_Service;
 import vn.QL_KyTucXa.Service.UtilityReading_Service;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/utility-readings")
@@ -24,20 +27,37 @@ import java.util.List;
 public class UtilityReading_Controller {
 
     UtilityReading_Service readingService;
+    Invoice_Service invoiceService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF') or hasAuthority('UTILITY_MANAGE')")
     public Api_Response<UtilityReading_Response> recordReading(@RequestBody @Valid UtilityReading_Request request) {
+        UtilityReading_Response saved = readingService.create(request);
+        if (saved != null && saved.getRoomId() != null && saved.getReadingMonth() != null) {
+            invoiceService.generateOrUpdateInvoicesForRoomReading(saved.getRoomId(), saved.getReadingMonth());
+        }
         return Api_Response.<UtilityReading_Response>builder()
-                .result(readingService.create(request))
+                .result(saved)
                 .build();
     }
 
     @PostMapping("/batch")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF') or hasAuthority('UTILITY_MANAGE')")
     public Api_Response<List<UtilityReading_Response>> recordBatch(@RequestBody @Valid List<UtilityReading_Request> requests) {
+        List<UtilityReading_Response> savedList = readingService.createBatch(requests);
+        if (savedList != null) {
+            Set<String> syncedRoomMonths = new HashSet<>();
+            for (UtilityReading_Response r : savedList) {
+                if (r != null && r.getRoomId() != null && r.getReadingMonth() != null) {
+                    String key = r.getRoomId() + "_" + r.getReadingMonth().withDayOfMonth(1);
+                    if (syncedRoomMonths.add(key)) {
+                        invoiceService.generateOrUpdateInvoicesForRoomReading(r.getRoomId(), r.getReadingMonth());
+                    }
+                }
+            }
+        }
         return Api_Response.<List<UtilityReading_Response>>builder()
-                .result(readingService.createBatch(requests))
+                .result(savedList)
                 .build();
     }
 
@@ -104,8 +124,12 @@ public class UtilityReading_Controller {
             @PathVariable String readingId,
             @RequestBody @Valid UtilityReading_Request request
     ) {
+        UtilityReading_Response updated = readingService.update(readingId, request);
+        if (updated != null && updated.getRoomId() != null && updated.getReadingMonth() != null) {
+            invoiceService.generateOrUpdateInvoicesForRoomReading(updated.getRoomId(), updated.getReadingMonth());
+        }
         return Api_Response.<UtilityReading_Response>builder()
-                .result(readingService.update(readingId, request))
+                .result(updated)
                 .build();
     }
 

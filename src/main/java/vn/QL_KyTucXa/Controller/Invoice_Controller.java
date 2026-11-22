@@ -43,6 +43,17 @@ public class Invoice_Controller {
                 .build();
     }
 
+    @PostMapping("/generate-by-room")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF') or hasAuthority('INVOICE_DRAFT') or hasAuthority('INVOICE_MANAGE') or hasAuthority('UTILITY_MANAGE')")
+    public Api_Response<List<Invoice_Response>> generateInvoicesByRoom(
+            @RequestParam("roomId") String roomId,
+            @RequestParam(value = "readingMonth", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate readingMonth
+    ) {
+        return Api_Response.<List<Invoice_Response>>builder()
+                .result(invoiceService.generateOrUpdateInvoicesForRoomReading(roomId, readingMonth))
+                .build();
+    }
+
     @PostMapping("/process-overdue")
     @PreAuthorize("hasAuthority('INVOICE_MANAGE')")
     public Api_Response<Integer> processOverdueInvoices() {
