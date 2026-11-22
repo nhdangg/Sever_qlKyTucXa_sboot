@@ -660,7 +660,8 @@ public class Contract_Service {
     public Contract_Response reject(String contractId, String staffId, String reason) {
         if (currentUserService != null && !currentUserService.hasAnyRole("ADMIN", "MANAGER")
                 && !currentUserService.hasPermission("CONTRACT_APPROVE")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED, "Chỉ Quản lý hoặc Quản trị viên mới có quyền từ chối hợp đồng");
+            throw new AppException(ErrorCode.UNAUTHORIZED,
+                    "Chỉ Quản lý hoặc Quản trị viên mới có quyền từ chối hợp đồng");
         }
 
         Contract hop_dong = contractRepository.findById(contractId)
@@ -700,7 +701,8 @@ public class Contract_Service {
             User approverUser = (nhan_vien != null) ? nhan_vien.getUser() : null;
             String contractCode = hop_dong.getContractCode();
             String reasonText = (hop_dong.getTerminationReason() != null && !hop_dong.getTerminationReason().isBlank())
-                    ? hop_dong.getTerminationReason() : "Từ chối duyệt đơn";
+                    ? hop_dong.getTerminationReason()
+                    : "Từ chối duyệt đơn";
             executeAfterCommitOrNow(() -> {
                 String title = "Hồ sơ đăng ký KTX không được phê duyệt";
                 String content = String.format("Đơn đăng ký hợp đồng mã %s đã bị từ chối duyệt. Lý do: %s",
@@ -724,15 +726,13 @@ public class Contract_Service {
                                 action.run();
                             } catch (Exception e) {
                                 log.warn("Lỗi thực thi tác vụ sau commit: {}", e.getMessage());
-             
-
-     
-             
-                });
-        se {
-            {
-         
-        } catch (Exception e) {
+                            }
+                        }
+                    });
+        } else {
+            try {
+                action.run();
+            } catch (Exception e) {
                 log.warn("Lỗi thực thi tác vụ: {}", e.getMessage());
             }
         }
