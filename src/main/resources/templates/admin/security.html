@@ -355,8 +355,8 @@
                             <label class="form-label small fw-semibold">Mức độ nghiêm trọng</label>
                             <select id="vtSeverity" class="form-select form-select-sm">
                                 <option value="MINOR">Nhẹ (MINOR)</option>
-                                <option value="MAJOR">Nặng (MAJOR)</option>
-                                <option value="CRITICAL">Đặc biệt nghiêm trọng (CRITICAL)</option>
+                                <option value="MEDIUM">Nặng (MEDIUM)</option>
+                                <option value="SERIOUS">Đặc biệt nghiêm trọng (SERIOUS)</option>
                             </select>
                         </div>
                     </div>
@@ -522,10 +522,10 @@
 
             tbody.innerHTML = allViolationTypes.map(vt => {
                 let sevBadge = '<span class="badge bg-info-subtle text-info">Nhẹ (MINOR)</span>';
-                if (vt.severityLevel === 'MAJOR' || vt.severityLevel === 'NGHIEM_TRONG') {
-                    sevBadge = '<span class="badge bg-warning-subtle text-warning">Nặng (MAJOR)</span>';
-                } else if (vt.severityLevel === 'CRITICAL' || vt.severityLevel === 'DAC_BIET') {
-                    sevBadge = '<span class="badge bg-danger-subtle text-danger">Đặc biệt nghiêm trọng</span>';
+                if (vt.severityLevel === 'SERIOUS' || vt.severityLevel === 'CRITICAL' || vt.severityLevel === 'DAC_BIET' || vt.severityLevel === 'NGHIEM_TRONG') {
+                    sevBadge = '<span class="badge bg-danger-subtle text-danger">Đặc biệt nghiêm trọng (SERIOUS)</span>';
+                } else if (vt.severityLevel === 'MEDIUM' || vt.severityLevel === 'MAJOR' || vt.severityLevel === 'TRUNG_BINH' || vt.severityLevel === 'NANG') {
+                    sevBadge = '<span class="badge bg-warning-subtle text-warning">Nặng (MEDIUM)</span>';
                 }
                 return `
                     <tr>
@@ -927,7 +927,8 @@
         document.getElementById('violationTypeModalTitle').textContent = 'Cập nhật Khung Kỷ luật';
         document.getElementById('vtId').value = vt.violationTypeId;
         document.getElementById('vtName').value = vt.violationName || '';
-        document.getElementById('vtSeverity').value = vt.severityLevel || 'MINOR';
+        document.getElementById('vtSeverity').value = (vt.severityLevel === 'MAJOR' || vt.severityLevel === 'NANG') ? 'MEDIUM'
+            : ((vt.severityLevel === 'CRITICAL' || vt.severityLevel === 'DAC_BIET') ? 'SERIOUS' : (vt.severityLevel || 'MINOR'));
         document.getElementById('vtPoints').value = vt.penaltyPoints || 0;
         document.getElementById('vtFine').value = vt.fineAmount || 0;
         document.getElementById('vtDesc').value = vt.description || '';

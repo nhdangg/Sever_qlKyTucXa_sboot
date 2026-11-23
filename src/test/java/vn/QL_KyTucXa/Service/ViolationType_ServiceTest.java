@@ -113,5 +113,20 @@ class ViolationType_ServiceTest {
 
         verify(violationTypeRepository).delete(violationType);
     }
+
+    @Test
+    @DisplayName("Chuẩn hóa mức độ nghiêm trọng khi truyền MAJOR hoặc CRITICAL")
+    void create_withMajorOrCritical_normalizesCorrectly() {
+        request.setSeverityLevel("MAJOR");
+        when(violationTypeRepository.existsByViolationName(anyString())).thenReturn(false);
+        when(violationTypeMapper.toEntity(request)).thenReturn(violationType);
+        when(violationTypeRepository.save(any(ViolationType.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(violationTypeMapper.toResponse(any(ViolationType.class))).thenReturn(response);
+
+        ViolationType_Response res = violationTypeService.create(request);
+
+        assertThat(res).isNotNull();
+        verify(violationTypeRepository).save(argThat(vt -> "MEDIUM".equals(vt.getSeverityLevel())));
+    }
 }
 
