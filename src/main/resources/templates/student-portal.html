@@ -2543,7 +2543,7 @@
                         const types = [...new Set(items.map(it => it.itemType))];
                         const typeLabels = types.map(t => {
                             if (t === 'RENT') return '<span class="badge bg-primary-subtle text-primary border" style="font-size:0.65rem;"><i class="bi bi-house-door-fill me-1"></i>Phòng</span>';
-                            if (t === 'UTILITY') return '<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Điện nước</span>';
+                            if (t === 'UTILITY') return '<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:0.65rem;"><i class="bi bi-lightning-charge me-1"></i>Điện nước</span>';
                             if (t === 'SERVICE') return '<span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.65rem;"><i class="bi bi-shield-fill-check me-1"></i>Dịch vụ</span>';
                             if (t === 'VEHICLE') return '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.65rem;"><i class="bi bi-bicycle me-1"></i>Xe</span>';
                             if (t === 'FINE') return '<span class="badge bg-danger-subtle text-danger border" style="font-size:0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Phạt</span>';
@@ -2628,8 +2628,8 @@
                     else if (it.itemType === 'UTILITY') {
                         const isWater = (it.description || '').toLowerCase().includes('nước');
                         badge = isWater
-                            ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet-fill me-1"></i>Nước sạch</span>'
-                            : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge-fill me-1"></i>Điện sinh hoạt</span>';
+                            ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet me-1"></i>Nước sạch</span>'
+                            : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge me-1"></i>Điện sinh hoạt</span>';
                     } else if (it.itemType === 'SERVICE') {
                         const desc = (it.description || '').toLowerCase();
                         if (desc.includes('wifi') || desc.includes('internet')) {
@@ -2694,7 +2694,7 @@
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-warning-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>ĐIỆN & NƯỚC</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge text-warning me-1"></i><i class="bi bi-droplet text-info me-1"></i>ĐIỆN & NƯỚC</div>
                                 <div class="fw-bold text-warning-emphasis">${formatCurrency(utilSum)}</div>
                             </div>
                         </div>
@@ -3545,9 +3545,9 @@
 
                     let icon = '<i class="bi bi-tag-fill text-secondary me-1"></i>';
                     if (code.includes('DIEN') && !code.includes('AN')) {
-                        icon = '<i class="bi bi-lightning-charge-fill text-warning me-1"></i>';
+                        icon = '<i class="bi bi-lightning-charge text-warning me-1"></i>';
                     } else if (code.includes('NUOC')) {
-                        icon = '<i class="bi bi-droplet-half text-info me-1"></i>';
+                        icon = '<i class="bi bi-droplet text-info me-1"></i>';
                     } else if (code.includes('NET') || code.includes('WIFI')) {
                         icon = '<i class="bi bi-wifi text-primary me-1"></i>';
                     } else if (code.includes('VE_SINH') || code.includes('VESINH') || code.includes('RAC')) {

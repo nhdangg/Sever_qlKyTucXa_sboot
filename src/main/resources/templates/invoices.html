@@ -156,8 +156,8 @@
                                     <tr>
                                         <th>Phòng & Tòa</th>
                                         <th>Kỳ ghi sổ</th>
-                                        <th><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Điện sinh hoạt</th>
-                                        <th><i class="bi bi-droplet-fill text-info me-1"></i>Nước sạch</th>
+                                        <th><i class="bi bi-lightning-charge text-warning me-1"></i>Điện sinh hoạt</th>
+                                        <th><i class="bi bi-droplet text-info me-1"></i>Nước sạch</th>
                                         <th>Tổng tiền phòng</th>
                                         <th>Người ghi sổ</th>
                                         <th class="text-center" style="width: 140px;">Thao tác</th>
@@ -409,8 +409,11 @@
                             <div class="col-12 col-md-6">
                                 <div class="card h-100 border border-warning-subtle rounded-3 p-3 bg-light">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="fw-bold text-dark">
-                                            <i class="bi bi-lightning-charge-fill text-warning me-1 fs-5"></i>ĐIỆN SINH HOẠT
+                                        <span class="fw-bold text-dark d-inline-flex align-items-center">
+                                            <span class="d-inline-flex align-items-center justify-content-center bg-white border border-warning-subtle rounded-2 p-1 me-2 shadow-sm text-warning" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-lightning-charge fs-6"></i>
+                                            </span>
+                                            ĐIỆN SINH HOẠT
                                         </span>
                                         <span class="badge bg-warning-subtle text-dark border" id="elecRateBadge">3.500 đ / kWh</span>
                                     </div>
@@ -441,8 +444,11 @@
                             <div class="col-12 col-md-6">
                                 <div class="card h-100 border border-info-subtle rounded-3 p-3 bg-light">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="fw-bold text-dark">
-                                            <i class="bi bi-droplet-fill text-primary me-1 fs-5"></i>NƯỚC SẠCH
+                                        <span class="fw-bold text-dark d-inline-flex align-items-center">
+                                            <span class="d-inline-flex align-items-center justify-content-center bg-white border border-info-subtle rounded-2 p-1 me-2 shadow-sm text-info" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-droplet fs-6"></i>
+                                            </span>
+                                            NƯỚC SẠCH
                                         </span>
                                         <span class="badge bg-info-subtle text-dark border" id="waterRateBadge">12.000 đ / m³</span>
                                     </div>
@@ -917,7 +923,7 @@
                             <div class="fw-bold mb-1"><i class="bi bi-info-circle-fill me-1"></i>Hệ thống tự động bóc tách 3 nhóm chi phí vào chi tiết hóa đơn mỗi sinh viên:</div>
                             <ul class="mb-0 ps-3">
                                 <li><b><i class="bi bi-house-door-fill text-primary me-1"></i>Tiền phòng:</b> Định mức theo hợp đồng sinh viên đang ở.</li>
-                                <li><b><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>Điện & Nước sạch:</b> Chia đều theo chỉ số công tơ phòng chốt trong kỳ.</li>
+                                <li><b><i class="bi bi-lightning-charge text-warning me-1"></i><i class="bi bi-droplet text-info me-1"></i>Điện & Nước sạch:</b> Chia đều theo chỉ số công tơ phòng chốt trong kỳ.</li>
                                 <li><b><i class="bi bi-shield-fill-check text-info me-1"></i>Dịch vụ KTX thiết yếu:</b> Vệ sinh & rác (20.000 đ/SV) + Điện an ninh (20.000 đ/SV) + Wifi phòng chia đều sĩ số phòng.</li>
                             </ul>
                         </div>
@@ -995,9 +1001,9 @@
                                         <th>STT</th>
                                         <th>Phòng</th>
                                         <th>Kỳ tháng</th>
-                                        <th class="bg-warning-subtle text-dark"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Điện (Cũ → Mới)</th>
+                                        <th class="bg-warning-subtle text-dark"><i class="bi bi-lightning-charge text-warning me-1"></i>Điện (Cũ → Mới)</th>
                                         <th class="text-end">Tiêu thụ Điện</th>
-                                        <th class="bg-info-subtle text-dark"><i class="bi bi-droplet-fill text-info me-1"></i>Nước (Cũ → Mới)</th>
+                                        <th class="bg-info-subtle text-dark"><i class="bi bi-droplet text-info me-1"></i>Nước (Cũ → Mới)</th>
                                         <th class="text-end">Tiêu thụ Nước</th>
                                         <th class="text-end">Tổng tiền phòng</th>
                                         <th>Trạng thái</th>
@@ -2255,8 +2261,8 @@
                 else if (it.itemType === 'UTILITY') {
                     const isWater = (it.description || '').toLowerCase().includes('nước');
                     badge = isWater
-                        ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet-fill me-1"></i>Nước</span>'
-                        : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge-fill me-1"></i>Điện</span>';
+                        ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet me-1"></i>Nước</span>'
+                        : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge me-1"></i>Điện</span>';
                 } else if (it.itemType === 'SERVICE') {
                     const desc = (it.description || '').toLowerCase();
                     if (desc.includes('wifi') || desc.includes('internet')) badge = '<span class="badge bg-info-subtle text-info-emphasis border"><i class="bi bi-wifi me-1"></i>Wifi</span>';
@@ -2373,8 +2379,8 @@
                     else if (it.itemType === 'UTILITY') {
                         const isWater = (it.description || '').toLowerCase().includes('nước');
                         badge = isWater
-                            ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet-fill me-1"></i>Nước sạch</span>'
-                            : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge-fill me-1"></i>Điện sinh hoạt</span>';
+                            ? '<span class="badge bg-info-subtle text-info border"><i class="bi bi-droplet me-1"></i>Nước sạch</span>'
+                            : '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-lightning-charge me-1"></i>Điện sinh hoạt</span>';
                     } else if (it.itemType === 'SERVICE') {
                         const desc = (it.description || '').toLowerCase();
                         if (desc.includes('wifi') || desc.includes('internet')) {
@@ -2437,7 +2443,7 @@
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-warning-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>ĐIỆN & NƯỚC</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge text-warning me-1"></i><i class="bi bi-droplet text-info me-1"></i>ĐIỆN & NƯỚC</div>
                                 <div class="fw-bold text-warning-emphasis">${formatCurrency(utilSum)}</div>
                             </div>
                         </div>
@@ -2864,8 +2870,8 @@
                                         <th class="ps-3 py-2 small">MSSV</th>
                                         <th class="py-2 small">Họ và tên</th>
                                         <th class="py-2 small text-muted">Hợp đồng</th>
-                                        <th class="text-end py-2 small text-warning-emphasis"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Tiền điện</th>
-                                        <th class="text-end py-2 small text-info"><i class="bi bi-droplet-fill text-info me-1"></i>Tiền nước</th>
+                                        <th class="text-end py-2 small text-warning-emphasis"><i class="bi bi-lightning-charge text-warning me-1"></i>Tiền điện</th>
+                                        <th class="text-end py-2 small text-info"><i class="bi bi-droplet text-info me-1"></i>Tiền nước</th>
                                         <th class="text-end pe-3 py-2 small text-danger fw-bold">Tổng cộng phải nộp</th>
                                     </tr>
                                 </thead>
@@ -2930,7 +2936,7 @@
                     <div class="col-md-6">
                         <div class="p-3 border rounded-4 bg-white h-100 shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-dark"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Điện sinh hoạt nội trú</span>
+                                <span class="fw-bold text-dark"><i class="bi bi-lightning-charge text-warning me-1"></i>Điện sinh hoạt nội trú</span>
                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle">${formatCurrency(elecPrice)}/kWh</span>
                             </div>
                             <div class="d-flex justify-content-between text-muted small mb-2">
@@ -2948,7 +2954,7 @@
                     <div class="col-md-6">
                         <div class="p-3 border rounded-4 bg-white h-100 shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-dark"><i class="bi bi-droplet-fill text-info me-1"></i>Nước sạch sinh hoạt</span>
+                                <span class="fw-bold text-dark"><i class="bi bi-droplet text-info me-1"></i>Nước sạch sinh hoạt</span>
                                 <span class="badge bg-info-subtle text-info border border-info-subtle">${formatCurrency(waterPrice)}/m³</span>
                             </div>
                             <div class="d-flex justify-content-between text-muted small mb-2">
