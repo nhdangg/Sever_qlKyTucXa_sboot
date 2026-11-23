@@ -331,7 +331,7 @@
                             <span class="fw-bold">Hướng dẫn xác nhận:</span>
                         </div>
                         <span class="text-secondary">1. Mở ứng dụng Telegram trên thiết bị của bạn.</span><br>
-                        <span class="text-secondary">2. Nhấn nút <b>[ ✅ Đúng ]</b> trên tin nhắn thông báo từ
+                        <span class="text-secondary">2. Nhấn nút <b>[ <i class="bi bi-check-circle-fill text-success"></i> Đúng ]</b> trên tin nhắn thông báo từ
                             Bot.</span>
                     </div>
 
@@ -494,7 +494,7 @@
                     const res = await apiFetch(`/auth/login-status/${verificationId}`);
                     const result = res.result;
 
-                    // Nếu Admin đã bấm [✅ Đúng] trên Telegram
+                    // Nếu Admin đã bấm [Đúng] trên Telegram
                     if (result && result.authenticated && result.status === 'APPROVED') {
                         clearInterval(pollingInterval);
                         modal2FA.hide();
@@ -522,7 +522,7 @@
                         });
                     }
                 } catch (err) {
-                    // Nếu Admin bấm [❌ Sai] hoặc phiên hết hạn
+                    // Nếu Admin bấm [Sai] hoặc phiên hết hạn
                     clearInterval(pollingInterval);
                     modal2FA.hide();
                     Swal.fire({
