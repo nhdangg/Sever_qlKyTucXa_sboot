@@ -202,8 +202,8 @@ class Invoice_ServiceTest {
         Invoice_Response result = invoiceService.create(request);
 
         assertThat(result).isNotNull();
-        // 2 * 100.56 = 201.12; 1 * 50.00 = 50.00; total = 251.12
-        assertThat(invoice.getSubtotalAmount()).isEqualByComparingTo(new BigDecimal("251.12"));
+        // contract rent (1500000) + items (2 * 100.56 = 201.12; 1 * 50.00 = 50.00; total = 251.12) = 1500251.12
+        assertThat(invoice.getSubtotalAmount()).isEqualByComparingTo(new BigDecimal("1500251.12"));
     }
 
     @Test
@@ -300,12 +300,12 @@ class Invoice_ServiceTest {
     @DisplayName("Lập hóa đơn hàng loạt (batch) cho các hợp đồng đang ACTIVE")
     void generateBatch_success() {
         InvoiceGenerate_Request batchReq = InvoiceGenerate_Request.builder()
-                .invoiceMonth(LocalDate.of(2026, 11, 1))
-                .dueDate(LocalDate.of(2026, 11, 15))
+                .invoiceMonth(LocalDate.now().withDayOfMonth(1))
+                .dueDate(LocalDate.now().plusDays(15))
                 .build();
 
         when(contractRepository.findByStatus("ACTIVE")).thenReturn(List.of(contract));
-        when(invoiceRepository.findByContract_ContractIdAndInvoiceMonth(eq("hd-01"), eq(LocalDate.of(2026, 11, 1)))).thenReturn(List.of());
+        when(invoiceRepository.findByContract_ContractIdAndInvoiceMonth(eq("hd-01"), any(LocalDate.class))).thenReturn(List.of());
         when(invoiceRepository.existsByInvoiceCode(any())).thenReturn(false);
         when(invoiceRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
         when(invoiceMapper.toResponseList(anyList())).thenReturn(List.of(response));

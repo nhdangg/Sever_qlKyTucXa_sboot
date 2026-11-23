@@ -1131,6 +1131,31 @@ public class Invoice_Service {
                 }
             }
 
+            // 5. Cộng tiền phạt vi phạm kỷ luật của riêng sinh viên đó (FINE) nếu có
+            if (violationRepository != null) {
+                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(
+                        sinh_vien.getStudentId(), monthEnd);
+                for (Violation v : danh_sach_vi_pham) {
+                    boolean alreadyBilled = invoiceItemRepository != null
+                            && invoiceItemRepository.existsByItemTypeAndReferenceId("FINE", v.getViolationId());
+                    if (!alreadyBilled && v.getFineAmount() != null
+                            && v.getFineAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        String vName = (v.getViolationType() != null && v.getViolationType().getViolationName() != null)
+                                ? v.getViolationType().getViolationName()
+                                : "Kỷ luật";
+                        hoa_don.getInvoiceItems().add(InvoiceItem.builder()
+                                .invoice(hoa_don)
+                                .itemType("FINE")
+                                .description("Tiền phạt vi phạm: " + vName)
+                                .quantity(BigDecimal.ONE)
+                                .unitPrice(v.getFineAmount().setScale(2, RoundingMode.HALF_UP))
+                                .amount(v.getFineAmount().setScale(2, RoundingMode.HALF_UP))
+                                .referenceId(v.getViolationId())
+                                .build());
+                    }
+                }
+            }
+
             recalculateInvoiceAmounts(hoa_don);
             hoa_don = invoiceRepository.save(hoa_don);
             savedInvoices.add(hoa_don);
