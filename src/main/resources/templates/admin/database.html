@@ -1,30 +1,33 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
-<head th:replace="~{fragments/layout :: head('Trung tâm Quản trị CSDL 28 Bảng')}"></head>
+<head th:replace="~{fragments/layout :: head('Trung tâm Quản trị CSDL')}"></head>
 
 <body>
 
     <aside th:replace="~{fragments/layout :: sidebar('admin-database')}"></aside>
 
     <div class="main-wrapper">
-        <nav th:replace="~{fragments/layout :: topbar('Trung tâm Quản trị Cơ sở Dữ liệu (28 Bảng CSDL)')}"></nav>
+        <nav th:replace="~{fragments/layout :: topbar('Trung tâm Quản trị Cơ sở Dữ liệu')}"></nav>
 
         <div class="content-body">
             <!-- Overview Header Card đồng bộ -->
             <div class="card border shadow-sm rounded-3 p-3 bg-white mb-3">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 46px; height: 46px; font-size: 1.4rem;">
+                        <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+                            style="width: 46px; height: 46px; font-size: 1.4rem;">
                             <i class="bi bi-database-fill-gear"></i>
                         </div>
                         <div>
-                            <h5 class="fw-bold mb-1 text-dark">Trung tâm Quản trị Dữ liệu Tối cao (Master Database Center)</h5>
-                            <p class="text-muted small mb-0">Toàn quyền truy vấn, thêm, sửa, xóa trực tiếp lên <b>toàn bộ 28 bảng</b> trong CSDL MySQL của Ký túc xá</p>
+                            <h5 class="fw-bold mb-1 text-dark">Trung tâm Quản trị Dữ liệu Tối cao </h5>
+                            <p class="text-muted small mb-0">Toàn quyền truy vấn, thêm, sửa, xóa trực tiếp lên <b>toàn
+                                    bộ 28 bảng</b> trong CSDL MySQL của Ký túc xá</p>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-flex align-items-center gap-1">
+                        <span
+                            class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-flex align-items-center gap-1">
                             <i class="bi bi-check-circle-fill"></i> MySQL: Đang kết nối
                         </span>
                         <button class="btn btn-outline-primary btn-sm fw-semibold px-3" onclick="refreshCurrentTable()">
@@ -39,13 +42,15 @@
                 <div class="col-12 col-xl-3">
                     <div class="card border shadow-sm rounded-3 p-3 bg-white h-100">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-primary me-2"></i>Chọn bảng CSDL:</h6>
+                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-primary me-2"></i>Chọn bảng
+                                CSDL:</h6>
                             <span class="badge bg-primary-subtle text-primary border px-2 py-1">28 Bảng</span>
                         </div>
 
                         <div class="mb-2">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-search text-muted"></i></span>
                                 <input type="text" id="tableFilterInput" class="form-control border-start-0"
                                     placeholder="Tìm tên bảng..." oninput="filterTableList()">
                             </div>
@@ -58,23 +63,23 @@
                                 thống & Tài khoản</div>
                             <a href="javascript:void(0)"
                                 class="list-group-item list-group-item-action active rounded-2 mb-1"
-                                onclick="selectTable('users', 'Tài khoản Người dùng', '/users')">
-                                <i class="bi bi-person-circle me-1"></i> users <span
+                                onclick="selectTable('users', 'Tài khoản Người dùng', '/users')" title="users">
+                                <i class="bi bi-person-circle me-1"></i> Tài khoản Người dùng <span
                                     class="badge bg-light text-dark float-end" id="cnt-users">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('roles', 'Vai trò Hệ thống', '/roles')">
-                                <i class="bi bi-shield-shaded me-1"></i> roles <span
+                                onclick="selectTable('roles', 'Vai trò Hệ thống', '/roles')" title="roles">
+                                <i class="bi bi-shield-shaded me-1"></i> Vai trò Hệ thống <span
                                     class="badge bg-light text-dark float-end" id="cnt-roles">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('permissions', 'Quyền hạn chi tiết', '/permissions')">
-                                <i class="bi bi-key-fill me-1"></i> permissions <span
+                                onclick="selectTable('permissions', 'Quyền hạn chi tiết', '/permissions')" title="permissions">
+                                <i class="bi bi-key-fill me-1"></i> Quyền hạn chi tiết <span
                                     class="badge bg-light text-dark float-end" id="cnt-permissions">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('system-settings', 'Cấu hình hệ thống', '/system-settings')">
-                                <i class="bi bi-sliders me-1"></i> system_settings <span
+                                onclick="selectTable('system-settings', 'Cấu hình hệ thống', '/system-settings')" title="system_settings">
+                                <i class="bi bi-sliders me-1"></i> Cấu hình hệ thống <span
                                     class="badge bg-light text-dark float-end" id="cnt-system-settings">...</span>
                             </a>
 
@@ -82,13 +87,13 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cư
                                 dân & Nhân sự</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('students', 'Hồ sơ Sinh viên', '/students')">
-                                <i class="bi bi-mortarboard-fill me-1"></i> students <span
+                                onclick="selectTable('students', 'Hồ sơ Sinh viên', '/students')" title="students">
+                                <i class="bi bi-mortarboard-fill me-1"></i> Hồ sơ Sinh viên <span
                                     class="badge bg-light text-dark float-end" id="cnt-students">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('staffs', 'Hồ sơ Nhân viên KTX', '/staffs')">
-                                <i class="bi bi-person-badge-fill me-1"></i> staffs <span
+                                onclick="selectTable('staffs', 'Hồ sơ Nhân viên KTX', '/staffs')" title="staffs">
+                                <i class="bi bi-person-badge-fill me-1"></i> Hồ sơ Nhân viên KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-staffs">...</span>
                             </a>
 
@@ -96,28 +101,28 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cơ
                                 sở Hạ Tầng KTX</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('buildings', 'Tòa nhà KTX', '/buildings')">
-                                <i class="bi bi-building me-1"></i> buildings <span
+                                onclick="selectTable('buildings', 'Tòa nhà KTX', '/buildings')" title="buildings">
+                                <i class="bi bi-building me-1"></i> Tòa nhà KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-buildings">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('floors', 'Các Tầng', '/floors')">
-                                <i class="bi bi-layers me-1"></i> floors <span
+                                onclick="selectTable('floors', 'Các Tầng', '/floors')" title="floors">
+                                <i class="bi bi-layers me-1"></i> Các Tầng lầu <span
                                     class="badge bg-light text-dark float-end" id="cnt-floors">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('room-types', 'Loại phòng KTX', '/room-types')">
-                                <i class="bi bi-grid-3x3-gap-fill me-1"></i> room_types <span
+                                onclick="selectTable('room-types', 'Loại phòng KTX', '/room-types')" title="room_types">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Loại phòng KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-room-types">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('rooms', 'Phòng ở KTX', '/rooms')">
-                                <i class="bi bi-door-open-fill me-1"></i> rooms <span
+                                onclick="selectTable('rooms', 'Phòng ở KTX', '/rooms')" title="rooms">
+                                <i class="bi bi-door-open-fill me-1"></i> Phòng ở KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-rooms">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('beds', 'Giường ngủ', '/beds')">
-                                <i class="bi bi-inbox me-1"></i> beds <span class="badge bg-light text-dark float-end"
+                                onclick="selectTable('beds', 'Giường ngủ', '/beds')" title="beds">
+                                <i class="bi bi-inbox me-1"></i> Giường ngủ KTX <span class="badge bg-light text-dark float-end"
                                     id="cnt-beds">...</span>
                             </a>
 
@@ -125,18 +130,18 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Hợp
                                 đồng & Lưu trú</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('contracts', 'Hợp đồng lưu trú', '/contracts')">
-                                <i class="bi bi-file-earmark-text-fill me-1"></i> contracts <span
+                                onclick="selectTable('contracts', 'Hợp đồng lưu trú', '/contracts')" title="contracts">
+                                <i class="bi bi-file-earmark-text-fill me-1"></i> Hợp đồng lưu trú <span
                                     class="badge bg-light text-dark float-end" id="cnt-contracts">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('registration-periods', 'Đợt đăng ký lưu trú', '/registration-periods')">
-                                <i class="bi bi-calendar-event me-1"></i> registration_periods <span
+                                onclick="selectTable('registration-periods', 'Đợt đăng ký lưu trú', '/registration-periods')" title="registration_periods">
+                                <i class="bi bi-calendar-event me-1"></i> Đợt đăng ký lưu trú <span
                                     class="badge bg-light text-dark float-end" id="cnt-registration-periods">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('room-transfers', 'Yêu cầu chuyển phòng', '/room-transfers')">
-                                <i class="bi bi-arrow-left-right me-1"></i> room_transfers <span
+                                onclick="selectTable('room-transfers', 'Yêu cầu chuyển phòng', '/room-transfers')" title="room_transfers">
+                                <i class="bi bi-arrow-left-right me-1"></i> Yêu cầu chuyển phòng <span
                                     class="badge bg-light text-dark float-end" id="cnt-room-transfers">...</span>
                             </a>
 
@@ -144,23 +149,23 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Tài
                                 chính & Điện Nước</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('service-types', 'Danh mục Dịch vụ', '/service-types')">
-                                <i class="bi bi-tags me-1"></i> service_types <span
+                                onclick="selectTable('service-types', 'Danh mục Dịch vụ', '/service-types')" title="service_types">
+                                <i class="bi bi-tags me-1"></i> Danh mục Dịch vụ <span
                                     class="badge bg-light text-dark float-end" id="cnt-service-types">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('utility-readings', 'Chỉ số Điện Nước', '/utility-readings')">
-                                <i class="bi bi-speedometer me-1"></i> utility_readings <span
+                                onclick="selectTable('utility-readings', 'Chỉ số Điện Nước', '/utility-readings')" title="utility_readings">
+                                <i class="bi bi-speedometer me-1"></i> Chỉ số Điện Nước <span
                                     class="badge bg-light text-dark float-end" id="cnt-utility-readings">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('invoices', 'Hóa đơn dịch vụ', '/invoices')">
-                                <i class="bi bi-receipt-cutoff me-1"></i> invoices <span
+                                onclick="selectTable('invoices', 'Hóa đơn dịch vụ', '/invoices')" title="invoices">
+                                <i class="bi bi-receipt-cutoff me-1"></i> Hóa đơn dịch vụ <span
                                     class="badge bg-light text-dark float-end" id="cnt-invoices">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('payments', 'Giao dịch thanh toán', '/payments')">
-                                <i class="bi bi-credit-card-2-front me-1"></i> payments <span
+                                onclick="selectTable('payments', 'Giao dịch thanh toán', '/payments')" title="payments">
+                                <i class="bi bi-credit-card-2-front me-1"></i> Giao dịch thanh toán <span
                                     class="badge bg-light text-dark float-end" id="cnt-payments">...</span>
                             </a>
 
@@ -168,18 +173,18 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">Cơ
                                 sở Vật chất & Báo hỏng</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('assets', 'Danh mục tài sản KTX', '/assets')">
-                                <i class="bi bi-box-seam me-1"></i> assets <span
+                                onclick="selectTable('assets', 'Danh mục tài sản KTX', '/assets')" title="assets">
+                                <i class="bi bi-box-seam me-1"></i> Danh mục tài sản KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-assets">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('room-assets', 'Tài sản trong phòng', '/room-assets')">
-                                <i class="bi bi-boxes me-1"></i> room_assets <span
+                                onclick="selectTable('room-assets', 'Tài sản trong phòng', '/room-assets')" title="room_assets">
+                                <i class="bi bi-boxes me-1"></i> Tài sản trong phòng <span
                                     class="badge bg-light text-dark float-end" id="cnt-room-assets">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('maintenance-requests', 'Yêu cầu sửa chữa', '/maintenance-requests')">
-                                <i class="bi bi-tools me-1"></i> maintenance_requests <span
+                                onclick="selectTable('maintenance-requests', 'Yêu cầu sửa chữa', '/maintenance-requests')" title="maintenance_requests">
+                                <i class="bi bi-tools me-1"></i> Yêu cầu sửa chữa <span
                                     class="badge bg-light text-dark float-end" id="cnt-maintenance-requests">...</span>
                             </a>
 
@@ -187,33 +192,33 @@
                             <div class="text-uppercase fw-bold text-muted px-2 py-1 mt-2" style="font-size: 0.7rem;">An
                                 ninh & Tương tác</div>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('vehicle-registrations', 'Đăng ký gửi xe', '/vehicle-registrations')">
-                                <i class="bi bi-bicycle me-1"></i> vehicle_registrations <span
+                                onclick="selectTable('vehicle-registrations', 'Đăng ký gửi xe', '/vehicle-registrations')" title="vehicle_registrations">
+                                <i class="bi bi-bicycle me-1"></i> Đăng ký gửi xe <span
                                     class="badge bg-light text-dark float-end" id="cnt-vehicle-registrations">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('visitors', 'Khách ra vào KTX', '/visitors')">
-                                <i class="bi bi-person-lines-fill me-1"></i> visitors <span
+                                onclick="selectTable('visitors', 'Khách ra vào KTX', '/visitors')" title="visitors">
+                                <i class="bi bi-person-lines-fill me-1"></i> Khách ra vào KTX <span
                                     class="badge bg-light text-dark float-end" id="cnt-visitors">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('violation-types', 'Loại vi phạm nội quy', '/violation-types')">
-                                <i class="bi bi-exclamation-octagon me-1"></i> violation_types <span
+                                onclick="selectTable('violation-types', 'Loại vi phạm nội quy', '/violation-types')" title="violation_types">
+                                <i class="bi bi-exclamation-octagon me-1"></i> Loại vi phạm nội quy <span
                                     class="badge bg-light text-dark float-end" id="cnt-violation-types">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('violations', 'Biên bản vi phạm', '/violations')">
-                                <i class="bi bi-clipboard-x me-1"></i> violations <span
+                                onclick="selectTable('violations', 'Biên bản vi phạm', '/violations')" title="violations">
+                                <i class="bi bi-clipboard-x me-1"></i> Biên bản vi phạm <span
                                     class="badge bg-light text-dark float-end" id="cnt-violations">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('feedbacks', 'Phản ánh sinh viên', '/feedbacks')">
-                                <i class="bi bi-chat-square-text me-1"></i> feedbacks <span
+                                onclick="selectTable('feedbacks', 'Phản ánh sinh viên', '/feedbacks')" title="feedbacks">
+                                <i class="bi bi-chat-square-text me-1"></i> Phản ánh sinh viên <span
                                     class="badge bg-light text-dark float-end" id="cnt-feedbacks">...</span>
                             </a>
                             <a href="javascript:void(0)" class="list-group-item list-group-item-action rounded-2 mb-1"
-                                onclick="selectTable('notifications', 'Thông báo cư dân', '/notifications')">
-                                <i class="bi bi-bell-fill me-1"></i> notifications <span
+                                onclick="selectTable('notifications', 'Thông báo cư dân', '/notifications')" title="notifications">
+                                <i class="bi bi-bell-fill me-1"></i> Thông báo cư dân <span
                                     class="badge bg-light text-dark float-end" id="cnt-notifications">...</span>
                             </a>
                         </div>
@@ -223,14 +228,17 @@
                 <!-- Main Panel: Dữ liệu chi tiết & Các nút CRUD -->
                 <div class="col-12 col-xl-9">
                     <div class="table-custom shadow-sm p-3 bg-white">
-                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
                             <div>
-                                <h5 class="fw-bold mb-1 text-dark" id="currentTableNameTitle">Bảng: users (Tài khoản Người dùng)</h5>
-                                <span class="text-muted small" id="currentTableEndpoint">REST API: <span class="badge bg-light text-primary border">/api/users</span></span>
+                                <h5 class="fw-bold mb-1 text-dark" id="currentTableNameTitle">Bảng: Tài khoản Người dùng (users)</h5>
+                                <span class="text-muted small" id="currentTableEndpoint">REST API: <span
+                                        class="badge bg-light text-primary border">/api/users</span></span>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="input-group input-group-sm" style="width: 230px;">
-                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <span class="input-group-text bg-light border-end-0"><i
+                                            class="bi bi-search text-muted"></i></span>
                                     <input type="text" id="tableSearchBox" class="form-control border-start-0"
                                         placeholder="Tìm kiếm trong bảng..." oninput="searchInTable()">
                                 </div>
@@ -250,15 +258,18 @@
                                 </thead>
                                 <tbody id="dynamicTableBody">
                                     <tr>
-                                        <td class="text-center text-muted py-5">Vui lòng chọn bảng từ danh sách bên trái</td>
+                                        <td class="text-center text-muted py-5">Vui lòng chọn bảng từ danh sách bên trái
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small text-muted">
+                        <div
+                            class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top small text-muted">
                             <span id="recordCountInfo" class="fw-medium">Đang tải số bản ghi...</span>
-                            <span>Quyền hạn: <span class="badge bg-primary-subtle text-primary border">ADMIN (FULL ACCESS)</span></span>
+                            <span>Quyền hạn: <span class="badge bg-primary-subtle text-primary border">ADMIN (FULL
+                                    ACCESS)</span></span>
                         </div>
                     </div>
                 </div>
@@ -392,7 +403,7 @@
                 }
             });
 
-            document.getElementById('currentTableNameTitle').textContent = `Bảng: ${key} (${name})`;
+            document.getElementById('currentTableNameTitle').textContent = `Bảng: ${name} (${key})`;
             document.getElementById('currentTableEndpoint').innerHTML = `REST API: <span class="badge bg-light text-primary border">/api${endpoint}</span>`;
 
             await refreshCurrentTable();
@@ -569,7 +580,9 @@
             const q = document.getElementById('tableFilterInput').value.toLowerCase().trim();
             document.querySelectorAll('#tableListGroup a').forEach(a => {
                 const text = a.textContent.toLowerCase();
-                a.style.display = text.includes(q) ? 'block' : 'none';
+                const onclickAttr = a.getAttribute('onclick') || '';
+                const titleAttr = a.getAttribute('title') || '';
+                a.style.display = (text.includes(q) || onclickAttr.toLowerCase().includes(q) || titleAttr.toLowerCase().includes(q)) ? 'block' : 'none';
             });
         }
     </script>

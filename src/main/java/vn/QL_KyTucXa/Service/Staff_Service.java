@@ -46,8 +46,7 @@ public class Staff_Service {
     public static final Set<String> ALLOWED_STAFF_ROLES = Set.of("STAFF", "MANAGER", "ADMIN");
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "staffId", "staffCode", "fullName", "department", "position", "createdAt", "updatedAt"
-    );
+            "staffId", "staffCode", "fullName", "department", "position", "createdAt", "updatedAt");
 
     @Transactional
     public Staff_Response create(Staff_Request request) {
@@ -171,7 +170,8 @@ public class Staff_Service {
         int safeSize = Math.min(Math.max(size, 1), 100);
         int pageIndex = Math.max(page - 1, 0);
         String safeSortBy = (sortBy != null && ALLOWED_SORT_FIELDS.contains(sortBy)) ? sortBy : "createdAt";
-        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(pageIndex, safeSize, sort);
 
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
