@@ -147,13 +147,28 @@ class VehicleRegistration_ServiceTest {
     }
 
     @Test
-    @DisplayName("Xóa xe chuyển trạng thái CANCELLED")
-    void delete_softDelete() {
+    @DisplayName("Xóa xe vĩnh viễn khỏi CSDL")
+    void delete_success() {
         when(vehicleRepository.findById("veh-01")).thenReturn(Optional.of(vehicle));
         when(currentUserService.hasRole("ADMIN")).thenReturn(true);
 
         vehicleService.delete("veh-01");
 
+        verify(vehicleRepository).delete(vehicle);
+    }
+
+    @Test
+    @DisplayName("Cập nhật trạng thái xe thành công bởi cán bộ quản lý")
+    void updateStatus_success() {
+        when(vehicleRepository.findById("veh-01")).thenReturn(Optional.of(vehicle));
+        when(currentUserService.hasRole("ADMIN")).thenReturn(true);
+        when(vehicleRepository.save(any(VehicleRegistration.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vehicleMapper.toResponse(any(VehicleRegistration.class)))
+                .thenReturn(VehicleRegistration_Response.builder().vehicleId("veh-01").status("CANCELLED").build());
+
+        VehicleRegistration_Response res = vehicleService.updateStatus("veh-01", "CANCELLED");
+
+        assertThat(res).isNotNull();
         assertThat(vehicle.getStatus()).isEqualTo("CANCELLED");
         verify(vehicleRepository).save(vehicle);
     }

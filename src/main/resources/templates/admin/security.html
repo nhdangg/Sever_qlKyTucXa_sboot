@@ -761,8 +761,22 @@
                                 <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="approveVehicle('${vh.vehicleId}', false)" title="Từ chối đăng ký xe">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
-                            ` : ''}
-                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteVehicle('${vh.vehicleId}')" title="Xóa">
+                            ` : `
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-light text-primary py-1 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Đổi trạng thái phương tiện">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Trạng thái
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <li><h6 class="dropdown-header">Chuyển trạng thái:</h6></li>
+                                        <li><a class="dropdown-item ${vh.status === 'ACTIVE' ? 'active' : ''}" href="javascript:void(0)" onclick="changeVehicleStatus('${vh.vehicleId}', 'ACTIVE')"><i class="bi bi-check-circle text-success me-2"></i>Đang hoạt động</a></li>
+                                        <li><a class="dropdown-item ${vh.status === 'CANCELLED' ? 'active' : ''}" href="javascript:void(0)" onclick="changeVehicleStatus('${vh.vehicleId}', 'CANCELLED')"><i class="bi bi-slash-circle text-secondary me-2"></i>Đã hủy</a></li>
+                                        <li><a class="dropdown-item ${vh.status === 'EXPIRED' ? 'active' : ''}" href="javascript:void(0)" onclick="changeVehicleStatus('${vh.vehicleId}', 'EXPIRED')"><i class="bi bi-clock-history text-dark me-2"></i>Hết hạn</a></li>
+                                        <li><a class="dropdown-item ${vh.status === 'PENDING' ? 'active' : ''}" href="javascript:void(0)" onclick="changeVehicleStatus('${vh.vehicleId}', 'PENDING')"><i class="bi bi-hourglass-split text-warning me-2"></i>Chờ duyệt</a></li>
+                                        <li><a class="dropdown-item ${vh.status === 'REJECTED' ? 'active' : ''}" href="javascript:void(0)" onclick="changeVehicleStatus('${vh.vehicleId}', 'REJECTED')"><i class="bi bi-x-circle text-danger me-2"></i>Từ chối</a></li>
+                                    </ul>
+                                </div>
+                            `}
+                            <button class="btn btn-sm btn-light text-danger py-1 px-2" style="width: 30px;" onclick="deleteVehicle('${vh.vehicleId}', '${escapeHtml(vh.licensePlate || 'Xe đạp')}')" title="Xóa vĩnh viễn xe khỏi CSDL">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -1082,12 +1096,23 @@
         }
     }
 
-    async function deleteVehicle(id) {
-        const confirmed = await showConfirm('Xác nhận hủy đăng ký xe?', 'Bạn có chắc chắn muốn xóa xe này khỏi danh sách gửi?');
+    async function changeVehicleStatus(id, newStatus) {
+        try {
+            await apiFetch(`/vehicle-registrations/${id}/status?status=${newStatus}`, { method: 'PATCH' });
+            showToastSuccess('Đã cập nhật trạng thái phương tiện!');
+            loadVehicles();
+        } catch (e) {
+            showToastError(e.message);
+        }
+    }
+
+    async function deleteVehicle(id, licensePlate = '') {
+        const titlePlate = licensePlate ? `biển số [${licensePlate}]` : 'này';
+        const confirmed = await showConfirm('CẢNH BÁO XÓA VĨNH VIỄN!', `Bạn có chắc chắn muốn XÓA VĨNH VIỄN phương tiện ${titlePlate} khỏi CSDL không? Dữ liệu xe sẽ bị xóa hoàn toàn và biến mất khỏi hệ thống.`);
         if (!confirmed) return;
         try {
             await apiFetch(`/vehicle-registrations/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa xe!');
+            showToastSuccess('Đã xóa vĩnh viễn xe khỏi cơ sở dữ liệu!');
             loadVehicles();
         } catch (e) {
             showToastError(e.message);

@@ -398,7 +398,34 @@ public class VehicleRegistration_Service {
         return vehicleMapper.toResponse(dang_ky_xe);
     }
 
-    // Xóa mềm phương tiện: chuyển trạng thái thành CANCELLED để lưu vết tính phí
+    // Cán bộ quản lý / Admin cập nhật trực tiếp trạng thái phương tiện
+    @Transactional
+    public VehicleRegistration_Response updateStatus(String vehicleId, String status) {
+        VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin gửi xe"));
+
+        boolean isStaffOrAdmin = currentUserService.hasRole("ADMIN") || currentUserService.hasRole("MANAGER")
+                || currentUserService.hasRole("STAFF");
+        if (!isStaffOrAdmin) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (status == null || status.isBlank()) {
+            throw new AppException(ErrorCode.OPERATION_FAILED, "Trạng thái không được để trống");
+        }
+
+        String normalizedStatus = status.trim().toUpperCase();
+        if (!ALLOWED_STATUSES.contains(normalizedStatus)) {
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Trạng thái '" + status + "' không hợp lệ. Cho phép: " + ALLOWED_STATUSES);
+        }
+
+        dang_ky_xe.setStatus(normalizedStatus);
+        dang_ky_xe = vehicleRepository.save(dang_ky_xe);
+        return vehicleMapper.toResponse(dang_ky_xe);
+    }
+
+    // Xóa vĩnh viễn phương tiện khỏi cơ sở dữ liệu
     @Transactional
     public void delete(String vehicleId) {
         VehicleRegistration dang_ky_xe = vehicleRepository.findById(vehicleId)
@@ -406,8 +433,7 @@ public class VehicleRegistration_Service {
 
         checkAccessOwnership(dang_ky_xe);
 
-        dang_ky_xe.setStatus("CANCELLED");
-        vehicleRepository.save(dang_ky_xe);
+        vehicleRepository.delete(dang_ky_xe);
     }
 
     // Tác vụ định kỳ quét và cập nhật trạng thái EXPIRED cho các phương tiện quá

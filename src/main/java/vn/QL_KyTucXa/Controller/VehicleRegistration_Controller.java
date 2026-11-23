@@ -44,6 +44,17 @@ public class VehicleRegistration_Controller {
                 .build();
     }
 
+    @PatchMapping("/{vehicleId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public Api_Response<VehicleRegistration_Response> updateStatus(
+            @PathVariable String vehicleId,
+            @RequestParam String status
+    ) {
+        return Api_Response.<VehicleRegistration_Response>builder()
+                .result(vehicleService.updateStatus(vehicleId, status))
+                .build();
+    }
+
     @GetMapping({"/my", "/me"})
     @PreAuthorize("isAuthenticated()")
     public Api_Response<List<VehicleRegistration_Response>> getMyVehicles() {
