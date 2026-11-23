@@ -358,6 +358,19 @@ class Student_ServiceTest {
     // ==================== UPDATE TESTS ====================
 
     @Test
+    @DisplayName("update - Thất bại khi cố tình thay đổi mã sinh viên (studentCode)")
+    void update_failed_changeStudentCodeBlocked() {
+        request.setStudentCode("SV_NEW_DIFFERENT");
+        when(studentRepository.findById("stu-01")).thenReturn(Optional.of(student));
+
+        AppException ex = assertThrows(AppException.class, () -> studentService.update("stu-01", request));
+
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.OPERATION_FAILED);
+        assertThat(ex.getMessage()).contains("Không được phép thay đổi Mã số sinh viên (MSSV)");
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("update - Chặn thay đổi userId sang tài khoản khác")
     void update_failed_changeUserIdBlocked() {
         request.setUserId("u-different");

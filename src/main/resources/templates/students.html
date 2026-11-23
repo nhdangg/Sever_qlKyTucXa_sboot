@@ -184,6 +184,7 @@
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Mã số sinh viên (MSSV) <span class="text-danger">*</span></label>
                                 <input type="text" id="studentCode" class="form-control" placeholder="VD: SV2026001" required>
+                                <small class="text-muted d-none" id="studentCodeHelp">MSSV là mã định danh cố định không thể sửa đổi.</small>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Họ và tên khai sinh <span class="text-danger">*</span></label>
@@ -744,7 +745,12 @@
         isAdminAvatarRemoved = false;
         document.getElementById('studentModalTitle').innerHTML = '<i class="bi bi-person-plus-fill text-primary me-2"></i>Thêm Sinh viên mới';
         document.getElementById('studentId').value = '';
-        document.getElementById('studentCode').value = '';
+        const studentCodeInput = document.getElementById('studentCode');
+        studentCodeInput.value = '';
+        studentCodeInput.readOnly = false;
+        studentCodeInput.classList.remove('bg-light');
+        const studentCodeHelp = document.getElementById('studentCodeHelp');
+        if (studentCodeHelp) studentCodeHelp.classList.add('d-none');
         document.getElementById('fullName').value = '';
         document.getElementById('gender').value = 'MALE';
         document.getElementById('phone').value = '';
@@ -767,7 +773,12 @@
         if (!s) return;
         document.getElementById('studentModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Sinh viên';
         document.getElementById('studentId').value = s.studentId;
-        document.getElementById('studentCode').value = s.studentCode || '';
+        const studentCodeInput = document.getElementById('studentCode');
+        studentCodeInput.value = s.studentCode || '';
+        studentCodeInput.readOnly = true;
+        studentCodeInput.classList.add('bg-light');
+        const studentCodeHelp = document.getElementById('studentCodeHelp');
+        if (studentCodeHelp) studentCodeHelp.classList.remove('d-none');
         document.getElementById('fullName').value = s.fullName || '';
         document.getElementById('gender').value = s.gender || 'MALE';
         document.getElementById('phone').value = s.phone || '';

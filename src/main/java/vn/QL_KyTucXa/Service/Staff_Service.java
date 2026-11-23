@@ -201,11 +201,15 @@ public class Staff_Service {
         Staff nhan_vien = staffRepository.findById(staffId)
                 .orElseThrow(() -> new AppException(ErrorCode.STAFF_NOT_FOUND));
 
-        if (!nhan_vien.getStaffCode().equalsIgnoreCase(request.getStaffCode()) &&
-                staffRepository.existsByStaffCode(request.getStaffCode())) {
+        // 1. Chặn sửa Mã nhân viên: Không được phép thay đổi Mã nhân viên
+        String trimmedStaffCode = request.getStaffCode() != null ? request.getStaffCode().trim() : null;
+        if (trimmedStaffCode != null && !trimmedStaffCode.isEmpty()
+                && !trimmedStaffCode.equalsIgnoreCase(nhan_vien.getStaffCode())) {
             throw new AppException(ErrorCode.OPERATION_FAILED,
-                    "Mã nhân viên '" + request.getStaffCode() + "' đã tồn tại");
+                    "Không được phép thay đổi Mã nhân viên");
         }
+        // Luôn giữ nguyên mã nhân viên hiện tại
+        request.setStaffCode(nhan_vien.getStaffCode());
 
         // Kiểm tra khi đổi tài khoản người dùng liên kết
         if (request.getUserId() != null

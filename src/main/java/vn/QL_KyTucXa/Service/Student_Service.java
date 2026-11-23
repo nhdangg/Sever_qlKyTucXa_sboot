@@ -68,6 +68,7 @@ public class Student_Service {
         String nationalId = request.getNationalId() != null && !request.getNationalId().isBlank()
                 ? request.getNationalId().trim()
                 : null;
+        request.setNationalId(nationalId);
 
         // 1. Kiểm tra tính duy nhất của Mã sinh viên (studentCode)
         if (studentRepository.existsByStudentCode(studentCode)) {
@@ -496,18 +497,25 @@ public class Student_Service {
         Student sinh_vien = studentRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.STUDENT_NOT_FOUND));
 
-        // 1. Kiểm tra MSSV nếu có cập nhật: không được trùng với sinh viên khác
+        // 1. Chặn sửa MSSV: Không được phép thay đổi Mã số sinh viên
         String trimmedStudentCode = request.getStudentCode() != null ? request.getStudentCode().trim() : null;
         if (trimmedStudentCode != null && !trimmedStudentCode.isEmpty()
-                && !trimmedStudentCode.equals(sinh_vien.getStudentCode())) {
-            if (studentRepository.existsByStudentCode(trimmedStudentCode)) {
-                throw new AppException(ErrorCode.OPERATION_FAILED,
-                        "Mã số sinh viên '" + trimmedStudentCode + "' đã tồn tại trong hệ thống");
-            }
-            sinh_vien.setStudentCode(trimmedStudentCode);
+                && !trimmedStudentCode.equalsIgnoreCase(sinh_vien.getStudentCode())) {
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Không được phép thay đổi Mã số sinh viên (MSSV)");
+        }
+        // Luôn giữ nguyên MSSV hiện tại của sinh viên
+        request.setStudentCode(sinh_vien.getStudentCode());
+
+        // 2. Chặn thay đổi tài khoản User đã liên kết với hồ sơ sinh viên
+        if (request.getUserId() != null && !request.getUserId().isBlank()
+                && sinh_vien.getUser() != null
+                && !sinh_vien.getUser().getUserId().equals(request.getUserId())) {
+            throw new AppException(ErrorCode.OPERATION_FAILED,
+                    "Không được phép thay đổi tài khoản người dùng đã liên kết với hồ sơ sinh viên");
         }
 
-        // 2. Kiểm tra CCCD/Định danh nếu có cập nhật: không được trùng với sinh viên
+        // 3. Kiểm tra CCCD/Định danh nếu có cập nhật: không được trùng với sinh viên
         // khác
         if (request.getNationalId() != null) {
             if (request.getNationalId().isBlank()) {

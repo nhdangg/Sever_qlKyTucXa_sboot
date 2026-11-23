@@ -266,6 +266,19 @@ class Staff_ServiceTest {
     // ==================== UPDATE TESTS ====================
 
     @Test
+    @DisplayName("update - Thất bại khi cố tình thay đổi mã nhân viên (staffCode)")
+    void update_failed_changeStaffCodeBlocked() {
+        sampleRequest.setStaffCode("NV_NEW_DIFFERENT");
+        when(staffRepository.findById("staff-1")).thenReturn(Optional.of(sampleStaff));
+
+        AppException ex = assertThrows(AppException.class, () -> staffService.update("staff-1", sampleRequest));
+
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.OPERATION_FAILED);
+        assertThat(ex.getMessage()).contains("Không được phép thay đổi Mã nhân viên");
+        verify(staffRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("update - Thành công khi không đổi tài khoản liên kết")
     void update_success_sameUser() {
         when(staffRepository.findById("staff-1")).thenReturn(Optional.of(sampleStaff));

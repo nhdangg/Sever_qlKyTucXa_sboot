@@ -103,6 +103,7 @@
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Mã nhân viên (Staff Code) <span class="text-danger">*</span></label>
                                 <input type="text" id="staffCode" class="form-control" placeholder="VD: NV002" required>
+                                <small class="text-muted d-none" id="staffCodeHelp">Mã nhân viên là mã định danh cố định không thể sửa đổi.</small>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Họ và tên cán bộ <span class="text-danger">*</span></label>
@@ -323,7 +324,12 @@
     function openCreateStaffModal() {
         document.getElementById('staffModalTitle').textContent = 'Thêm Nhân viên mới';
         document.getElementById('staffId').value = '';
-        document.getElementById('staffCode').value = 'NV' + Date.now().toString().slice(-4);
+        const staffCodeInput = document.getElementById('staffCode');
+        staffCodeInput.value = 'NV' + Date.now().toString().slice(-4);
+        staffCodeInput.readOnly = false;
+        staffCodeInput.classList.remove('bg-light');
+        const staffCodeHelp = document.getElementById('staffCodeHelp');
+        if (staffCodeHelp) staffCodeHelp.classList.add('d-none');
         document.getElementById('staffFullName').value = '';
         document.getElementById('staffPosition').value = 'Quản lý tòa nhà';
         document.getElementById('staffPhone').value = '';
@@ -335,7 +341,12 @@
     function openEditStaffModal(s) {
         document.getElementById('staffModalTitle').textContent = 'Cập nhật thông tin Nhân viên';
         document.getElementById('staffId').value = s.staffId;
-        document.getElementById('staffCode').value = s.staffCode;
+        const staffCodeInput = document.getElementById('staffCode');
+        staffCodeInput.value = s.staffCode;
+        staffCodeInput.readOnly = true;
+        staffCodeInput.classList.add('bg-light');
+        const staffCodeHelp = document.getElementById('staffCodeHelp');
+        if (staffCodeHelp) staffCodeHelp.classList.remove('d-none');
         document.getElementById('staffFullName').value = s.fullName;
         document.getElementById('staffPosition').value = s.position || '';
         document.getElementById('staffDepartment').value = s.department || '';
