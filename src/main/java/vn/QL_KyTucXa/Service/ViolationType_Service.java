@@ -37,15 +37,14 @@ public class ViolationType_Service {
     }
 
     // Chuẩn hóa và kiểm tra mức độ nghiêm trọng thuộc tập cố định (MINOR, MEDIUM, SERIOUS)
-    // Hỗ trợ linh hoạt cả MAJOR (-> MEDIUM) và CRITICAL (-> SERIOUS) từ frontend
     private String normalizeSeverityLevel(String level) {
         if (level == null || level.isBlank()) {
             return "MINOR";
         }
         String upper = level.trim().toUpperCase();
         return switch (upper) {
-            case "SERIOUS", "CRITICAL", "DAC_BIET", "NGHIEM_TRONG" -> "SERIOUS";
-            case "MEDIUM", "MAJOR", "TRUNG_BINH", "NANG" -> "MEDIUM";
+            case "SERIOUS", "NGHIEM_TRONG" -> "SERIOUS";
+            case "MEDIUM", "TRUNG_BINH" -> "MEDIUM";
             case "MINOR", "NHE" -> "MINOR";
             default -> throw new AppException(ErrorCode.OPERATION_FAILED,
                     "Mức độ nghiêm trọng không hợp lệ. Chỉ chấp nhận: MINOR, MEDIUM, SERIOUS");

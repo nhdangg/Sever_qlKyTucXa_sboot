@@ -115,18 +115,15 @@ class ViolationType_ServiceTest {
     }
 
     @Test
-    @DisplayName("Chuẩn hóa mức độ nghiêm trọng khi truyền MAJOR hoặc CRITICAL")
-    void create_withMajorOrCritical_normalizesCorrectly() {
-        request.setSeverityLevel("MAJOR");
+    @DisplayName("Ném lỗi khi mức độ nghiêm trọng không hợp lệ")
+    void create_withInvalidSeverity_throwsException() {
+        request.setSeverityLevel("INVALID_LEVEL");
         when(violationTypeRepository.existsByViolationName(anyString())).thenReturn(false);
         when(violationTypeMapper.toEntity(request)).thenReturn(violationType);
-        when(violationTypeRepository.save(any(ViolationType.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(violationTypeMapper.toResponse(any(ViolationType.class))).thenReturn(response);
 
-        ViolationType_Response res = violationTypeService.create(request);
+        AppException ex = assertThrows(AppException.class, () -> violationTypeService.create(request));
 
-        assertThat(res).isNotNull();
-        verify(violationTypeRepository).save(argThat(vt -> "MEDIUM".equals(vt.getSeverityLevel())));
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.OPERATION_FAILED);
     }
 }
 
