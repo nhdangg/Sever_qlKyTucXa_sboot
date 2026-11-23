@@ -156,8 +156,8 @@
                                     <tr>
                                         <th>Phòng & Tòa</th>
                                         <th>Kỳ ghi sổ</th>
-                                        <th>⚡ Điện sinh hoạt</th>
-                                        <th>💧 Nước sạch</th>
+                                        <th><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Điện sinh hoạt</th>
+                                        <th><i class="bi bi-droplet-fill text-info me-1"></i>Nước sạch</th>
                                         <th>Tổng tiền phòng</th>
                                         <th>Người ghi sổ</th>
                                         <th class="text-center" style="width: 140px;">Thao tác</th>
@@ -376,7 +376,7 @@
                                         <span class="text-muted small" style="font-size: 0.75rem;">(Hỗ trợ tìm nhanh số phòng / tòa)</span>
                                     </div>
                                     <div class="input-group">
-                                        <input type="text" id="readingRoomSearch" class="form-control form-control-sm" placeholder="🔍 Gõ tìm số phòng..." oninput="filterRoomDropdown(this.value)" style="max-width: 140px;">
+                                        <input type="text" id="readingRoomSearch" class="form-control form-control-sm" placeholder="Tìm số phòng..." oninput="filterRoomDropdown(this.value)" style="max-width: 140px;">
                                         <select id="readingRoomId" class="form-select" onchange="onReadingRoomOrMonthChange()" required></select>
                                     </div>
                                 </div>
@@ -916,9 +916,9 @@
                         <div class="alert alert-info py-2 px-3 small mb-0 rounded-3 border-info-subtle">
                             <div class="fw-bold mb-1"><i class="bi bi-info-circle-fill me-1"></i>Hệ thống tự động bóc tách 3 nhóm chi phí vào chi tiết hóa đơn mỗi sinh viên:</div>
                             <ul class="mb-0 ps-3">
-                                <li><b>🏠 Tiền phòng:</b> Định mức theo hợp đồng sinh viên đang ở.</li>
-                                <li><b>⚡💧 Điện & Nước sạch:</b> Chia đều theo chỉ số công tơ phòng chốt trong kỳ.</li>
-                                <li><b>🛡️ Dịch vụ KTX thiết yếu:</b> Vệ sinh & rác (20.000 đ/SV) + Điện an ninh (20.000 đ/SV) + Wifi phòng chia đều sĩ số phòng.</li>
+                                <li><b><i class="bi bi-house-door-fill text-primary me-1"></i>Tiền phòng:</b> Định mức theo hợp đồng sinh viên đang ở.</li>
+                                <li><b><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>Điện & Nước sạch:</b> Chia đều theo chỉ số công tơ phòng chốt trong kỳ.</li>
+                                <li><b><i class="bi bi-shield-fill-check text-info me-1"></i>Dịch vụ KTX thiết yếu:</b> Vệ sinh & rác (20.000 đ/SV) + Điện an ninh (20.000 đ/SV) + Wifi phòng chia đều sĩ số phòng.</li>
                             </ul>
                         </div>
                     </form>
@@ -995,9 +995,9 @@
                                         <th>STT</th>
                                         <th>Phòng</th>
                                         <th>Kỳ tháng</th>
-                                        <th class="bg-warning-subtle text-dark">⚡ Điện (Cũ → Mới)</th>
+                                        <th class="bg-warning-subtle text-dark"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Điện (Cũ → Mới)</th>
                                         <th class="text-end">Tiêu thụ Điện</th>
-                                        <th class="bg-info-subtle text-dark">💧 Nước (Cũ → Mới)</th>
+                                        <th class="bg-info-subtle text-dark"><i class="bi bi-droplet-fill text-info me-1"></i>Nước (Cũ → Mới)</th>
                                         <th class="text-end">Tiêu thụ Nước</th>
                                         <th class="text-end">Tổng tiền phòng</th>
                                         <th>Trạng thái</th>
@@ -1427,7 +1427,7 @@
             let html = '';
             const bNames = Object.keys(groups).sort();
             bNames.forEach(b => {
-                html += `<optgroup label="🏢 ${b}">`;
+                html += `<optgroup label="Tòa ${b}">`;
                 groups[b].forEach(r => {
                     html += `<option value="${r.roomId}">Phòng ${r.roomNumber} (${b})</option>`;
                 });
@@ -2431,25 +2431,25 @@
                     <div class="row g-2 mb-3 text-center">
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-primary-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">🏠 TIỀN PHÒNG</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-house-door-fill text-primary me-1"></i>TIỀN PHÒNG</div>
                                 <div class="fw-bold text-primary">${formatCurrency(rentSum || fullInv.subtotalAmount || 0)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-warning-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">⚡💧 ĐIỆN & NƯỚC</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>ĐIỆN & NƯỚC</div>
                                 <div class="fw-bold text-warning-emphasis">${formatCurrency(utilSum)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-info-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">🛡️ DỊCH VỤ KTX</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-shield-fill-check text-info me-1"></i>DỊCH VỤ KTX</div>
                                 <div class="fw-bold text-info-emphasis">${formatCurrency(srvSum)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-danger-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">💵 TỔNG CỘNG</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-cash-stack text-danger me-1"></i>TỔNG CỘNG</div>
                                 <div class="fw-bold text-danger">${formatCurrency(total)}</div>
                             </div>
                         </div>
@@ -2864,8 +2864,8 @@
                                         <th class="ps-3 py-2 small">MSSV</th>
                                         <th class="py-2 small">Họ và tên</th>
                                         <th class="py-2 small text-muted">Hợp đồng</th>
-                                        <th class="text-end py-2 small text-warning-emphasis">⚡ Tiền điện</th>
-                                        <th class="text-end py-2 small text-info">💧 Tiền nước</th>
+                                        <th class="text-end py-2 small text-warning-emphasis"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Tiền điện</th>
+                                        <th class="text-end py-2 small text-info"><i class="bi bi-droplet-fill text-info me-1"></i>Tiền nước</th>
                                         <th class="text-end pe-3 py-2 small text-danger fw-bold">Tổng cộng phải nộp</th>
                                     </tr>
                                 </thead>

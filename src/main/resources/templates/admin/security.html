@@ -789,7 +789,7 @@
             }
 
             tbody.innerHTML = list.map(fb => {
-                const stars = '★'.repeat(fb.rating || 5);
+                const stars = '<i class="bi bi-star-fill text-warning me-1"></i>'.repeat(fb.rating || 5);
                 const isResolved = fb.status === 'RESOLVED' || fb.status === 'DA_PHAN_HOI' || !!fb.response;
                 return `
                     <tr>
@@ -802,7 +802,7 @@
                             <div class="fw-medium text-dark text-truncate" style="max-width: 330px;" title="${escapeHtml(fb.content || '-')}">${escapeHtml(fb.content || '-')}</div>
                             ${fb.response ? `<div class="small text-success mt-1 text-truncate" style="max-width: 330px;" title="${escapeHtml(fb.response)}"><i class="bi bi-reply-fill me-1"></i><b>BQL:</b> ${escapeHtml(fb.response)}</div>` : ''}
                         </td>
-                        <td class="text-warning fw-bold text-nowrap small">${stars} (${fb.rating || 5}/5)</td>
+                        <td class="text-nowrap small">${stars} <span class="fw-bold text-warning">(${fb.rating || 5}/5)</span></td>
                         <td class="text-nowrap small">${formatDate(fb.createdAt || new Date())}</td>
                         <td class="text-nowrap"><span class="badge ${isResolved ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">${isResolved ? 'Đã phản hồi' : 'Chờ phản hồi'}</span></td>
                         <td class="text-end pe-3 text-nowrap">

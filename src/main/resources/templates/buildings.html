@@ -1,342 +1,378 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head th:replace="~{fragments/layout :: head('Quản lý Tòa nhà, Tầng & Loại phòng')}"></head>
+
 <body>
 
-<aside th:replace="~{fragments/layout :: sidebar('buildings')}"></aside>
+    <aside th:replace="~{fragments/layout :: sidebar('buildings')}"></aside>
 
-<div class="main-wrapper">
-    <nav th:replace="~{fragments/layout :: topbar('Quản lý Tòa nhà, Tầng & Đơn giá Loại phòng')}"></nav>
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Quản lý Tòa nhà, Tầng & Đơn giá Loại phòng')}"></nav>
 
-    <div class="content-body">
-        <!-- 3 Navigation Tabs -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#paneBuildings" type="button">
-                        <i class="bi bi-buildings-fill me-1"></i> Tòa nhà KTX
+        <div class="content-body">
+            <!-- 3 Navigation Tabs -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold rounded-2" data-bs-toggle="pill"
+                            data-bs-target="#paneBuildings" type="button">
+                            <i class="bi bi-buildings-fill me-1"></i> Tòa nhà KTX
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill"
+                            data-bs-target="#paneFloors" type="button">
+                            <i class="bi bi-layers-fill me-1"></i> Danh sách Tầng
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill"
+                            data-bs-target="#paneRoomTypes" type="button">
+                            <i class="bi bi-tags-fill me-1"></i> Loại phòng & Đơn giá
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="d-flex gap-2 role-manager-up">
+                    <button class="btn btn-primary btn-sm px-3" onclick="openCreateModal()">
+                        <i class="bi bi-plus-lg me-1"></i> Thêm Tòa nhà
                     </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#paneFloors" type="button">
-                        <i class="bi bi-layers-fill me-1"></i> Danh sách Tầng
+                    <button class="btn btn-outline-primary btn-sm px-3" onclick="openCreateFloorModal()">
+                        <i class="bi bi-plus-lg me-1"></i> Thêm Tầng
                     </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-semibold rounded-2" data-bs-toggle="pill" data-bs-target="#paneRoomTypes" type="button">
-                        <i class="bi bi-tags-fill me-1"></i> Loại phòng & Đơn giá
+                    <button class="btn btn-outline-primary btn-sm px-3" onclick="openCreateRoomTypeModal()">
+                        <i class="bi bi-plus-lg me-1"></i> Thêm Loại phòng
                     </button>
-                </li>
-            </ul>
-
-            <div class="d-flex gap-2 role-manager-up">
-                <button class="btn btn-primary btn-sm px-3" onclick="openCreateModal()">
-                    <i class="bi bi-plus-lg me-1"></i> Thêm Tòa nhà
-                </button>
-                <button class="btn btn-outline-primary btn-sm px-3" onclick="openCreateFloorModal()">
-                    <i class="bi bi-plus-lg me-1"></i> Thêm Tầng
-                </button>
-                <button class="btn btn-outline-primary btn-sm px-3" onclick="openCreateRoomTypeModal()">
-                    <i class="bi bi-plus-lg me-1"></i> Thêm Loại phòng
-                </button>
-            </div>
-        </div>
-
-        <div class="tab-content">
-            <!-- TAB 1: TÒA NHÀ (toa_nha) -->
-            <div class="tab-pane fade show active" id="paneBuildings">
-                <div class="table-custom shadow-sm bg-white rounded-4">
-                    <div class="table-responsive">
-                        <table class="table align-middle table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Mã tòa</th>
-                                    <th>Tên tòa nhà</th>
-                                    <th>Số tầng</th>
-                                    <th>Loại khu</th>
-                                    <th>Trạng thái</th>
-                                    <th>Ghi chú</th>
-                                    <th class="text-center" style="width: 140px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="buildingTableBody">
-                                <tr><td colspan="7" class="text-center text-muted py-4">Đang tải danh sách tòa nhà...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
-            <!-- TAB 2: TẦNG (tang) -->
-            <div class="tab-pane fade" id="paneFloors">
-                <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-12 col-md-5">
-                            <select id="floorBuildingFilter" class="form-select" onchange="filterFloors()">
-                                <option value="">-- Lọc theo Tòa nhà (Tất cả) --</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-7 text-end role-manager-up">
-                            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openCreateFloorModal()">
-                                <i class="bi bi-plus-circle me-1"></i> Thêm Tầng mới vào Tòa nhà
-                            </button>
+            <div class="tab-content">
+                <!-- TAB 1: TÒA NHÀ (toa_nha) -->
+                <div class="tab-pane fade show active" id="paneBuildings">
+                    <div class="table-custom shadow-sm bg-white rounded-4">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mã tòa</th>
+                                        <th>Tên tòa nhà</th>
+                                        <th>Số tầng</th>
+                                        <th>Loại khu</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ghi chú</th>
+                                        <th class="text-center" style="width: 140px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="buildingTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">Đang tải danh sách tòa
+                                            nhà...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="table-custom shadow-sm bg-white rounded-4">
-                    <div class="table-responsive">
-                        <table class="table align-middle table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Tòa nhà</th>
-                                    <th>Tầng số</th>
-                                    <th>Mô tả khu vực tầng</th>
-                                    <th class="text-center" style="width: 140px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="floorTableBody">
-                                <tr><td colspan="4" class="text-center text-muted py-4">Đang tải danh sách tầng...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: LOẠI PHÒNG & ĐƠN GIÁ THUÊ (loai_phong) -->
-            <div class="tab-pane fade" id="paneRoomTypes">
-                <div class="table-custom shadow-sm bg-white rounded-4">
-                    <div class="table-responsive">
-                        <table class="table align-middle table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Tên loại phòng</th>
-                                    <th>Sức chứa tối đa</th>
-                                    <th>Diện tích (m²)</th>
-                                    <th>Đơn giá thuê / tháng</th>
-                                    <th>Mô tả tiện nghi</th>
-                                    <th class="text-center" style="width: 140px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="roomTypeTableBody">
-                                <tr><td colspan="6" class="text-center text-muted py-4">Đang tải danh mục loại phòng...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Thêm / Sửa Tòa nhà - Chuẩn ĐH Công Nghiệp Việt Trì -->
-<div class="modal fade" id="buildingModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header univ-modal-header">
-                <h5 class="modal-title" id="modalTitle">
-                    <i class="bi bi-building-fill me-2"></i>THÔNG TIN TÒA NHÀ KÝ TÚC XÁ
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="buildingForm">
-                    <input type="hidden" id="buildingId">
-                    <div class="form-section-title">
-                        <i class="bi bi-building"></i>I. ĐỊNH DANH & PHÂN KHU TÒA NHÀ
-                    </div>
-                    <div class="form-section-box">
-                        <div class="mb-2">
-                            <label class="form-label">Mã tòa nhà ký hiệu <span class="text-danger">*</span></label>
-                            <input type="text" id="buildingCode" class="form-control" placeholder="VD: TOA_A" required>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Tên tòa nhà đầy đủ <span class="text-danger">*</span></label>
-                            <input type="text" id="buildingName" class="form-control" placeholder="VD: Tòa A - Khu KTX Nữ" required>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label">Số tầng quy mô <span class="text-danger">*</span></label>
-                                <input type="number" id="numFloors" class="form-control" min="1" value="5" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Phân loại khu lưu trú <span class="text-danger">*</span></label>
-                                <select id="genderType" class="form-select" required>
-                                    <option value="MALE">Khu Nam (MALE)</option>
-                                    <option value="FEMALE">Khu Nữ (FEMALE)</option>
-                                    <option value="MIXED">Khu Hỗn hợp (MIXED)</option>
+                <!-- TAB 2: TẦNG (tang) -->
+                <div class="tab-pane fade" id="paneFloors">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-5">
+                                <select id="floorBuildingFilter" class="form-select" onchange="filterFloors()">
+                                    <option value="">-- Lọc theo Tòa nhà (Tất cả) --</option>
                                 </select>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="form-section-title">
-                        <i class="bi bi-info-circle"></i>II. TRẠNG THÁI & GHI CHÚ
-                    </div>
-                    <div class="form-section-box mb-0">
-                        <div class="mb-2">
-                            <label class="form-label">Trạng thái vận hành</label>
-                            <select id="status" class="form-select">
-                                <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
-                                <option value="MAINTENANCE">Đang bảo dưỡng (MAINTENANCE)</option>
-                                <option value="INACTIVE">Tạm ngừng sử dụng (INACTIVE)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label">Ghi chú chi tiết</label>
-                            <textarea id="description" class="form-control" rows="2" placeholder="Ghi chú chi tiết về tòa nhà..."></textarea>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
-                <button type="button" class="btn btn-primary" onclick="saveBuilding()"><i class="bi bi-floppy-fill me-1"></i>Lưu thông tin tòa nhà</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Thêm / Sửa Tầng (tang) -->
-<div class="modal fade" id="floorModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header univ-modal-header">
-                <h5 class="modal-title" id="floorModalTitle">
-                    <i class="bi bi-layers-fill me-2"></i>THIẾT LẬP TẦNG TÒA NHÀ
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="floorForm">
-                    <input type="hidden" id="floorId">
-                    <div class="form-section-box mb-0">
-                        <div class="mb-2">
-                            <label class="form-label">Bố trí thuộc Tòa nhà <span class="text-danger">*</span></label>
-                            <select id="floorBuildingId" class="form-select" required></select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Số thứ tự tầng <span class="text-danger">*</span></label>
-                            <input type="number" id="floorNumberInput" class="form-control" min="1" value="1" required>
-                        </div>
-                        <div>
-                            <label class="form-label">Mô tả định danh tầng</label>
-                            <input type="text" id="floorDescInput" class="form-control" placeholder="VD: Tầng 3 - Khu phòng 4 sinh viên">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
-                <button type="button" class="btn btn-primary" onclick="saveFloor()"><i class="bi bi-floppy-fill me-1"></i>Lưu tầng</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Thêm / Sửa Loại phòng & Đơn giá (loai_phong) -->
-<div class="modal fade" id="roomTypeModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header univ-modal-header">
-                <h5 class="modal-title" id="roomTypeModalTitle">
-                    <i class="bi bi-tag-fill me-2"></i>CẤU HÌNH LOẠI PHÒNG & ĐƠN GIÁ NỘI TRÚ
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="roomTypeForm">
-                    <input type="hidden" id="roomTypeId">
-                    <div class="form-section-title">
-                        <i class="bi bi-door-closed"></i>I. ĐẶC TÍNH & QUY CÁCH PHÒNG
-                    </div>
-                    <div class="form-section-box">
-                        <div class="mb-2">
-                            <label class="form-label">Tên loại phòng chuẩn <span class="text-danger">*</span></label>
-                            <input type="text" id="roomTypeNameInput" class="form-control" placeholder="VD: Phòng 4 Sinh viên (Điều hòa)" required>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label">Sức chứa (SV/phòng) <span class="text-danger">*</span></label>
-                                <input type="number" id="roomTypeCapInput" class="form-control" min="1" value="4" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Diện tích (m²)</label>
-                                <input type="number" step="0.5" id="roomTypeAreaInput" class="form-control" value="28">
+                            <div class="col-12 col-md-7 text-end role-manager-up">
+                                <button class="btn btn-primary btn-sm rounded-pill px-3"
+                                    onclick="openCreateFloorModal()">
+                                    <i class="bi bi-plus-circle me-1"></i> Thêm Tầng mới vào Tòa nhà
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-section-title">
-                        <i class="bi bi-cash"></i>II. ĐƠN GIÁ THUÊ & TRANG THIẾT BỊ
-                    </div>
-                    <div class="form-section-box mb-0">
-                        <div class="mb-2">
-                            <label class="form-label">Đơn giá thuê hàng tháng (VNĐ/SV) <span class="text-danger">*</span></label>
-                            <input type="number" step="10000" min="10000" id="roomTypePriceInput" class="form-control fw-bold text-primary" value="650000" required>
+                    <div class="table-custom shadow-sm bg-white rounded-4">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Tòa nhà</th>
+                                        <th>Tầng số</th>
+                                        <th>Mô tả khu vực tầng</th>
+                                        <th class="text-center" style="width: 140px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="floorTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">Đang tải danh sách tầng...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div>
-                            <label class="form-label">Mô tả trang thiết bị tiêu chuẩn</label>
-                            <textarea id="roomTypeDescInput" class="form-control" rows="2" placeholder="VD: Giường tầng sắt, điều hòa, bình nóng lạnh, bàn học..."></textarea>
+                    </div>
+                </div>
+
+                <!-- TAB 3: LOẠI PHÒNG & ĐƠN GIÁ THUÊ (loai_phong) -->
+                <div class="tab-pane fade" id="paneRoomTypes">
+                    <div class="table-custom shadow-sm bg-white rounded-4">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Tên loại phòng</th>
+                                        <th>Sức chứa tối đa</th>
+                                        <th>Diện tích (m²)</th>
+                                        <th>Đơn giá thuê / tháng</th>
+                                        <th>Mô tả tiện nghi</th>
+                                        <th class="text-center" style="width: 140px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roomTypeTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">Đang tải danh mục loại
+                                            phòng...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
-                <button type="button" class="btn btn-primary" onclick="saveRoomType()"><i class="bi bi-floppy-fill me-1"></i>Lưu cấu hình loại phòng</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+    <!-- Modal Thêm / Sửa Tòa nhà - Chuẩn ĐH Công Nghiệp Việt Trì -->
+    <div class="modal fade" id="buildingModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title" id="modalTitle">
+                        <i class="bi bi-building-fill me-2"></i>THÔNG TIN TÒA NHÀ KÝ TÚC XÁ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="buildingForm">
+                        <input type="hidden" id="buildingId">
+                        <div class="form-section-title">
+                            <i class="bi bi-building"></i>I. ĐỊNH DANH & PHÂN KHU TÒA NHÀ
+                        </div>
+                        <div class="form-section-box">
+                            <div class="mb-2">
+                                <label class="form-label">Mã tòa nhà ký hiệu <span class="text-danger">*</span></label>
+                                <input type="text" id="buildingCode" class="form-control" placeholder="VD: TOA_A"
+                                    required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Tên tòa nhà đầy đủ <span class="text-danger">*</span></label>
+                                <input type="text" id="buildingName" class="form-control"
+                                    placeholder="VD: Tòa A - Khu KTX Nữ" required>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Số tầng quy mô <span class="text-danger">*</span></label>
+                                    <input type="number" id="numFloors" class="form-control" min="1" value="5" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Phân loại khu lưu trú <span
+                                            class="text-danger">*</span></label>
+                                    <select id="genderType" class="form-select" required>
+                                        <option value="MALE">Khu Nam</option>
+                                        <option value="FEMALE">Khu Nữ</option>
+                                        <option value="MIXED">Khu Hỗn hợp</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-<script>
-    let buildingModal = null;
-    let floorModal = null;
-    let roomTypeModal = null;
+                        <div class="form-section-title">
+                            <i class="bi bi-info-circle"></i>II. TRẠNG THÁI & GHI CHÚ
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="mb-2">
+                                <label class="form-label">Trạng thái vận hành</label>
+                                <select id="status" class="form-select">
+                                    <option value="ACTIVE">Đang hoạt động</option>
+                                    <option value="MAINTENANCE">Đang bảo dưỡng</option>
+                                    <option value="INACTIVE">Tạm ngừng sử dụng</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">Ghi chú chi tiết</label>
+                                <textarea id="description" class="form-control" rows="2"
+                                    placeholder="Ghi chú chi tiết về tòa nhà..."></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBuilding()"><i
+                            class="bi bi-floppy-fill me-1"></i>Lưu thông tin tòa nhà</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    let allBuildings = [];
-    let allFloors = [];
-    let allRoomTypes = [];
-    let canManageFacility = false;
+    <!-- Modal Thêm / Sửa Tầng (tang) -->
+    <div class="modal fade" id="floorModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title" id="floorModalTitle">
+                        <i class="bi bi-layers-fill me-2"></i>THIẾT LẬP TẦNG TÒA NHÀ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="floorForm">
+                        <input type="hidden" id="floorId">
+                        <div class="form-section-box mb-0">
+                            <div class="mb-2">
+                                <label class="form-label">Bố trí thuộc Tòa nhà <span
+                                        class="text-danger">*</span></label>
+                                <select id="floorBuildingId" class="form-select" required></select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Số thứ tự tầng <span class="text-danger">*</span></label>
+                                <input type="number" id="floorNumberInput" class="form-control" min="1" value="1"
+                                    required>
+                            </div>
+                            <div>
+                                <label class="form-label">Mô tả định danh tầng</label>
+                                <input type="text" id="floorDescInput" class="form-control"
+                                    placeholder="VD: Tầng 3 - Khu phòng 4 sinh viên">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="saveFloor()"><i
+                            class="bi bi-floppy-fill me-1"></i>Lưu tầng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        buildingModal = new bootstrap.Modal(document.getElementById('buildingModal'));
-        floorModal = new bootstrap.Modal(document.getElementById('floorModal'));
-        roomTypeModal = new bootstrap.Modal(document.getElementById('roomTypeModal'));
+    <!-- Modal Thêm / Sửa Loại phòng & Đơn giá (loai_phong) -->
+    <div class="modal fade" id="roomTypeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title" id="roomTypeModalTitle">
+                        <i class="bi bi-tag-fill me-2"></i>CẤU HÌNH LOẠI PHÒNG & ĐƠN GIÁ NỘI TRÚ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="roomTypeForm">
+                        <input type="hidden" id="roomTypeId">
+                        <div class="form-section-title">
+                            <i class="bi bi-door-closed"></i>I. ĐẶC TÍNH & QUY CÁCH PHÒNG
+                        </div>
+                        <div class="form-section-box">
+                            <div class="mb-2">
+                                <label class="form-label">Tên loại phòng chuẩn <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="roomTypeNameInput" class="form-control"
+                                    placeholder="VD: Phòng 4 Sinh viên (Điều hòa)" required>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Sức chứa (SV/phòng) <span
+                                            class="text-danger">*</span></label>
+                                    <input type="number" id="roomTypeCapInput" class="form-control" min="1" value="4"
+                                        required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Diện tích (m²)</label>
+                                    <input type="number" step="0.5" id="roomTypeAreaInput" class="form-control"
+                                        value="28">
+                                </div>
+                            </div>
+                        </div>
 
-        const user = Auth.getUser() || {};
-        const role = (user.role || 'ADMIN').toUpperCase();
-        canManageFacility = (role === 'ADMIN' || role === 'MANAGER');
+                        <div class="form-section-title">
+                            <i class="bi bi-cash"></i>II. ĐƠN GIÁ THUÊ & TRANG THIẾT BỊ
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="mb-2">
+                                <label class="form-label">Đơn giá thuê hàng tháng (VNĐ/SV) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" step="10000" min="10000" id="roomTypePriceInput"
+                                    class="form-control fw-bold text-primary" value="650000" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Mô tả trang thiết bị tiêu chuẩn</label>
+                                <textarea id="roomTypeDescInput" class="form-control" rows="2"
+                                    placeholder="VD: Giường tầng sắt, điều hòa, bình nóng lạnh, bàn học..."></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="saveRoomType()"><i
+                            class="bi bi-floppy-fill me-1"></i>Lưu cấu hình loại phòng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        await Promise.all([
-            loadBuildings(),
-            loadFloors(),
-            loadRoomTypes()
-        ]);
-    });
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
-    // ==================== 1. TÒA NHÀ (toa_nha) ====================
-    async function loadBuildings() {
-        const tbody = document.getElementById('buildingTableBody');
-        try {
-            const res = await apiFetch('/buildings/all').catch(() => apiFetch('/buildings'));
-            allBuildings = unwrapList(res);
+    <script>
+        let buildingModal = null;
+        let floorModal = null;
+        let roomTypeModal = null;
 
-            const bFilter = document.getElementById('floorBuildingFilter');
-            const bSelect = document.getElementById('floorBuildingId');
-            bFilter.innerHTML = '<option value="">-- Lọc theo Tòa nhà (Tất cả) --</option>' +
-                allBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
-            bSelect.innerHTML = allBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
+        let allBuildings = [];
+        let allFloors = [];
+        let allRoomTypes = [];
+        let canManageFacility = false;
 
-            if (allBuildings.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Chưa có tòa nhà nào trong hệ thống.</td></tr>';
-                return;
-            }
+        document.addEventListener('DOMContentLoaded', async () => {
+            buildingModal = new bootstrap.Modal(document.getElementById('buildingModal'));
+            floorModal = new bootstrap.Modal(document.getElementById('floorModal'));
+            roomTypeModal = new bootstrap.Modal(document.getElementById('roomTypeModal'));
 
-            tbody.innerHTML = allBuildings.map(b => `
+            const user = Auth.getUser() || {};
+            const role = (user.role || 'ADMIN').toUpperCase();
+            canManageFacility = (role === 'ADMIN' || role === 'MANAGER');
+
+            await Promise.all([
+                loadBuildings(),
+                loadFloors(),
+                loadRoomTypes()
+            ]);
+        });
+
+        // ==================== 1. TÒA NHÀ (toa_nha) ====================
+        async function loadBuildings() {
+            const tbody = document.getElementById('buildingTableBody');
+            try {
+                const res = await apiFetch('/buildings/all').catch(() => apiFetch('/buildings'));
+                allBuildings = unwrapList(res);
+
+                const bFilter = document.getElementById('floorBuildingFilter');
+                const bSelect = document.getElementById('floorBuildingId');
+                bFilter.innerHTML = '<option value="">-- Lọc theo Tòa nhà (Tất cả) --</option>' +
+                    allBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
+                bSelect.innerHTML = allBuildings.map(b => `<option value="${b.buildingId}">${b.buildingName} (${b.buildingCode})</option>`).join('');
+
+                if (allBuildings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Chưa có tòa nhà nào trong hệ thống.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = allBuildings.map(b => `
                 <tr>
                     <td class="fw-bold text-primary">${b.buildingCode}</td>
                     <td class="fw-semibold">${b.buildingName}</td>
@@ -348,7 +384,7 @@
                     </td>
                     <td>
                         <span class="badge ${b.status === 'ACTIVE' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}">
-                            ${b.status}
+                            ${b.status == 'ACTIVE' ? 'Đang hoạt động' : (b.status == 'INACTIVE' ? 'Tạm ngừng hoạt động' : 'Đang bảo dưỡng')}
                         </span>
                     </td>
                     <td class="text-muted small">${b.description || '-'}</td>
@@ -364,98 +400,98 @@
                     </td>
                 </tr>
             `).join('');
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Lỗi tải dữ liệu: ${e.message}</td></tr>`;
-        }
-    }
-
-    function openCreateModal() {
-        document.getElementById('modalTitle').textContent = 'Thêm Tòa nhà mới';
-        document.getElementById('buildingId').value = '';
-        document.getElementById('buildingCode').value = '';
-        document.getElementById('buildingName').value = '';
-        document.getElementById('numFloors').value = 5;
-        document.getElementById('genderType').value = 'MALE';
-        document.getElementById('status').value = 'ACTIVE';
-        document.getElementById('description').value = '';
-        buildingModal.show();
-    }
-
-    function openEditModal(b) {
-        document.getElementById('modalTitle').textContent = 'Cập nhật Tòa nhà';
-        document.getElementById('buildingId').value = b.buildingId;
-        document.getElementById('buildingCode').value = b.buildingCode;
-        document.getElementById('buildingName').value = b.buildingName;
-        document.getElementById('numFloors').value = b.numFloors;
-        document.getElementById('genderType').value = b.genderType;
-        document.getElementById('status').value = b.status;
-        document.getElementById('description').value = b.description || '';
-        buildingModal.show();
-    }
-
-    async function saveBuilding() {
-        const id = document.getElementById('buildingId').value;
-        const payload = {
-            buildingCode: document.getElementById('buildingCode').value.trim(),
-            buildingName: document.getElementById('buildingName').value.trim(),
-            numFloors: parseInt(document.getElementById('numFloors').value),
-            genderType: document.getElementById('genderType').value,
-            status: document.getElementById('status').value,
-            description: document.getElementById('description').value.trim()
-        };
-
-        if (!payload.buildingCode || !payload.buildingName) {
-            showToastError('Vui lòng điền đủ Mã tòa và Tên tòa nhà!');
-            return;
-        }
-
-        try {
-            if (id) {
-                await apiFetch(`/buildings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                showToastSuccess('Cập nhật tòa nhà thành công!');
-            } else {
-                await apiFetch('/buildings', { method: 'POST', body: JSON.stringify(payload) });
-                showToastSuccess('Tạo mới tòa nhà thành công!');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Lỗi tải dữ liệu: ${e.message}</td></tr>`;
             }
-            buildingModal.hide();
-            await loadBuildings();
-        } catch (e) {
-            showToastError(e.message);
         }
-    }
 
-    async function deleteBuilding(id) {
-        if (!await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa tòa nhà này không?')) return;
-        try {
-            await apiFetch(`/buildings/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa tòa nhà thành công!');
-            await loadBuildings();
-        } catch (e) {
-            showToastError(e.message);
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Thêm Tòa nhà mới';
+            document.getElementById('buildingId').value = '';
+            document.getElementById('buildingCode').value = '';
+            document.getElementById('buildingName').value = '';
+            document.getElementById('numFloors').value = 5;
+            document.getElementById('genderType').value = 'MALE';
+            document.getElementById('status').value = 'ACTIVE';
+            document.getElementById('description').value = '';
+            buildingModal.show();
         }
-    }
 
-    // ==================== 2. TẦNG (tang) ====================
-    async function loadFloors() {
-        const tbody = document.getElementById('floorTableBody');
-        try {
-            const res = await apiFetch('/floors');
-            allFloors = unwrapList(res);
-            filterFloors();
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+        function openEditModal(b) {
+            document.getElementById('modalTitle').textContent = 'Cập nhật Tòa nhà';
+            document.getElementById('buildingId').value = b.buildingId;
+            document.getElementById('buildingCode').value = b.buildingCode;
+            document.getElementById('buildingName').value = b.buildingName;
+            document.getElementById('numFloors').value = b.numFloors;
+            document.getElementById('genderType').value = b.genderType;
+            document.getElementById('status').value = b.status;
+            document.getElementById('description').value = b.description || '';
+            buildingModal.show();
         }
-    }
 
-    function filterFloors() {
-        const bId = document.getElementById('floorBuildingFilter').value;
-        const list = bId ? allFloors.filter(f => f.buildingId === bId) : allFloors;
-        const tbody = document.getElementById('floorTableBody');
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu tầng.</td></tr>';
-            return;
+        async function saveBuilding() {
+            const id = document.getElementById('buildingId').value;
+            const payload = {
+                buildingCode: document.getElementById('buildingCode').value.trim(),
+                buildingName: document.getElementById('buildingName').value.trim(),
+                numFloors: parseInt(document.getElementById('numFloors').value),
+                genderType: document.getElementById('genderType').value,
+                status: document.getElementById('status').value,
+                description: document.getElementById('description').value.trim()
+            };
+
+            if (!payload.buildingCode || !payload.buildingName) {
+                showToastError('Vui lòng điền đủ Mã tòa và Tên tòa nhà!');
+                return;
+            }
+
+            try {
+                if (id) {
+                    await apiFetch(`/buildings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Cập nhật tòa nhà thành công!');
+                } else {
+                    await apiFetch('/buildings', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Tạo mới tòa nhà thành công!');
+                }
+                buildingModal.hide();
+                await loadBuildings();
+            } catch (e) {
+                showToastError(e.message);
+            }
         }
-        tbody.innerHTML = list.map(f => `
+
+        async function deleteBuilding(id) {
+            if (!await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa tòa nhà này không?')) return;
+            try {
+                await apiFetch(`/buildings/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa tòa nhà thành công!');
+                await loadBuildings();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        // ==================== 2. TẦNG (tang) ====================
+        async function loadFloors() {
+            const tbody = document.getElementById('floorTableBody');
+            try {
+                const res = await apiFetch('/floors');
+                allFloors = unwrapList(res);
+                filterFloors();
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
+        }
+
+        function filterFloors() {
+            const bId = document.getElementById('floorBuildingFilter').value;
+            const list = bId ? allFloors.filter(f => f.buildingId === bId) : allFloors;
+            const tbody = document.getElementById('floorTableBody');
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Chưa có dữ liệu tầng.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map(f => `
             <tr>
                 <td class="fw-semibold text-primary">${f.buildingName || '-'}</td>
                 <td><span class="badge bg-primary-subtle text-primary fw-bold">Tầng ${f.floorNumber}</span></td>
@@ -472,73 +508,73 @@
                 </td>
             </tr>
         `).join('');
-    }
-
-    function openCreateFloorModal() {
-        document.getElementById('floorModalTitle').textContent = 'Thêm Tầng mới vào Tòa nhà';
-        document.getElementById('floorId').value = '';
-        document.getElementById('floorNumberInput').value = 1;
-        document.getElementById('floorDescInput').value = '';
-        floorModal.show();
-    }
-
-    function openEditFloorModal(f) {
-        document.getElementById('floorModalTitle').textContent = 'Cập nhật Thông tin Tầng';
-        document.getElementById('floorId').value = f.floorId;
-        document.getElementById('floorBuildingId').value = f.buildingId;
-        document.getElementById('floorNumberInput').value = f.floorNumber;
-        document.getElementById('floorDescInput').value = f.description || '';
-        floorModal.show();
-    }
-
-    async function saveFloor() {
-        const id = document.getElementById('floorId').value;
-        const payload = {
-            buildingId: document.getElementById('floorBuildingId').value,
-            floorNumber: parseInt(document.getElementById('floorNumberInput').value || 1),
-            description: document.getElementById('floorDescInput').value.trim()
-        };
-        if (!payload.buildingId || isNaN(payload.floorNumber)) {
-            showToastError('Vui lòng chọn Tòa nhà và Số tầng!');
-            return;
         }
-        try {
-            if (id) {
-                await apiFetch(`/floors/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                showToastSuccess('Đã cập nhật tầng!');
-            } else {
-                await apiFetch('/floors', { method: 'POST', body: JSON.stringify(payload) });
-                showToastSuccess('Đã thêm tầng mới vào CSDL!');
-            }
-            floorModal.hide();
-            await loadFloors();
-        } catch (e) {
-            showToastError(e.message);
-        }
-    }
 
-    async function deleteFloor(id) {
-        if (!await showConfirm('Xóa tầng?', 'Bạn có chắc muốn xóa tầng này?')) return;
-        try {
-            await apiFetch(`/floors/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa tầng!');
-            await loadFloors();
-        } catch (e) {
-            showToastError(e.message);
+        function openCreateFloorModal() {
+            document.getElementById('floorModalTitle').textContent = 'Thêm Tầng mới vào Tòa nhà';
+            document.getElementById('floorId').value = '';
+            document.getElementById('floorNumberInput').value = 1;
+            document.getElementById('floorDescInput').value = '';
+            floorModal.show();
         }
-    }
 
-    // ==================== 3. LOẠI PHÒNG & ĐƠN GIÁ (loai_phong) ====================
-    async function loadRoomTypes() {
-        const tbody = document.getElementById('roomTypeTableBody');
-        try {
-            const res = await apiFetch('/room-types/all').catch(() => apiFetch('/room-types'));
-            allRoomTypes = unwrapList(res);
-            if (allRoomTypes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Chưa có danh mục loại phòng.</td></tr>';
+        function openEditFloorModal(f) {
+            document.getElementById('floorModalTitle').textContent = 'Cập nhật Thông tin Tầng';
+            document.getElementById('floorId').value = f.floorId;
+            document.getElementById('floorBuildingId').value = f.buildingId;
+            document.getElementById('floorNumberInput').value = f.floorNumber;
+            document.getElementById('floorDescInput').value = f.description || '';
+            floorModal.show();
+        }
+
+        async function saveFloor() {
+            const id = document.getElementById('floorId').value;
+            const payload = {
+                buildingId: document.getElementById('floorBuildingId').value,
+                floorNumber: parseInt(document.getElementById('floorNumberInput').value || 1),
+                description: document.getElementById('floorDescInput').value.trim()
+            };
+            if (!payload.buildingId || isNaN(payload.floorNumber)) {
+                showToastError('Vui lòng chọn Tòa nhà và Số tầng!');
                 return;
             }
-            tbody.innerHTML = allRoomTypes.map(rt => `
+            try {
+                if (id) {
+                    await apiFetch(`/floors/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã cập nhật tầng!');
+                } else {
+                    await apiFetch('/floors', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã thêm tầng mới vào CSDL!');
+                }
+                floorModal.hide();
+                await loadFloors();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteFloor(id) {
+            if (!await showConfirm('Xóa tầng?', 'Bạn có chắc muốn xóa tầng này?')) return;
+            try {
+                await apiFetch(`/floors/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa tầng!');
+                await loadFloors();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        // ==================== 3. LOẠI PHÒNG & ĐƠN GIÁ (loai_phong) ====================
+        async function loadRoomTypes() {
+            const tbody = document.getElementById('roomTypeTableBody');
+            try {
+                const res = await apiFetch('/room-types/all').catch(() => apiFetch('/room-types'));
+                allRoomTypes = unwrapList(res);
+                if (allRoomTypes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Chưa có danh mục loại phòng.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = allRoomTypes.map(rt => `
                 <tr>
                     <td class="fw-bold text-dark">${rt.typeName}</td>
                     <td><span class="badge bg-info-subtle text-info fw-bold">${rt.capacity} SV / phòng</span></td>
@@ -557,71 +593,72 @@
                     </td>
                 </tr>
             `).join('');
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
-        }
-    }
-
-    function openCreateRoomTypeModal() {
-        document.getElementById('roomTypeModalTitle').textContent = 'Thêm Loại phòng & Đơn giá thuê mới';
-        document.getElementById('roomTypeId').value = '';
-        document.getElementById('roomTypeNameInput').value = '';
-        document.getElementById('roomTypeCapInput').value = 4;
-        document.getElementById('roomTypeAreaInput').value = 28;
-        document.getElementById('roomTypePriceInput').value = 650000;
-        document.getElementById('roomTypeDescInput').value = '';
-        roomTypeModal.show();
-    }
-
-    function openEditRoomTypeModal(rt) {
-        document.getElementById('roomTypeModalTitle').textContent = 'Cập nhật Loại phòng & Đơn giá';
-        document.getElementById('roomTypeId').value = rt.roomTypeId;
-        document.getElementById('roomTypeNameInput').value = rt.typeName;
-        document.getElementById('roomTypeCapInput').value = rt.capacity || 4;
-        document.getElementById('roomTypeAreaInput').value = rt.areaM2 || 28;
-        document.getElementById('roomTypePriceInput').value = rt.pricePerMonth || 650000;
-        document.getElementById('roomTypeDescInput').value = rt.description || '';
-        roomTypeModal.show();
-    }
-
-    async function saveRoomType() {
-        const id = document.getElementById('roomTypeId').value;
-        const payload = {
-            typeName: document.getElementById('roomTypeNameInput').value.trim(),
-            capacity: parseInt(document.getElementById('roomTypeCapInput').value || 4),
-            areaM2: parseFloat(document.getElementById('roomTypeAreaInput').value || 25),
-            pricePerMonth: parseFloat(document.getElementById('roomTypePriceInput').value || 0),
-            description: document.getElementById('roomTypeDescInput').value.trim()
-        };
-        if (!payload.typeName || isNaN(payload.pricePerMonth) || payload.pricePerMonth <= 0) {
-            showToastError('Vui lòng nhập Tên loại phòng và Đơn giá thuê hợp lệ!');
-            return;
-        }
-        try {
-            if (id) {
-                await apiFetch(`/room-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                showToastSuccess('Đã cập nhật loại phòng & đơn giá!');
-            } else {
-                await apiFetch('/room-types', { method: 'POST', body: JSON.stringify(payload) });
-                showToastSuccess('Đã thêm loại phòng mới vào CSDL!');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
             }
-            roomTypeModal.hide();
-            await loadRoomTypes();
-        } catch (e) {
-            showToastError(e.message);
         }
-    }
 
-    async function deleteRoomType(id) {
-        if (!await showConfirm('Xóa loại phòng?', 'Bạn có chắc chắn muốn xóa loại phòng này?')) return;
-        try {
-            await apiFetch(`/room-types/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa loại phòng!');
-            await loadRoomTypes();
-        } catch (e) {
-            showToastError(e.message);
+        function openCreateRoomTypeModal() {
+            document.getElementById('roomTypeModalTitle').textContent = 'Thêm Loại phòng & Đơn giá thuê mới';
+            document.getElementById('roomTypeId').value = '';
+            document.getElementById('roomTypeNameInput').value = '';
+            document.getElementById('roomTypeCapInput').value = 4;
+            document.getElementById('roomTypeAreaInput').value = 28;
+            document.getElementById('roomTypePriceInput').value = 650000;
+            document.getElementById('roomTypeDescInput').value = '';
+            roomTypeModal.show();
         }
-    }
-</script>
+
+        function openEditRoomTypeModal(rt) {
+            document.getElementById('roomTypeModalTitle').textContent = 'Cập nhật Loại phòng & Đơn giá';
+            document.getElementById('roomTypeId').value = rt.roomTypeId;
+            document.getElementById('roomTypeNameInput').value = rt.typeName;
+            document.getElementById('roomTypeCapInput').value = rt.capacity || 4;
+            document.getElementById('roomTypeAreaInput').value = rt.areaM2 || 28;
+            document.getElementById('roomTypePriceInput').value = rt.pricePerMonth || 650000;
+            document.getElementById('roomTypeDescInput').value = rt.description || '';
+            roomTypeModal.show();
+        }
+
+        async function saveRoomType() {
+            const id = document.getElementById('roomTypeId').value;
+            const payload = {
+                typeName: document.getElementById('roomTypeNameInput').value.trim(),
+                capacity: parseInt(document.getElementById('roomTypeCapInput').value || 4),
+                areaM2: parseFloat(document.getElementById('roomTypeAreaInput').value || 25),
+                pricePerMonth: parseFloat(document.getElementById('roomTypePriceInput').value || 0),
+                description: document.getElementById('roomTypeDescInput').value.trim()
+            };
+            if (!payload.typeName || isNaN(payload.pricePerMonth) || payload.pricePerMonth <= 0) {
+                showToastError('Vui lòng nhập Tên loại phòng và Đơn giá thuê hợp lệ!');
+                return;
+            }
+            try {
+                if (id) {
+                    await apiFetch(`/room-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã cập nhật loại phòng & đơn giá!');
+                } else {
+                    await apiFetch('/room-types', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess('Đã thêm loại phòng mới vào CSDL!');
+                }
+                roomTypeModal.hide();
+                await loadRoomTypes();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+
+        async function deleteRoomType(id) {
+            if (!await showConfirm('Xóa loại phòng?', 'Bạn có chắc chắn muốn xóa loại phòng này?')) return;
+            try {
+                await apiFetch(`/room-types/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa loại phòng!');
+                await loadRoomTypes();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+    </script>
 </body>
+
 </html>

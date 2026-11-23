@@ -54,6 +54,7 @@ public class Building_Service {
         }
 
         Building toa_nha = buildingMapper.toEntity(request);
+        toa_nha.setBuildingCode(request.getBuildingCode().toUpperCase());
         toa_nha = buildingRepository.save(toa_nha);
 
         return buildingMapper.toResponse(toa_nha);

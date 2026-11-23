@@ -2542,11 +2542,11 @@
                     if (items && items.length > 0) {
                         const types = [...new Set(items.map(it => it.itemType))];
                         const typeLabels = types.map(t => {
-                            if (t === 'RENT') return '<span class="badge bg-primary-subtle text-primary border" style="font-size:0.65rem;">🏠 Phòng</span>';
-                            if (t === 'UTILITY') return '<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:0.65rem;">⚡ Điện nước</span>';
-                            if (t === 'SERVICE') return '<span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.65rem;">🛡️ Dịch vụ</span>';
-                            if (t === 'VEHICLE') return '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.65rem;">🚲 Xe</span>';
-                            if (t === 'FINE') return '<span class="badge bg-danger-subtle text-danger border" style="font-size:0.65rem;">⚠️ Phạt</span>';
+                            if (t === 'RENT') return '<span class="badge bg-primary-subtle text-primary border" style="font-size:0.65rem;"><i class="bi bi-house-door-fill me-1"></i>Phòng</span>';
+                            if (t === 'UTILITY') return '<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:0.65rem;"><i class="bi bi-lightning-charge-fill me-1"></i>Điện nước</span>';
+                            if (t === 'SERVICE') return '<span class="badge bg-info-subtle text-info-emphasis border" style="font-size:0.65rem;"><i class="bi bi-shield-fill-check me-1"></i>Dịch vụ</span>';
+                            if (t === 'VEHICLE') return '<span class="badge bg-secondary-subtle text-secondary border" style="font-size:0.65rem;"><i class="bi bi-bicycle me-1"></i>Xe</span>';
+                            if (t === 'FINE') return '<span class="badge bg-danger-subtle text-danger border" style="font-size:0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Phạt</span>';
                             return `<span class="badge bg-light text-dark border" style="font-size:0.65rem;">${t}</span>`;
                         }).join(' ');
                         breakdownBadges = `<div class="d-flex flex-wrap gap-1 mt-1">${typeLabels}</div>`;
@@ -2688,25 +2688,25 @@
                     <div class="row g-2 mb-3 text-center">
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-primary-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">🏠 TIỀN PHÒNG</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-house-door-fill text-primary me-1"></i>TIỀN PHÒNG</div>
                                 <div class="fw-bold text-primary">${formatCurrency(rentSum || fullInv.subtotalAmount || 0)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-warning-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">⚡💧 ĐIỆN & NƯỚC</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><i class="bi bi-droplet-fill text-info me-1"></i>ĐIỆN & NƯỚC</div>
                                 <div class="fw-bold text-warning-emphasis">${formatCurrency(utilSum)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-info-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">🛡️ DỊCH VỤ KTX</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-shield-fill-check text-info me-1"></i>DỊCH VỤ KTX</div>
                                 <div class="fw-bold text-info-emphasis">${formatCurrency(srvSum)}</div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="p-2 rounded-3 border bg-danger-subtle">
-                                <div class="text-muted" style="font-size: 0.72rem;">💵 TỔNG TIỀN</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-cash-stack text-danger me-1"></i>TỔNG TIỀN</div>
                                 <div class="fw-bold text-danger">${formatCurrency(total)}</div>
                             </div>
                         </div>
@@ -2974,7 +2974,7 @@
                 <div class="border-bottom py-1">
                     <div class="d-flex justify-content-between">
                         <span class="fw-semibold text-dark">${fb.category || 'Góp ý'}</span>
-                        <span class="text-warning fw-bold">${'★'.repeat(fb.rating || 5)}</span>
+                        <span class="text-warning">${'<i class="bi bi-star-fill text-warning me-1"></i>'.repeat(fb.rating || 5)}</span>
                     </div>
                     <div class="text-muted text-truncate">${fb.content}</div>
                     ${fb.response ? `<div class="text-success small mt-1"><i class="bi bi-reply-fill"></i> BQL: ${fb.response}</div>` : ''}

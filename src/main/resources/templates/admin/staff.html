@@ -1,251 +1,277 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head th:replace="~{fragments/layout :: head('Quản lý Nhân sự KTX')}"></head>
+
 <body>
 
-<aside th:replace="~{fragments/layout :: sidebar('admin-staff')}"></aside>
+    <aside th:replace="~{fragments/layout :: sidebar('admin-staff')}"></aside>
 
-<div class="main-wrapper">
-    <nav th:replace="~{fragments/layout :: topbar('Quản lý Nhân sự & Nhân viên Ký Túc Xá')}"></nav>
+    <div class="main-wrapper">
+        <nav th:replace="~{fragments/layout :: topbar('Quản lý Nhân sự & Nhân viên Ký Túc Xá')}"></nav>
 
-    <div class="content-body">
-        <!-- Thanh tiêu đề & Nút thao tác đồng bộ -->
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <div>
-                <h5 class="fw-bold mb-1">Đội ngũ Nhân viên Ký Túc Xá (Staff)</h5>
-                <p class="text-muted small mb-0">Quản trị nhân sự: Quản lý tòa nhà, nhân viên kỹ thuật, bảo vệ, thủ quỹ</p>
-            </div>
-            <button class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1 px-3 py-2 shadow-sm" onclick="openCreateStaffModal()">
-                <i class="bi bi-person-plus-fill"></i> Thêm Nhân viên mới
-            </button>
-        </div>
-
-        <!-- Bộ lọc và Tìm kiếm Nhân sự trên 1 hàng ngang gọn gàng -->
-        <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
-                    <div class="input-group input-group-sm" style="width: 260px;">
-                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" id="staffSearchKeyword" class="form-control border-start-0"
-                               placeholder="Tìm theo Mã NV, Họ tên, SĐT, Email..." oninput="debouncedSearchStaff()">
-                    </div>
-                    <input type="text" id="staffDepartmentFilter" class="form-control form-control-sm" style="width: 200px;"
-                           placeholder="Lọc phòng ban / bộ phận..." oninput="debouncedSearchStaff()">
-                    <select id="staffStatusFilter" class="form-select form-select-sm" style="width: 175px;" onchange="loadStaffList(1)">
-                        <option value="">-- Tất cả trạng thái --</option>
-                        <option value="ACTIVE">Đang làm việc (ACTIVE)</option>
-                        <option value="ON_LEAVE">Nghỉ phép (ON_LEAVE)</option>
-                        <option value="RESIGNED">Đã nghỉ việc (RESIGNED)</option>
-                        <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
-                    </select>
+        <div class="content-body">
+            <!-- Thanh tiêu đề & Nút thao tác đồng bộ -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1">Đội ngũ Nhân viên Ký Túc Xá</h5>
+                    <p class="text-muted small mb-0">Quản trị nhân sự: Quản lý tòa nhà, nhân viên kỹ thuật, bảo vệ, thủ
+                        quỹ</p>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <select id="staffPageSizeSelect" class="form-select form-select-sm" style="width: 130px;" onchange="loadStaffList(1)">
-                        <option value="10" selected>10 dòng / trang</option>
-                        <option value="20">20 dòng / trang</option>
-                        <option value="50">50 dòng / trang</option>
-                    </select>
-                    <button class="btn btn-sm btn-outline-secondary px-2" onclick="resetStaffFilters()" title="Đặt lại bộ lọc">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
+                <button class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
+                    onclick="openCreateStaffModal()">
+                    <i class="bi bi-person-plus-fill"></i> Thêm Nhân viên mới
+                </button>
+            </div>
+
+            <!-- Bộ lọc và Tìm kiếm Nhân sự trên 1 hàng ngang gọn gàng -->
+            <div class="card border shadow-sm rounded-3 p-2 px-3 mb-3 bg-white">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                        <div class="input-group input-group-sm" style="width: 260px;">
+                            <span class="input-group-text bg-light border-end-0"><i
+                                    class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="staffSearchKeyword" class="form-control border-start-0"
+                                placeholder="Tìm theo Mã NV, Họ tên, SĐT, Email..." oninput="debouncedSearchStaff()">
+                        </div>
+                        <input type="text" id="staffDepartmentFilter" class="form-control form-control-sm"
+                            style="width: 200px;" placeholder="Lọc phòng ban / bộ phận..."
+                            oninput="debouncedSearchStaff()">
+                        <select id="staffStatusFilter" class="form-select form-select-sm" style="width: 175px;"
+                            onchange="loadStaffList(1)">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="ACTIVE">Đang làm việc (ACTIVE)</option>
+                            <option value="ON_LEAVE">Nghỉ phép (ON_LEAVE)</option>
+                            <option value="RESIGNED">Đã nghỉ việc (RESIGNED)</option>
+                            <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="staffPageSizeSelect" class="form-select form-select-sm" style="width: 130px;"
+                            onchange="loadStaffList(1)">
+                            <option value="10" selected>10 dòng / trang</option>
+                            <option value="20">20 dòng / trang</option>
+                            <option value="50">50 dòng / trang</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary px-2" onclick="resetStaffFilters()"
+                            title="Đặt lại bộ lọc">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-custom shadow-sm bg-white">
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Mã NV</th>
+                                <th style="width: 165px;">Họ và tên</th>
+                                <th style="width: 160px;">Vị trí công tác</th>
+                                <th style="width: 160px;">Bộ phận / Phòng ban</th>
+                                <th style="width: 105px;">Số điện thoại</th>
+                                <th style="width: 170px;">Email</th>
+                                <th style="width: 95px;">Ngày vào làm</th>
+                                <th style="width: 110px;">Trạng thái</th>
+                                <th class="text-end pe-3" style="width: 115px;">Thao tác Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-5">Đang tải danh sách nhân viên...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="staffPaginationBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm / Sửa Nhân viên - Chuẩn ĐH Công Nghiệp Việt Trì -->
+    <div class="modal fade" id="staffModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title" id="staffModalTitle">
+                        <i class="bi bi-person-badge-fill me-2"></i>THÔNG TIN HỒ SƠ NHÂN SỰ KÝ TÚC XÁ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="staffForm">
+                        <input type="hidden" id="staffId">
+                        <div class="alert alert-primary py-2 px-3 small mb-3">
+                            <i class="bi bi-shield-lock-fill me-1"></i><b>Khởi tạo tài khoản tự động:</b> Hệ thống liên
+                            kết tài khoản cho nhân viên với <b>Tên đăng nhập</b> và <b>Mật khẩu mặc định</b> là chính
+                            <b>Mã nhân viên</b> (Vai trò STAFF).
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-person-badge"></i>I. ĐỊNH DANH & CHỨC DANH CÔNG TÁC
+                        </div>
+                        <div class="form-section-box">
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Mã nhân viên (Staff Code) <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="staffCode" class="form-control" placeholder="VD: NV002"
+                                        required>
+                                    <small class="text-muted d-none" id="staffCodeHelp">Mã nhân viên là mã định danh cố
+                                        định không thể sửa đổi.</small>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Họ và tên cán bộ <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="staffFullName" class="form-control"
+                                        placeholder="VD: Lê Văn Kỹ Thuật" required>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Vị trí / Chức danh công tác <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="staffPosition" class="form-control"
+                                        placeholder="VD: Quản lý tòa B / Kỹ thuật điện nước" required>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Bộ phận / Ban điều phối</label>
+                                    <input type="text" id="staffDepartment" class="form-control"
+                                        placeholder="VD: Ban Quản Lý KTX" value="Ban Quản Lý KTX">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <i class="bi bi-telephone-inbound"></i>II. THÔNG TIN LIÊN HỆ & TRẠNG THÁI LÀM VIỆC
+                        </div>
+                        <div class="form-section-box mb-0">
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Số điện thoại liên lạc <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="staffPhone" class="form-control" placeholder="0987654321"
+                                        required>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Email công vụ</label>
+                                    <input type="email" id="staffEmail" class="form-control"
+                                        placeholder="nv@kytucxa.edu.vn">
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Ngày vào công tác</label>
+                                    <input type="date" id="staffHireDate" class="form-control">
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">Trạng thái công tác</label>
+                                    <select id="staffStatus" class="form-select">
+                                        <option value="ACTIVE">Đang làm việc (ACTIVE)</option>
+                                        <option value="ON_LEAVE">Nghỉ phép (ON_LEAVE)</option>
+                                        <option value="RESIGNED">Đã nghỉ việc (RESIGNED)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i
+                            class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary" onclick="submitSaveStaff()"><i
+                            class="bi bi-floppy-fill me-1"></i>Lưu nhân sự</button>
                 </div>
             </div>
         </div>
-
-        <div class="table-custom shadow-sm bg-white">
-            <div class="table-responsive">
-                <table class="table align-middle table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 80px;">Mã NV</th>
-                            <th style="width: 165px;">Họ và tên</th>
-                            <th style="width: 160px;">Vị trí công tác</th>
-                            <th style="width: 160px;">Bộ phận / Phòng ban</th>
-                            <th style="width: 105px;">Số điện thoại</th>
-                            <th style="width: 170px;">Email</th>
-                            <th style="width: 95px;">Ngày vào làm</th>
-                            <th style="width: 110px;">Trạng thái</th>
-                            <th class="text-end pe-3" style="width: 115px;">Thao tác Admin</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staffTableBody">
-                        <tr><td colspan="9" class="text-center text-muted py-5">Đang tải danh sách nhân viên...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div id="staffPaginationBar"></div>
-        </div>
     </div>
-</div>
 
-<!-- Modal Thêm / Sửa Nhân viên - Chuẩn ĐH Công Nghiệp Việt Trì -->
-<div class="modal fade" id="staffModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header univ-modal-header">
-                <h5 class="modal-title" id="staffModalTitle">
-                    <i class="bi bi-person-badge-fill me-2"></i>THÔNG TIN HỒ SƠ NHÂN SỰ KÝ TÚC XÁ
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="staffForm">
-                    <input type="hidden" id="staffId">
-                    <div class="alert alert-primary py-2 px-3 small mb-3">
-                        <i class="bi bi-shield-lock-fill me-1"></i><b>Khởi tạo tài khoản tự động:</b> Hệ thống liên kết tài khoản cho nhân viên với <b>Tên đăng nhập</b> và <b>Mật khẩu mặc định</b> là chính <b>Mã nhân viên</b> (Vai trò STAFF).
-                    </div>
-
-                    <div class="form-section-title">
-                        <i class="bi bi-person-badge"></i>I. ĐỊNH DANH & CHỨC DANH CÔNG TÁC
-                    </div>
-                    <div class="form-section-box">
-                        <div class="row g-2 mb-2">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Mã nhân viên (Staff Code) <span class="text-danger">*</span></label>
-                                <input type="text" id="staffCode" class="form-control" placeholder="VD: NV002" required>
-                                <small class="text-muted d-none" id="staffCodeHelp">Mã nhân viên là mã định danh cố định không thể sửa đổi.</small>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Họ và tên cán bộ <span class="text-danger">*</span></label>
-                                <input type="text" id="staffFullName" class="form-control" placeholder="VD: Lê Văn Kỹ Thuật" required>
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Vị trí / Chức danh công tác <span class="text-danger">*</span></label>
-                                <input type="text" id="staffPosition" class="form-control" placeholder="VD: Quản lý tòa B / Kỹ thuật điện nước" required>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Bộ phận / Ban điều phối</label>
-                                <input type="text" id="staffDepartment" class="form-control" placeholder="VD: Ban Quản Lý KTX" value="Ban Quản Lý KTX">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-section-title">
-                        <i class="bi bi-telephone-inbound"></i>II. THÔNG TIN LIÊN HỆ & TRẠNG THÁI LÀM VIỆC
-                    </div>
-                    <div class="form-section-box mb-0">
-                        <div class="row g-2 mb-2">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Số điện thoại liên lạc <span class="text-danger">*</span></label>
-                                <input type="text" id="staffPhone" class="form-control" placeholder="0987654321" required>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Email công vụ</label>
-                                <input type="email" id="staffEmail" class="form-control" placeholder="nv@kytucxa.edu.vn">
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Ngày vào công tác</label>
-                                <input type="date" id="staffHireDate" class="form-control">
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label">Trạng thái công tác</label>
-                                <select id="staffStatus" class="form-select">
-                                    <option value="ACTIVE">Đang làm việc (ACTIVE)</option>
-                                    <option value="ON_LEAVE">Nghỉ phép (ON_LEAVE)</option>
-                                    <option value="RESIGNED">Đã nghỉ việc (RESIGNED)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Hủy bỏ</button>
-                <button type="button" class="btn btn-primary" onclick="submitSaveStaff()"><i class="bi bi-floppy-fill me-1"></i>Lưu nhân sự</button>
+    <!-- Modal Xem Chi tiết Nhân viên -->
+    <div class="modal fade" id="staffDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header univ-modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-vcard-fill me-2"></i>HỒ SƠ CHI TIẾT NHÂN SỰ KÝ TÚC XÁ
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="staffDetailBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Xem Chi tiết Nhân viên -->
-<div class="modal fade" id="staffDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header univ-modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-person-vcard-fill me-2"></i>HỒ SƠ CHI TIẾT NHÂN SỰ KÝ TÚC XÁ
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="staffDetailBody"></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
-            </div>
-        </div>
-    </div>
-</div>
+    <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+    <script>
+        let staffModal = null;
+        let staffDetailModal = null;
+        let currentStaffPage = 1;
+        let staffSearchTimer = null;
+        let currentStaffRows = [];
 
-<script>
-    let staffModal = null;
-    let staffDetailModal = null;
-    let currentStaffPage = 1;
-    let staffSearchTimer = null;
-    let currentStaffRows = [];
+        document.addEventListener('DOMContentLoaded', () => {
+            staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
+            staffDetailModal = new bootstrap.Modal(document.getElementById('staffDetailModal'));
+            document.getElementById('staffHireDate').value = new Date().toISOString().split('T')[0];
+            loadStaffList(1);
+        });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        staffModal = new bootstrap.Modal(document.getElementById('staffModal'));
-        staffDetailModal = new bootstrap.Modal(document.getElementById('staffDetailModal'));
-        document.getElementById('staffHireDate').value = new Date().toISOString().split('T')[0];
-        loadStaffList(1);
-    });
+        function debouncedSearchStaff() {
+            clearTimeout(staffSearchTimer);
+            staffSearchTimer = setTimeout(() => loadStaffList(1), 300);
+        }
 
-    function debouncedSearchStaff() {
-        clearTimeout(staffSearchTimer);
-        staffSearchTimer = setTimeout(() => loadStaffList(1), 300);
-    }
+        function resetStaffFilters() {
+            document.getElementById('staffSearchKeyword').value = '';
+            document.getElementById('staffDepartmentFilter').value = '';
+            document.getElementById('staffStatusFilter').value = '';
+            loadStaffList(1);
+        }
 
-    function resetStaffFilters() {
-        document.getElementById('staffSearchKeyword').value = '';
-        document.getElementById('staffDepartmentFilter').value = '';
-        document.getElementById('staffStatusFilter').value = '';
-        loadStaffList(1);
-    }
+        function getStaffStatusInfo(status) {
+            if (status === 'ACTIVE') return { label: 'Đang làm việc', cls: 'bg-success-subtle text-success' };
+            if (status === 'ON_LEAVE') return { label: 'Nghỉ phép', cls: 'bg-warning-subtle text-warning' };
+            if (status === 'RESIGNED' || status === 'INACTIVE') return { label: 'Đã nghỉ việc', cls: 'bg-secondary-subtle text-secondary' };
+            return { label: status || '-', cls: 'bg-light text-dark border' };
+        }
 
-    function getStaffStatusInfo(status) {
-        if (status === 'ACTIVE') return { label: 'Đang làm việc', cls: 'bg-success-subtle text-success' };
-        if (status === 'ON_LEAVE') return { label: 'Nghỉ phép', cls: 'bg-warning-subtle text-warning' };
-        if (status === 'RESIGNED' || status === 'INACTIVE') return { label: 'Đã nghỉ việc', cls: 'bg-secondary-subtle text-secondary' };
-        return { label: status || '-', cls: 'bg-light text-dark border' };
-    }
+        async function loadStaffList(page = 1) {
+            currentStaffPage = page;
+            const tbody = document.getElementById('staffTableBody');
+            const keyword = (document.getElementById('staffSearchKeyword')?.value || '').trim();
+            const department = (document.getElementById('staffDepartmentFilter')?.value || '').trim();
+            const status = document.getElementById('staffStatusFilter')?.value || '';
+            const size = document.getElementById('staffPageSizeSelect')?.value || 10;
 
-    async function loadStaffList(page = 1) {
-        currentStaffPage = page;
-        const tbody = document.getElementById('staffTableBody');
-        const keyword = (document.getElementById('staffSearchKeyword')?.value || '').trim();
-        const department = (document.getElementById('staffDepartmentFilter')?.value || '').trim();
-        const status = document.getElementById('staffStatusFilter')?.value || '';
-        const size = document.getElementById('staffPageSizeSelect')?.value || 10;
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    size: size,
+                    sortBy: 'staffCode',
+                    sortDir: 'asc'
+                });
+                if (keyword) params.append('keyword', keyword);
+                if (department) params.append('department', department);
+                if (status) params.append('status', status);
 
-        try {
-            const params = new URLSearchParams({
-                page: page,
-                size: size,
-                sortBy: 'staffCode',
-                sortDir: 'asc'
-            });
-            if (keyword) params.append('keyword', keyword);
-            if (department) params.append('department', department);
-            if (status) params.append('status', status);
+                const res = await apiFetch(`/staffs?${params.toString()}`);
+                const list = unwrapList(res);
+                currentStaffRows = list;
 
-            const res = await apiFetch(`/staffs?${params.toString()}`);
-            const list = unwrapList(res);
-            currentStaffRows = list;
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5">Không tìm thấy hồ sơ nhân viên phù hợp.</td></tr>';
+                    renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
+                    return;
+                }
 
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-5">Không tìm thấy hồ sơ nhân viên phù hợp.</td></tr>';
-                renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
-                return;
-            }
-
-            tbody.innerHTML = list.map(s => {
-                const stInfo = getStaffStatusInfo(s.status);
-                return `
+                tbody.innerHTML = list.map(s => {
+                    const stInfo = getStaffStatusInfo(s.status);
+                    return `
                 <tr>
                     <td class="fw-bold text-primary">
                         <a href="javascript:void(0)" class="text-decoration-none fw-bold text-primary" onclick="openStaffDetailModal('${s.staffId}')">${s.staffCode}</a>
@@ -275,17 +301,17 @@
                 </tr>
             `}).join('');
 
-            renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+                renderPaginationBar('staffPaginationBar', res.pageInfo || res.result, 'loadStaffList');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Lỗi: ${e.message}</td></tr>`;
+            }
         }
-    }
 
-    function openStaffDetailModal(staffId) {
-        const s = currentStaffRows.find(item => String(item.staffId) === String(staffId));
-        if (!s) return;
-        const stInfo = getStaffStatusInfo(s.status);
-        document.getElementById('staffDetailBody').innerHTML = `
+        function openStaffDetailModal(staffId) {
+            const s = currentStaffRows.find(item => String(item.staffId) === String(staffId));
+            if (!s) return;
+            const stInfo = getStaffStatusInfo(s.status);
+            document.getElementById('staffDetailBody').innerHTML = `
             <div class="form-section-box mb-0">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                     <div>
@@ -318,90 +344,91 @@
                 </div>
             </div>
         `;
-        staffDetailModal.show();
-    }
-
-    function openCreateStaffModal() {
-        document.getElementById('staffModalTitle').textContent = 'Thêm Nhân viên mới';
-        document.getElementById('staffId').value = '';
-        const staffCodeInput = document.getElementById('staffCode');
-        staffCodeInput.value = 'NV' + Date.now().toString().slice(-4);
-        staffCodeInput.readOnly = false;
-        staffCodeInput.classList.remove('bg-light');
-        const staffCodeHelp = document.getElementById('staffCodeHelp');
-        if (staffCodeHelp) staffCodeHelp.classList.add('d-none');
-        document.getElementById('staffFullName').value = '';
-        document.getElementById('staffPosition').value = 'Quản lý tòa nhà';
-        document.getElementById('staffPhone').value = '';
-        document.getElementById('staffEmail').value = '';
-        document.getElementById('staffStatus').value = 'ACTIVE';
-        staffModal.show();
-    }
-
-    function openEditStaffModal(s) {
-        document.getElementById('staffModalTitle').textContent = 'Cập nhật thông tin Nhân viên';
-        document.getElementById('staffId').value = s.staffId;
-        const staffCodeInput = document.getElementById('staffCode');
-        staffCodeInput.value = s.staffCode;
-        staffCodeInput.readOnly = true;
-        staffCodeInput.classList.add('bg-light');
-        const staffCodeHelp = document.getElementById('staffCodeHelp');
-        if (staffCodeHelp) staffCodeHelp.classList.remove('d-none');
-        document.getElementById('staffFullName').value = s.fullName;
-        document.getElementById('staffPosition').value = s.position || '';
-        document.getElementById('staffDepartment').value = s.department || '';
-        document.getElementById('staffPhone').value = s.phone || '';
-        document.getElementById('staffEmail').value = s.email || '';
-        document.getElementById('staffHireDate').value = s.hireDate ? s.hireDate.split('T')[0] : '';
-        document.getElementById('staffStatus').value = s.status || 'ACTIVE';
-        staffModal.show();
-    }
-
-    async function submitSaveStaff() {
-        const id = document.getElementById('staffId').value;
-        const payload = {
-            staffCode: document.getElementById('staffCode').value.trim(),
-            fullName: document.getElementById('staffFullName').value.trim(),
-            position: document.getElementById('staffPosition').value.trim(),
-            department: document.getElementById('staffDepartment').value.trim(),
-            phone: document.getElementById('staffPhone').value.trim(),
-            email: document.getElementById('staffEmail').value.trim(),
-            hireDate: document.getElementById('staffHireDate').value,
-            status: document.getElementById('staffStatus').value
-        };
-
-        if (!payload.staffCode || !payload.fullName || !payload.phone) {
-            showToastError('Vui lòng điền đủ Mã NV, Họ tên và Số điện thoại!');
-            return;
+            staffDetailModal.show();
         }
 
-        try {
-            if (id) {
-                await apiFetch(`/staffs/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-                showToastSuccess('Cập nhật nhân viên thành công!');
-            } else {
-                await apiFetch('/staffs', { method: 'POST', body: JSON.stringify(payload) });
-                showToastSuccess(`Thêm nhân viên thành công! Đã tự động tạo tài khoản đăng nhập (Tài khoản: ${payload.staffCode}, Mật khẩu: ${payload.staffCode})`);
+        function openCreateStaffModal() {
+            document.getElementById('staffModalTitle').textContent = 'Thêm Nhân viên mới';
+            document.getElementById('staffId').value = '';
+            const staffCodeInput = document.getElementById('staffCode');
+            staffCodeInput.value = 'NV' + Date.now().toString().slice(-4);
+            staffCodeInput.readOnly = false;
+            staffCodeInput.classList.remove('bg-light');
+            const staffCodeHelp = document.getElementById('staffCodeHelp');
+            if (staffCodeHelp) staffCodeHelp.classList.add('d-none');
+            document.getElementById('staffFullName').value = '';
+            document.getElementById('staffPosition').value = 'Quản lý tòa nhà';
+            document.getElementById('staffPhone').value = '';
+            document.getElementById('staffEmail').value = '';
+            document.getElementById('staffStatus').value = 'ACTIVE';
+            staffModal.show();
+        }
+
+        function openEditStaffModal(s) {
+            document.getElementById('staffModalTitle').textContent = 'Cập nhật thông tin Nhân viên';
+            document.getElementById('staffId').value = s.staffId;
+            const staffCodeInput = document.getElementById('staffCode');
+            staffCodeInput.value = s.staffCode;
+            staffCodeInput.readOnly = true;
+            staffCodeInput.classList.add('bg-light');
+            const staffCodeHelp = document.getElementById('staffCodeHelp');
+            if (staffCodeHelp) staffCodeHelp.classList.remove('d-none');
+            document.getElementById('staffFullName').value = s.fullName;
+            document.getElementById('staffPosition').value = s.position || '';
+            document.getElementById('staffDepartment').value = s.department || '';
+            document.getElementById('staffPhone').value = s.phone || '';
+            document.getElementById('staffEmail').value = s.email || '';
+            document.getElementById('staffHireDate').value = s.hireDate ? s.hireDate.split('T')[0] : '';
+            document.getElementById('staffStatus').value = s.status || 'ACTIVE';
+            staffModal.show();
+        }
+
+        async function submitSaveStaff() {
+            const id = document.getElementById('staffId').value;
+            const payload = {
+                staffCode: document.getElementById('staffCode').value.trim(),
+                fullName: document.getElementById('staffFullName').value.trim(),
+                position: document.getElementById('staffPosition').value.trim(),
+                department: document.getElementById('staffDepartment').value.trim(),
+                phone: document.getElementById('staffPhone').value.trim(),
+                email: document.getElementById('staffEmail').value.trim(),
+                hireDate: document.getElementById('staffHireDate').value,
+                status: document.getElementById('staffStatus').value
+            };
+
+            if (!payload.staffCode || !payload.fullName || !payload.phone) {
+                showToastError('Vui lòng điền đủ Mã NV, Họ tên và Số điện thoại!');
+                return;
             }
-            staffModal.hide();
-            loadStaffList();
-        } catch (e) {
-            showToastError(e.message);
-        }
-    }
 
-    async function deleteStaff(id) {
-        const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này không?');
-        if (!confirmed) return;
-
-        try {
-            await apiFetch(`/staffs/${id}`, { method: 'DELETE' });
-            showToastSuccess('Đã xóa nhân viên!');
-            loadStaffList();
-        } catch (e) {
-            showToastError(e.message);
+            try {
+                if (id) {
+                    await apiFetch(`/staffs/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                    showToastSuccess('Cập nhật nhân viên thành công!');
+                } else {
+                    await apiFetch('/staffs', { method: 'POST', body: JSON.stringify(payload) });
+                    showToastSuccess(`Thêm nhân viên thành công! Đã tự động tạo tài khoản đăng nhập (Tài khoản: ${payload.staffCode}, Mật khẩu: ${payload.staffCode})`);
+                }
+                staffModal.hide();
+                loadStaffList();
+            } catch (e) {
+                showToastError(e.message);
+            }
         }
-    }
-</script>
+
+        async function deleteStaff(id) {
+            const confirmed = await showConfirm('Xác nhận xóa?', 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này không?');
+            if (!confirmed) return;
+
+            try {
+                await apiFetch(`/staffs/${id}`, { method: 'DELETE' });
+                showToastSuccess('Đã xóa nhân viên!');
+                loadStaffList();
+            } catch (e) {
+                showToastError(e.message);
+            }
+        }
+    </script>
 </body>
+
 </html>

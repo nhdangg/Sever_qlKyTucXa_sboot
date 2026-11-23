@@ -13,36 +13,48 @@
         <div class="content-body">
             <!-- Thanh Menu ngang Lọc Trạng thái & Thao tác đồng bộ -->
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" id="roomStatusTabs" role="tablist">
+                <ul class="nav nav-pills gap-1 bg-white p-1 rounded-3 border shadow-sm" id="roomStatusTabs"
+                    role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-semibold rounded-2" type="button" onclick="setStatusFilter('', this)">
-                            <i class="bi bi-grid-fill me-1"></i> Tất cả phòng <span class="badge bg-light text-dark border ms-1" id="countAllRooms">0</span>
+                        <button class="nav-link active fw-semibold rounded-2" type="button"
+                            onclick="setStatusFilter('', this)">
+                            <i class="bi bi-grid-fill me-1"></i> Tất cả phòng <span
+                                class="badge bg-light text-dark border ms-1" id="countAllRooms">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold rounded-2" type="button" onclick="setStatusFilter('AVAILABLE', this)">
-                            <i class="bi bi-check-circle me-1"></i> Còn trống <span class="badge bg-light text-dark border ms-1" id="countAvailableRooms">0</span>
+                        <button class="nav-link fw-semibold rounded-2" type="button"
+                            onclick="setStatusFilter('AVAILABLE', this)">
+                            <i class="bi bi-check-circle me-1"></i> Còn trống <span
+                                class="badge bg-light text-dark border ms-1" id="countAvailableRooms">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold rounded-2" type="button" onclick="setStatusFilter('OCCUPIED', this)">
-                            <i class="bi bi-people me-1"></i> Đang ở <span class="badge bg-light text-dark border ms-1" id="countOccupiedRooms">0</span>
+                        <button class="nav-link fw-semibold rounded-2" type="button"
+                            onclick="setStatusFilter('OCCUPIED', this)">
+                            <i class="bi bi-people me-1"></i> Đang ở <span class="badge bg-light text-dark border ms-1"
+                                id="countOccupiedRooms">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold rounded-2" type="button" onclick="setStatusFilter('FULL', this)">
-                            <i class="bi bi-door-closed me-1"></i> Đã đầy <span class="badge bg-light text-dark border ms-1" id="countFullRooms">0</span>
+                        <button class="nav-link fw-semibold rounded-2" type="button"
+                            onclick="setStatusFilter('FULL', this)">
+                            <i class="bi bi-door-closed me-1"></i> Đã đầy <span
+                                class="badge bg-light text-dark border ms-1" id="countFullRooms">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-semibold rounded-2" type="button" onclick="setStatusFilter('MAINTENANCE', this)">
-                            <i class="bi bi-tools me-1"></i> Bảo trì <span class="badge bg-light text-dark border ms-1" id="countMaintRooms">0</span>
+                        <button class="nav-link fw-semibold rounded-2" type="button"
+                            onclick="setStatusFilter('MAINTENANCE', this)">
+                            <i class="bi bi-tools me-1"></i> Bảo trì <span class="badge bg-light text-dark border ms-1"
+                                id="countMaintRooms">0</span>
                         </button>
                     </li>
                 </ul>
 
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <select id="filterBuilding" class="form-select form-select-sm bg-white shadow-sm" style="width: 240px; height: 36px;" onchange="filterRooms()">
+                    <select id="filterBuilding" class="form-select form-select-sm bg-white shadow-sm"
+                        style="width: 240px; height: 36px;" onchange="filterRooms()">
                         <option value="">-- Lọc theo Tòa nhà (Tất cả) --</option>
                     </select>
                     <input type="hidden" id="filterStatus" value="">
@@ -85,7 +97,8 @@
                         <div class="col-6 col-md-3">
                             <div class="p-3 rounded-2 bg-light border">
                                 <div class="small text-secondary">Sức chứa / Đang ở</div>
-                                <div class="fw-bold fs-5" style="color: var(--univ-navy);" id="detailOccupancy">0 / 4</div>
+                                <div class="fw-bold fs-5" style="color: var(--univ-navy);" id="detailOccupancy">0 / 4
+                                </div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
@@ -209,10 +222,10 @@
                             <div>
                                 <label class="form-label">Trạng thái vận hành</label>
                                 <select id="roomStatus" class="form-select">
-                                    <option value="AVAILABLE">Còn trống (AVAILABLE)</option>
-                                    <option value="OCCUPIED">Đang có người ở (OCCUPIED)</option>
-                                    <option value="FULL">Đã đầy (FULL)</option>
-                                    <option value="MAINTENANCE">Đang bảo trì (MAINTENANCE)</option>
+                                    <option value="AVAILABLE">Còn trống</option>
+                                    <option value="OCCUPIED">Đang có người ở</option>
+                                    <option value="FULL">Đã đầy</option>
+                                    <option value="MAINTENANCE">Đang bảo trì</option>
                                 </select>
                             </div>
                         </div>
