@@ -68,13 +68,10 @@ const Auth = {
         const refreshToken = Auth.getRefreshToken();
         if (token || refreshToken) {
             try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) {
-                    headers['Authorization'] = 'Bearer ' + token;
-                }
+                // Không gửi Authorization header để tránh bị Spring Security chặn 401 khi access token hết hạn
                 await fetch(`${API_BASE}/auth/logout`, {
                     method: 'POST',
-                    headers: headers,
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: token, refreshToken: refreshToken })
                 });
             } catch (e) {

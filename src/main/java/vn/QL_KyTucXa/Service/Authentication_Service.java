@@ -274,22 +274,46 @@ public class Authentication_Service {
         // Nếu có access token: đưa jti vào blacklist và trích xuất userId của người đang logout
         if (StringUtils.hasText(rawToken)) {
             try {
-                SignedJWT signedJWT = tokenService.verifyToken(rawToken, false);
-                JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
-                String jti = claims.getJWTID();
-                Date expiryTime = claims.getExpirationTime();
-                currentUserId = (String) claims.getClaim("userId");
+                SignedJWT signedJWT = null;
+                Date expiryTime = null;
+                String jti = null;
+
+                try {
+                    signedJWT = tokenService.verifyToken(rawToken, false);
+                    JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+                    jti = claims.getJWTID();
+                    expiryTime = claims.getExpirationTime();
+                    currentUserId = (String) claims.getClaim("userId");
+                } catch (Exception ex) {
+                    // Nếu verifyToken không pass (ví dụ access token vừa hết hạn), vẫn parse payload để lấy jti blacklist
+                    try {
+                        signedJWT = SignedJWT.parse(rawToken);
+                        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+                        jti = claims.getJWTID();
+                        expiryTime = claims.getExpirationTime();
+                        currentUserId = (String) claims.getClaim("userId");
+                    } catch (Exception ignored) {
+                    }
+                }
+
                 User nguoi_dung = (StringUtils.hasText(currentUserId))
                         ? userRepository.findById(currentUserId).orElse(null)
                         : null;
 
                 // Kiểm tra existsByToken trước khi lưu để tránh vi phạm Unique Constraint khi có 2 request logout đồng thời
                 if (StringUtils.hasText(jti) && !logoutTokenRepository.existsByToken(jti)) {
+                    LocalDateTime expAt = (expiryTime != null)
+                            ? Jwt_Service.toLocalDateTime(expiryTime)
+                            : now.plusMinutes(15);
+                    if (expAt.isBefore(now)) {
+                        expAt = now.plusMinutes(15);
+                    }
+
                     LogoutToken token_dang_xuat = LogoutToken.builder()
                             .tokenId(jti)
                             .token(jti)
                             .user(nguoi_dung)
-                            .expiresAt(Jwt_Service.toLocalDateTime(expiryTime))
+                            .expiresAt(expAt)
                             .deviceInfo(Jwt_Service.limit(clientInfoResolver.getClientUserAgent(), 255))
                             .ipAddress(Jwt_Service.limit(clientInfoResolver.getClientIpAddress(), 45))
                             .logoutAt(now)
@@ -297,15 +321,8 @@ public class Authentication_Service {
 
                     logoutTokenRepository.save(token_dang_xuat);
                 }
-            } catch (AppException | JOSEException | ParseException e) {
-                log.info("Bỏ qua access token khi logout (hết hạn hoặc không hợp lệ): {}", e.getMessage());
-                if (currentUserId == null) {
-                    try {
-                        SignedJWT parsed = SignedJWT.parse(rawToken);
-                        currentUserId = (String) parsed.getJWTClaimsSet().getClaim("userId");
-                    } catch (Exception ignored) {
-                    }
-                }
+            } catch (Exception e) {
+                log.info("Bỏ qua access token khi logout: {}", e.getMessage());
             }
         }
 
