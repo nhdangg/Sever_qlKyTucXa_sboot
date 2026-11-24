@@ -75,6 +75,8 @@ class Authentication_ServiceTest {
     private AccountStatusPolicy accountStatusPolicy;
     @Mock
     private User_Service userService;
+    @Mock
+    private AuditLog_Service auditLogService;
 
     @InjectMocks
     private Authentication_Service authenticationService;

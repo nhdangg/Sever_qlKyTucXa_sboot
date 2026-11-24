@@ -238,9 +238,18 @@
 
             try {
                 const res = await apiFetch(`/audit-logs?${params.toString()}`);
-                const pageData = res.result;
 
-                if (!pageData || !pageData.data || pageData.data.length === 0) {
+                let logs = [];
+                let pageInfo = res.pageInfo || {};
+
+                if (Array.isArray(res.result)) {
+                    logs = res.result;
+                } else if (res.result && Array.isArray(res.result.data)) {
+                    logs = res.result.data;
+                    pageInfo = res.result;
+                }
+
+                if (!logs || logs.length === 0) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="8" class="text-center py-4 text-muted">
@@ -254,11 +263,14 @@
                     return;
                 }
 
-                currentLogs = pageData.data;
-                totalPages = pageData.totalPages || 1;
+                currentLogs = logs;
+                const totalElements = (pageInfo.totalElements != null) ? pageInfo.totalElements : logs.length;
+                const totalPagesCount = pageInfo.totalPages || Math.ceil(totalElements / size) || 1;
+                totalPages = totalPagesCount;
+                const curPage = pageInfo.currentPage || page;
 
                 tbody.innerHTML = currentLogs.map((log, idx) => {
-                    const stt = (page - 1) * size + idx + 1;
+                    const stt = (curPage - 1) * size + idx + 1;
                     const actionBadge = renderActionBadge(log.action);
                     const timeStr = formatDateTime(log.createdAt);
                     const userDisplay = log.username ? `<span class="fw-semibold text-dark"><i class="bi bi-person me-1"></i>${escapeHtml(log.username)}</span>` : '<span class="text-muted">Hệ thống</span>';
@@ -283,9 +295,9 @@
 
                 // Hiển thị phân trang
                 document.getElementById('auditPaginationInfo').textContent =
-                    `Trang ${pageData.currentPage} / ${pageData.totalPages} (Tổng: ${pageData.totalElements} bản ghi)`;
+                    `Trang ${curPage} / ${totalPagesCount} (Tổng: ${totalElements} bản ghi)`;
 
-                renderPagination(pageData.currentPage, pageData.totalPages);
+                renderPagination(curPage, totalPagesCount);
             } catch (err) {
                 tbody.innerHTML = `
                     <tr>
@@ -306,14 +318,14 @@
             if (act === 'LOGOUT') {
                 return '<span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-box-arrow-right me-1"></i>LOGOUT</span>';
             }
-            if (act === 'CREATE') {
-                return '<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-plus-lg me-1"></i>CREATE</span>';
+            if (act.startsWith('CREATE')) {
+                return `<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-plus-lg me-1"></i>${escapeHtml(act)}</span>`;
             }
-            if (act === 'UPDATE') {
-                return '<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-pencil me-1"></i>UPDATE</span>';
+            if (act.startsWith('UPDATE') || act.startsWith('APPROVE')) {
+                return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-pencil me-1"></i>${escapeHtml(act)}</span>`;
             }
-            if (act === 'DELETE') {
-                return '<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-trash me-1"></i>DELETE</span>';
+            if (act.startsWith('DELETE')) {
+                return `<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-trash me-1"></i>${escapeHtml(act)}</span>`;
             }
             if (act === 'RESET_PASSWORD') {
                 return '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-key me-1"></i>RESET_PWD</span>';
