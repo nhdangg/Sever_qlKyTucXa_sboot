@@ -329,6 +329,9 @@
                 </ul>
 
                 <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-secondary btn-sm px-3" onclick="syncExpiredContracts()" title="Rà soát và chuyển trạng thái các hợp đồng quá thời hạn sang Hết hạn">
+                        <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ Hết hạn
+                    </button>
                     <button class="btn btn-outline-primary btn-sm px-3 role-manager-up" onclick="openPeriodModal()">
                         <i class="bi bi-calendar-plus me-1"></i> Mở Đợt Đăng ký
                     </button>
@@ -819,6 +822,22 @@
                 document.getElementById('statPendingContracts').textContent = fullList.filter(c => c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT').length;
             } catch (e) {
                 console.warn('Không thể tải thống kê tổng hợp đồng:', e);
+            }
+        }
+
+        async function syncExpiredContracts() {
+            try {
+                showToastInfo('Đang kiểm tra và đồng bộ các hợp đồng quá hạn...');
+                const res = await apiFetch('/contracts/sync-expired', { method: 'POST' });
+                const count = res.result || 0;
+                if (count > 0) {
+                    showToastSuccess(`Đã tự động chuyển ${count} hợp đồng hết hạn sang trạng thái 'Hết hạn' và giải phóng giường!`);
+                } else {
+                    showToastSuccess('Tất cả hợp đồng đang hoạt động đều còn trong thời hạn hợp lệ.');
+                }
+                await loadContracts(currentContractPage || 1);
+            } catch (e) {
+                showToastError(e.message || 'Lỗi khi đồng bộ hợp đồng hết hạn');
             }
         }
 

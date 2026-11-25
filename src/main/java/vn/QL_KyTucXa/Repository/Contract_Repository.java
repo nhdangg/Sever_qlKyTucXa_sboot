@@ -26,6 +26,7 @@ public interface Contract_Repository extends JpaRepository<Contract, String> {
     boolean existsByPeriod_PeriodId(String periodId);
     List<Contract> findByStatus(String status);
     List<Contract> findByStatusAndEndDateBefore(String status, LocalDate date);
+    boolean existsByStatusAndEndDateBefore(String status, LocalDate date);
 
     // Lấy danh sách hợp đồng có hiệu lực trong tháng của một phòng
     @Query("""

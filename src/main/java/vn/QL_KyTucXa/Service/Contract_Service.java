@@ -10,7 +10,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.QL_KyTucXa.DTO.Request.Contract_Request;
 import vn.QL_KyTucXa.DTO.Request.StudentContractApply_Request;
@@ -385,6 +388,15 @@ public class Contract_Service {
                     "Sinh viên không có quyền truy cập danh sách toàn bộ hợp đồng");
         }
 
+        // Tự động rà soát và chuyển trạng thái các hợp đồng quá hạn sang EXPIRED ngay khi tải dữ liệu
+        try {
+            if (contractRepository != null && contractRepository.existsByStatusAndEndDateBefore("ACTIVE", LocalDate.now())) {
+                expireCompletedContracts();
+            }
+        } catch (Exception ex) {
+            log.warn("Không thể tự động đồng bộ hợp đồng hết hạn khi tải danh sách: {}", ex.getMessage());
+        }
+
         int safeSize = Math.min(Math.max(size, 1), 100);
         int pageIndex = Math.max(page - 1, 0);
         String effectiveSortBy = (sortBy != null && ALLOWED_SORT_FIELDS.contains(sortBy)) ? sortBy : "createdAt";
@@ -610,8 +622,13 @@ public class Contract_Service {
     }
 
     // Tác vụ tự động quét và chuyển trạng thái các hợp đồng quá hạn sang EXPIRED
+    // 1. Quét định kỳ lúc 01:30 sáng mỗi ngày
+    // 2. Quét mỗi 30 phút một lần khi server hoạt động
+    // 3. Tự động quét và xử lý ngay khi ứng dụng khởi động thành công (ApplicationReadyEvent)
     @Scheduled(cron = "0 30 1 * * ?")
-    @Transactional
+    @Scheduled(fixedRate = 1800000, initialDelay = 10000)
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int expireCompletedContracts() {
         LocalDate today = LocalDate.now();
         List<Contract> danh_sach_hop_dong_het_han = contractRepository.findByStatusAndEndDateBefore("ACTIVE", today);

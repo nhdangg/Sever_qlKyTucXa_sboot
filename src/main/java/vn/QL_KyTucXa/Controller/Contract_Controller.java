@@ -91,6 +91,18 @@ public class Contract_Controller {
                 .build();
     }
 
+    /**
+     * API đồng bộ cưỡng bức các hợp đồng đã quá hạn sang trạng thái EXPIRED
+     */
+    @PostMapping("/sync-expired")
+    @PreAuthorize("hasAuthority('CONTRACT_VIEW')")
+    public Api_Response<Integer> syncExpiredContracts() {
+        return Api_Response.<Integer>builder()
+                .result(contractService.expireCompletedContracts())
+                .message("Đã đồng bộ trạng thái các hợp đồng quá hạn thành công")
+                .build();
+    }
+
     @PutMapping("/{contractId}/approve")
     @PreAuthorize("hasAuthority('CONTRACT_MANAGE')")
     public Api_Response<Contract_Response> approveContract(
