@@ -544,7 +544,9 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Đợt đăng ký nội trú <span
                                             class="text-danger">*</span></label>
-                                    <select id="contractPeriodSelect" class="form-select" required></select>
+                                    <select id="contractPeriodSelect" class="form-select" required
+                                        onchange="onContractPeriodChange()"></select>
+                                    <div class="form-text small" id="periodHelpText"></div>
                                 </div>
                             </div>
                         </div>
@@ -586,11 +588,11 @@
                             <div class="row g-2">
                                 <div class="col-md-4">
                                     <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                                    <input type="date" id="startDate" class="form-control" required>
+                                    <input type="date" id="startDate" class="form-control bg-light" readonly required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                                    <input type="date" id="endDate" class="form-control" required>
+                                    <input type="date" id="endDate" class="form-control bg-light" readonly required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Trạng thái hợp đồng</label>
@@ -605,6 +607,11 @@
                                         <option value="CANCELLED">Đã hủy đơn</option>
                                     </select>
                                     <div class="form-text small" id="contractStatusHelp"></div>
+                                </div>
+                                <div class="col-12 mt-1">
+                                    <div class="form-text small text-muted">
+                                        <i class="bi bi-calendar-check text-primary me-1"></i>Thời hạn lưu trú được tự động thiết lập và cố định theo <b>Đợt đăng ký</b> đã chọn để đảm bảo tính đồng bộ học kỳ và chu kỳ tài chính KTX.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -798,12 +805,24 @@
                 filterBedsInContractModal();
 
                 const periodOptions = periods.map(p =>
-                    `<option value="${p.periodId}">${p.periodName} (${p.academicYear || ''})</option>`
+                    `<option value="${p.periodId}" data-start="${p.startDate || ''}" data-end="${p.endDate || ''}">${p.periodName} (${p.academicYear || ''})</option>`
                 ).join('');
                 document.getElementById('contractPeriodSelect').innerHTML = periodOptions;
                 document.getElementById('contractFilterPeriod').innerHTML = '<option value="">-- Tất cả đợt đăng ký --</option>' + periodOptions;
             } catch (e) {
                 console.warn('Lỗi tải danh mục form hợp đồng:', e);
+            }
+        }
+
+        function onContractPeriodChange() {
+            const periodSelect = document.getElementById('contractPeriodSelect');
+            if (!periodSelect) return;
+            const opt = periodSelect.options[periodSelect.selectedIndex];
+            if (opt) {
+                const s = opt.getAttribute('data-start');
+                const e = opt.getAttribute('data-end');
+                if (s) document.getElementById('startDate').value = s;
+                if (e) document.getElementById('endDate').value = e;
             }
         }
 
@@ -1305,8 +1324,14 @@
             document.getElementById('contractCode').value = 'HD-KTX-' + Date.now().toString().slice(-6);
             document.getElementById('monthlyFee').value = '';
             document.getElementById('depositAmount').value = '';
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
+
+            // Đợt đăng ký & Tự động nạp ngày bắt đầu / kết thúc
+            const periodSelect = document.getElementById('contractPeriodSelect');
+            periodSelect.disabled = false;
+            document.getElementById('periodHelpText').innerHTML = '<span class="text-muted">Chọn đợt đăng ký để tự động áp dụng thời hạn lưu trú chuẩn.</span>';
+            if (periodSelect.options.length > 0) {
+                onContractPeriodChange();
+            }
 
             // Mở khóa chọn sinh viên khi lập mới
             const stuSelect = document.getElementById('contractStudentSelect');
@@ -1339,6 +1364,14 @@
             document.getElementById('contractModalTitle').textContent = `Cập nhật Hợp đồng ${c.contractCode}`;
             document.getElementById('contractId').value = c.contractId;
             document.getElementById('contractCode').value = c.contractCode || '';
+
+            // 0. Đợt đăng ký: Khóa cố định theo hợp đồng đã tạo
+            const periodSelect = document.getElementById('contractPeriodSelect');
+            if (c.periodId) {
+                periodSelect.value = c.periodId;
+            }
+            periodSelect.disabled = true;
+            document.getElementById('periodHelpText').innerHTML = '<span class="text-primary"><i class="bi bi-lock-fill me-1"></i>Đợt đăng ký cố định của hợp đồng.</span>';
 
             // 1. Sinh viên: Khóa không cho đổi sang sinh viên khác (vì HĐ pháp lý thuộc về SV cụ thể)
             const stuSelect = document.getElementById('contractStudentSelect');
@@ -1377,8 +1410,7 @@
                 document.getElementById('bedHelpText').innerHTML = '<span class="text-muted">Có thể đổi giường khác khi HĐ đang ở trạng thái Chờ duyệt / Nháp.</span>';
             }
 
-            // 3. Thời hạn & Trạng thái:
-            if (c.periodId) document.getElementById('contractPeriodSelect').value = c.periodId;
+            // 3. Thời hạn & Trạng thái: Cố định theo đợt
             document.getElementById('startDate').value = c.startDate || '';
             document.getElementById('endDate').value = c.endDate || '';
             document.getElementById('monthlyFee').value = c.monthlyFee != null ? c.monthlyFee : '';
