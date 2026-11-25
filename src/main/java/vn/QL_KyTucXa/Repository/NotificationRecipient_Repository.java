@@ -25,6 +25,10 @@ public interface NotificationRecipient_Repository extends JpaRepository<Notifica
     void deleteByNotification_NotificationId(String notificationId);
 
     @Modifying
+    @Query(value = "DELETE FROM nguoi_nhan_thong_bao WHERE thong_bao = :notificationId", nativeQuery = true)
+    int deleteRecipientsByNotificationId(@Param("notificationId") String notificationId);
+
+    @Modifying
     @Query(value = "INSERT INTO nguoi_nhan_thong_bao (ma_nguoi_nhan, thong_bao, nguoi_dung, da_doc) " +
             "SELECT UUID(), :notificationId, u.ma_nguoi_dung, 0 " +
             "FROM nguoi_dung u " +

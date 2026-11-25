@@ -277,18 +277,15 @@ public class Notification_Service {
         return notificationMapper.toResponse(thong_bao);
     }
 
-    // Xóa thông báo và xóa tất cả người nhận liên quan trước để tránh lỗi khóa
-    // ngoại
+    // Xóa thông báo và xóa tất cả người nhận liên quan trực tiếp bằng 1 câu lệnh native SQL
     @Transactional
     public void delete(String notificationId) {
         Notification thong_bao = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
 
-        List<NotificationRecipient> danh_sach_nguoi_nhan = notificationRecipientRepository
-                .findByNotification_NotificationId(notificationId);
-        if (danh_sach_nguoi_nhan != null && !danh_sach_nguoi_nhan.isEmpty()) {
-            notificationRecipientRepository.deleteAll(danh_sach_nguoi_nhan);
-            log.info("Đã xóa {} người nhận trước khi xóa thông báo {}", danh_sach_nguoi_nhan.size(), notificationId);
+        if (notificationRecipientRepository != null) {
+            int deletedRecipients = notificationRecipientRepository.deleteRecipientsByNotificationId(notificationId);
+            log.info("Đã xóa siêu tốc {} người nhận của thông báo ID={}", deletedRecipients, notificationId);
         }
 
         notificationRepository.delete(thong_bao);

@@ -888,7 +888,7 @@
                         <td class="text-center">
                             ${canManageNotif ? `
                                 ${!n.isPublished ? `<button class="btn btn-sm btn-outline-success me-1" onclick="publishNotif('${n.notificationId}')" title="Phát hành"><i class="bi bi-send-check"></i></button>` : ''}
-                                <button class="btn btn-sm btn-light text-danger" onclick="deleteNotif('${n.notificationId}')" title="Xóa"><i class="bi bi-trash"></i></button>
+                                <button class="btn btn-sm btn-light text-danger" onclick="deleteNotif('${n.notificationId}', this)" title="Xóa"><i class="bi bi-trash"></i></button>
                             ` : '<span class="badge bg-light text-secondary border">Đã xem</span>'}
                         </td>
                     </tr>
@@ -1121,15 +1121,25 @@
             }
         }
 
-        async function deleteNotif(id) {
+        async function deleteNotif(id, btn) {
             if (!await showConfirm('Xóa thông báo?', 'Bạn có chắc muốn xóa thông báo này?')) return;
+            let origHtml = '';
+            if (btn) {
+                origHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            }
             try {
                 await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
-                showToastSuccess('Đã xóa thông báo!');
+                showToastSuccess('Đã xóa thông báo thành công!');
                 const user = Auth.getUser() || {};
                 await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
             } catch (e) {
-                showToastError(e.message);
+                showToastError(e.message || 'Lỗi khi xóa thông báo');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
             }
         }
     </script>
