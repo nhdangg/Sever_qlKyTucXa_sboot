@@ -343,37 +343,16 @@ public class Notification_Service {
                 break;
 
             case "STAFF":
-                if (staffRepository != null) {
-                    boolean foundSpecificStaff = false;
-                    if (targetId != null) {
-                        var specificStaff = staffRepository.findById(targetId)
+                if (userRepository != null) {
+                    tap_nguoi_nhan.addAll(userRepository.findActiveStaffAndAdmins());
+                }
+                if (targetId != null && staffRepository != null) {
+                    try {
+                        staffRepository.findById(targetId)
                                 .map(Staff::getUser)
-                                .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()));
-                        if (specificStaff.isPresent()) {
-                            tap_nguoi_nhan.add(specificStaff.get());
-                            foundSpecificStaff = true;
-                        } else {
-                            var specificUser = staffRepository.findByUser_UserId(targetId)
-                                    .map(Staff::getUser)
-                                    .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()));
-                            if (specificUser.isPresent()) {
-                                tap_nguoi_nhan.add(specificUser.get());
-                                foundSpecificStaff = true;
-                            }
-                        }
-                    }
-
-                    // Nếu không tìm thấy nhân viên cụ thể hoặc targetId không phải staffId (ví dụ là mã đơn, biển số xe...)
-                    // thì tự động gửi đến toàn bộ Ban Quản lý & Cán bộ nhân viên KTX (Admin, Manager, Staff)
-                    if (!foundSpecificStaff) {
-                        staffRepository.findAll().stream()
-                                .map(Staff::getUser)
-                                .filter(Objects::nonNull)
-                                .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .forEach(tap_nguoi_nhan::add);
-                        if (userRepository != null) {
-                            tap_nguoi_nhan.addAll(userRepository.findActiveStaffAndAdmins());
-                        }
+                                .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
+                                .ifPresent(tap_nguoi_nhan::add);
+                    } catch (Exception ignored) {
                     }
                 }
                 break;
@@ -430,7 +409,6 @@ public class Notification_Service {
                     && !existingUserIds.contains(nguoi_nhan.getUserId())) {
                 existingUserIds.add(nguoi_nhan.getUserId()); // Đánh dấu đã thêm để chặn trùng lặp tuyệt đối
                 danh_sach_nguoi_nhan_moi.add(NotificationRecipient.builder()
-                        .recipientId(java.util.UUID.randomUUID().toString())
                         .notification(notification)
                         .user(nguoi_nhan)
                         .isRead(false)
@@ -469,20 +447,30 @@ public class Notification_Service {
     public void notifyStaffAndAdmins(String title, String content, User actor, String targetId) {
         try {
             User managedActor = null;
-            if (actor != null && actor.getUserId() != null && userRepository != null) {
-                managedActor = userRepository.findById(actor.getUserId()).orElse(null);
+            String actorId = null;
+            if (actor != null) {
+                try {
+                    actorId = actor.getUserId();
+                } catch (Exception ignored) {
+                }
+            }
+            if (actorId != null && userRepository != null) {
+                try {
+                    managedActor = userRepository.findById(actorId).orElse(null);
+                } catch (Exception ignored) {
+                }
             }
             if (managedActor == null && userRepository != null) {
-                managedActor = userRepository.findAll().stream()
-                        .filter(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getRoleCode()))
+                managedActor = userRepository.findActiveStaffAndAdmins().stream()
                         .findFirst()
                         .orElse(null);
             }
-            if (managedActor == null)
+            if (managedActor == null) {
+                log.warn("notifyStaffAndAdmins: Không tìm thấy tài khoản quản trị để phát thông báo");
                 return;
+            }
 
             Notification thong_bao = Notification.builder()
-                    .notificationId(java.util.UUID.randomUUID().toString())
                     .title(title)
                     .content(content)
                     .targetType("STAFF")
@@ -497,12 +485,7 @@ public class Notification_Service {
             createRecipientsForNotification(thong_bao);
             log.info("Đã tạo thông báo hệ thống cho Staff/Admin: {}", title);
         } catch (Exception e) {
-            log.warn("Không thể gửi thông báo hệ thống tới Staff/Admin: {}", e.getMessage());
-            try {
-                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus()
-                        .setRollbackOnly();
-            } catch (Exception ignored) {
-            }
+            log.error("Lỗi khi gửi thông báo hệ thống tới Staff/Admin: {}", e.getMessage(), e);
         }
     }
 
@@ -510,9 +493,29 @@ public class Notification_Service {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyStudent(Student student, String title, String content, User actor) {
         try {
-            if (student == null || student.getUser() == null)
+            if (student == null)
                 return;
-            String studentUserId = student.getUser().getUserId();
+            String studentUserId = null;
+            try {
+                if (student.getUser() != null) {
+                    studentUserId = student.getUser().getUserId();
+                }
+            } catch (Exception ignored) {
+            }
+            if (studentUserId == null && student.getStudentId() != null && studentRepository != null) {
+                try {
+                    studentUserId = studentRepository.findById(student.getStudentId())
+                            .map(s -> {
+                                try {
+                                    return s.getUser() != null ? s.getUser().getUserId() : null;
+                                } catch (Exception ex) {
+                                    return null;
+                                }
+                            })
+                            .orElse(null);
+                } catch (Exception ignored) {
+                }
+            }
             if (studentUserId == null || userRepository == null)
                 return;
 
@@ -521,12 +524,21 @@ public class Notification_Service {
                 return;
 
             User managedActor = null;
-            if (actor != null && actor.getUserId() != null) {
-                managedActor = userRepository.findById(actor.getUserId()).orElse(null);
+            String actorId = null;
+            if (actor != null) {
+                try {
+                    actorId = actor.getUserId();
+                } catch (Exception ignored) {
+                }
+            }
+            if (actorId != null) {
+                try {
+                    managedActor = userRepository.findById(actorId).orElse(null);
+                } catch (Exception ignored) {
+                }
             }
             if (managedActor == null) {
-                managedActor = userRepository.findAll().stream()
-                        .filter(u -> u.getRole() != null && "ADMIN".equalsIgnoreCase(u.getRole().getRoleCode()))
+                managedActor = userRepository.findActiveStaffAndAdmins().stream()
                         .findFirst()
                         .orElse(nguoi_dung_sinh_vien);
             }
@@ -535,7 +547,6 @@ public class Notification_Service {
             }
 
             Notification thong_bao = Notification.builder()
-                    .notificationId(java.util.UUID.randomUUID().toString())
                     .title(title)
                     .content(content)
                     .targetType("USER")
@@ -549,7 +560,6 @@ public class Notification_Service {
             thong_bao = notificationRepository.saveAndFlush(thong_bao);
 
             NotificationRecipient nguoi_nhan = NotificationRecipient.builder()
-                    .recipientId(java.util.UUID.randomUUID().toString())
                     .notification(thong_bao)
                     .user(nguoi_dung_sinh_vien)
                     .isRead(false)
@@ -559,12 +569,7 @@ public class Notification_Service {
             notificationRecipientRepository.saveAndFlush(nguoi_nhan);
             log.info("Đã gửi thông báo tới sinh viên {}: {}", student.getFullName(), title);
         } catch (Exception e) {
-            log.warn("Không thể gửi thông báo tới sinh viên: {}", e.getMessage());
-            try {
-                org.springframework.transaction.interceptor.TransactionAspectSupport.currentTransactionStatus()
-                        .setRollbackOnly();
-            } catch (Exception ignored) {
-            }
+            log.error("Không thể gửi thông báo tới sinh viên: {}", e.getMessage(), e);
         }
     }
 }

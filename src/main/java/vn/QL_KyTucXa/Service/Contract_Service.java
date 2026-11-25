@@ -259,7 +259,12 @@ public class Contract_Service {
             String studentName = sinh_vien.getFullName();
             String studentCode = sinh_vien.getStudentCode();
             String finalContractCode = hop_dong.getContractCode();
-            User studentUser = sinh_vien.getUser();
+            User studentUser = null;
+            try {
+                studentUser = sinh_vien.getUser();
+            } catch (Exception ignored) {
+            }
+            final User finalStudentUser = studentUser;
             executeAfterCommitOrNow(() -> {
                 String title = "Đơn đăng ký KTX mới từ SV " + studentName;
                 String content = String.format(
@@ -269,7 +274,7 @@ public class Contract_Service {
                         roomNum,
                         bedNum,
                         finalContractCode);
-                notificationService.notifyStaffAndAdmins(title, content, studentUser, null);
+                notificationService.notifyStaffAndAdmins(title, content, finalStudentUser, null);
             });
         }
 
