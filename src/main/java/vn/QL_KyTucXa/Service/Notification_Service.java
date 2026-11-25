@@ -316,7 +316,14 @@ public class Notification_Service {
                 if (targetId != null && userRepository != null) {
                     userRepository.findById(targetId)
                             .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                            .ifPresent(tap_nguoi_nhan::add);
+                            .ifPresentOrElse(tap_nguoi_nhan::add, () -> {
+                                if (studentRepository != null) {
+                                    studentRepository.findById(targetId)
+                                            .map(Student::getUser)
+                                            .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
+                                            .ifPresent(tap_nguoi_nhan::add);
+                                }
+                            });
                 }
                 break;
 

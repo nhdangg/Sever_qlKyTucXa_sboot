@@ -544,11 +544,67 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Đối tượng nhận</label>
-                            <select id="notifTargetTypeInput" class="form-select">
-                                <option value="ALL">Toàn bộ Sinh viên & Nhân viên KTX (ALL)</option>
-                                <option value="ROLE">Theo nhóm vai trò (ROLE)</option>
-                                <option value="BUILDING">Theo Tòa nhà (BUILDING)</option>
+                            <select id="notifTargetTypeInput" class="form-select" onchange="onNotifTargetTypeChange()">
+                                <option value="ALL">Toàn bộ Sinh viên & Nhân viên KTX</option>
+                                <option value="STUDENT">Toàn bộ Sinh viên</option>
+                                <option value="STAFF">Toàn bộ Cán bộ & Nhân viên KTX</option>
+                                <option value="BUILDING">Theo Tòa nhà cụ thể</option>
+                                <option value="FLOOR">Theo Tầng cụ thể</option>
+                                <option value="ROOM">Theo Phòng cụ thể</option>
+                                <option value="USER">Theo Sinh viên cụ thể</option>
                             </select>
+                        </div>
+                        <div class="mb-3 d-none" id="notifTargetWrapper">
+                            <label class="form-label small fw-semibold" id="notifTargetLabel">Chọn mục tiêu nhận <span
+                                    class="text-danger">*</span></label>
+                            
+                            <!-- Chọn Tòa nhà -->
+                            <div id="targetBuildingBox" class="d-none">
+                                <select id="notifTargetBuildingSelect" class="form-select">
+                                    <option value="">-- Chọn Tòa nhà nhận thông báo --</option>
+                                </select>
+                            </div>
+
+                            <!-- Chọn Tầng -->
+                            <div id="targetFloorBox" class="d-none">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <select id="notifFloorBuildingFilter" class="form-select form-select-sm" onchange="onFilterFloorByBuilding()">
+                                            <option value="">-- Tất cả tòa nhà --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <select id="notifTargetFloorSelect" class="form-select form-select-sm">
+                                            <option value="">-- Chọn Tầng --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chọn Phòng -->
+                            <div id="targetRoomBox" class="d-none">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <select id="notifRoomBuildingFilter" class="form-select form-select-sm" onchange="onFilterRoomByBuilding()">
+                                            <option value="">-- Tất cả tòa nhà --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <select id="notifTargetRoomSelect" class="form-select form-select-sm">
+                                            <option value="">-- Chọn Phòng --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chọn Sinh viên cụ thể -->
+                            <div id="targetUserBox" class="d-none">
+                                <input type="text" id="notifStudentSearchInput" class="form-control form-control-sm mb-2"
+                                    placeholder="🔍 Tìm nhanh theo Tên hoặc MSSV..." oninput="onFilterStudentList()">
+                                <select id="notifTargetUserSelect" class="form-select">
+                                    <option value="">-- Chọn Sinh viên nhận thông báo --</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Nội dung thông báo <span
@@ -838,9 +894,150 @@
             }
         }
 
+        let notifBuildingsCache = [];
+        let notifFloorsCache = [];
+        let notifRoomsCache = [];
+        let notifStudentsCache = [];
+        let notifTargetsLoaded = false;
+
+        async function loadNotifTargetData() {
+            if (notifTargetsLoaded) return;
+            try {
+                const [bRes, fRes, rRes, sRes] = await Promise.all([
+                    apiFetch('/buildings/all').catch(() => apiFetch('/buildings').catch(() => ({ result: [] }))),
+                    apiFetch('/floors/all').catch(() => apiFetch('/floors').catch(() => ({ result: [] }))),
+                    apiFetch('/rooms/all').catch(() => apiFetch('/rooms').catch(() => ({ result: [] }))),
+                    apiFetch('/students/all').catch(() => apiFetch('/students?page=1&size=1000').catch(() => ({ result: [] })))
+                ]);
+
+                notifBuildingsCache = unwrapList(bRes);
+                notifFloorsCache = unwrapList(fRes);
+                notifRoomsCache = unwrapList(rRes);
+                notifStudentsCache = unwrapList(sRes);
+                notifTargetsLoaded = true;
+
+                // Populate Buildings select & filters
+                const bSelect = document.getElementById('notifTargetBuildingSelect');
+                const fbFilter = document.getElementById('notifFloorBuildingFilter');
+                const rbFilter = document.getElementById('notifRoomBuildingFilter');
+
+                const bOptions = notifBuildingsCache.map(b => `<option value="${b.buildingId}">${b.buildingName || b.buildingCode}</option>`).join('');
+                if (bSelect) bSelect.innerHTML = '<option value="">-- Chọn Tòa nhà nhận thông báo --</option>' + bOptions;
+                if (fbFilter) fbFilter.innerHTML = '<option value="">-- Tất cả tòa nhà --</option>' + bOptions;
+                if (rbFilter) rbFilter.innerHTML = '<option value="">-- Tất cả tòa nhà --</option>' + bOptions;
+
+                // Populate Floors
+                renderNotifFloors('');
+
+                // Populate Rooms
+                renderNotifRooms('');
+
+                // Populate Students
+                renderNotifStudents('');
+            } catch (e) {
+                console.warn('Lỗi tải danh mục mục tiêu thông báo:', e);
+            }
+        }
+
+        function renderNotifFloors(buildingId) {
+            const fSelect = document.getElementById('notifTargetFloorSelect');
+            if (!fSelect) return;
+            let list = notifFloorsCache;
+            if (buildingId) {
+                list = list.filter(f => (f.building && (f.building.buildingId === buildingId || f.building.buildingCode === buildingId)) || f.buildingId === buildingId);
+            }
+            fSelect.innerHTML = '<option value="">-- Chọn Tầng --</option>' + list.map(f => {
+                const bName = f.building ? (f.building.buildingName || f.building.buildingCode) : '';
+                return `<option value="${f.floorId}">${f.floorName || ('Tầng ' + f.floorNumber)}${bName ? ' (' + bName + ')' : ''}</option>`;
+            }).join('');
+        }
+
+        function onFilterFloorByBuilding() {
+            const bId = document.getElementById('notifFloorBuildingFilter').value;
+            renderNotifFloors(bId);
+        }
+
+        function renderNotifRooms(buildingId) {
+            const rSelect = document.getElementById('notifTargetRoomSelect');
+            if (!rSelect) return;
+            let list = notifRoomsCache;
+            if (buildingId) {
+                list = list.filter(r => (r.building && (r.building.buildingId === buildingId || r.building.buildingCode === buildingId)) || r.buildingId === buildingId);
+            }
+            rSelect.innerHTML = '<option value="">-- Chọn Phòng --</option>' + list.map(r => {
+                const bName = r.building ? (r.building.buildingName || r.building.buildingCode) : '';
+                return `<option value="${r.roomId}">Phòng ${r.roomNumber}${bName ? ' - Tòa ' + bName : ''}</option>`;
+            }).join('');
+        }
+
+        function onFilterRoomByBuilding() {
+            const bId = document.getElementById('notifRoomBuildingFilter').value;
+            renderNotifRooms(bId);
+        }
+
+        function renderNotifStudents(keyword) {
+            const sSelect = document.getElementById('notifTargetUserSelect');
+            if (!sSelect) return;
+            let list = notifStudentsCache;
+            if (keyword) {
+                const kw = keyword.toLowerCase();
+                list = list.filter(s => (s.fullName && s.fullName.toLowerCase().includes(kw)) ||
+                                        (s.studentCode && s.studentCode.toLowerCase().includes(kw)));
+            }
+            const displayList = list.slice(0, 100);
+            sSelect.innerHTML = '<option value="">-- Chọn Sinh viên nhận thông báo --</option>' + displayList.map(s => {
+                const uId = (s.user && s.user.userId) ? s.user.userId : s.studentId;
+                return `<option value="${uId}">${s.fullName} - MSSV: ${s.studentCode || 'N/A'}${s.roomNumber ? ' (P.' + s.roomNumber + ')' : ''}</option>`;
+            }).join('');
+        }
+
+        function onFilterStudentList() {
+            const kw = document.getElementById('notifStudentSearchInput').value.trim();
+            renderNotifStudents(kw);
+        }
+
+        async function onNotifTargetTypeChange() {
+            const type = document.getElementById('notifTargetTypeInput').value;
+            const wrapper = document.getElementById('notifTargetWrapper');
+            const bBox = document.getElementById('targetBuildingBox');
+            const fBox = document.getElementById('targetFloorBox');
+            const rBox = document.getElementById('targetRoomBox');
+            const uBox = document.getElementById('targetUserBox');
+            const lbl = document.getElementById('notifTargetLabel');
+
+            bBox.classList.add('d-none');
+            fBox.classList.add('d-none');
+            rBox.classList.add('d-none');
+            uBox.classList.add('d-none');
+
+            if (type === 'ALL' || type === 'STUDENT' || type === 'STAFF') {
+                wrapper.classList.add('d-none');
+                return;
+            }
+
+            wrapper.classList.remove('d-none');
+            await loadNotifTargetData();
+
+            if (type === 'BUILDING') {
+                lbl.innerHTML = 'Chọn Tòa nhà nhận thông báo <span class="text-danger">*</span>';
+                bBox.classList.remove('d-none');
+            } else if (type === 'FLOOR') {
+                lbl.innerHTML = 'Chọn Tầng nhận thông báo <span class="text-danger">*</span>';
+                fBox.classList.remove('d-none');
+            } else if (type === 'ROOM') {
+                lbl.innerHTML = 'Chọn Phòng nhận thông báo <span class="text-danger">*</span>';
+                rBox.classList.remove('d-none');
+            } else if (type === 'USER') {
+                lbl.innerHTML = 'Chọn Sinh viên cụ thể nhận thông báo <span class="text-danger">*</span>';
+                uBox.classList.remove('d-none');
+            }
+        }
+
         function openNotificationModal() {
             document.getElementById('notifTitleInput').value = '';
             document.getElementById('notifContentInput').value = '';
+            document.getElementById('notifTargetTypeInput').value = 'ALL';
+            onNotifTargetTypeChange();
             new bootstrap.Modal(document.getElementById('notificationModal')).show();
         }
 
@@ -852,13 +1049,41 @@
                 showToastError('Vui lòng nhập Tiêu đề và Nội dung thông báo!');
                 return;
             }
+
+            let targetId = null;
+            if (targetType === 'BUILDING') {
+                targetId = document.getElementById('notifTargetBuildingSelect').value;
+                if (!targetId) {
+                    showToastError('Vui lòng chọn Tòa nhà nhận thông báo!');
+                    return;
+                }
+            } else if (targetType === 'FLOOR') {
+                targetId = document.getElementById('notifTargetFloorSelect').value;
+                if (!targetId) {
+                    showToastError('Vui lòng chọn Tầng nhận thông báo!');
+                    return;
+                }
+            } else if (targetType === 'ROOM') {
+                targetId = document.getElementById('notifTargetRoomSelect').value;
+                if (!targetId) {
+                    showToastError('Vui lòng chọn Phòng nhận thông báo!');
+                    return;
+                }
+            } else if (targetType === 'USER') {
+                targetId = document.getElementById('notifTargetUserSelect').value;
+                if (!targetId) {
+                    showToastError('Vui lòng chọn Sinh viên nhận thông báo!');
+                    return;
+                }
+            }
+
             try {
                 await apiFetch('/notifications', {
                     method: 'POST',
-                    body: JSON.stringify({ title, content, targetType, isPublished: true })
+                    body: JSON.stringify({ title, content, targetType, targetId, isPublished: true })
                 });
                 bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
-                showToastSuccess('Đã đăng thông báo thành công!');
+                showToastSuccess('Đã đăng và phát hành thông báo thành công!');
                 const user = Auth.getUser() || {};
                 await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
             } catch (e) {
