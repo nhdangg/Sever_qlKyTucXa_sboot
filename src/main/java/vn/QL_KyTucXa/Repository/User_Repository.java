@@ -36,6 +36,10 @@ public interface User_Repository extends JpaRepository<User, String> {
     List<User> findActiveStaffAndAdmins();
 
     @EntityGraph(attributePaths = {"role"})
+    @Query("SELECT u FROM User u WHERE u.status = 'ACTIVE' AND u.role IS NOT NULL AND u.role.roleCode = 'STUDENT'")
+    List<User> findActiveStudents();
+
+    @EntityGraph(attributePaths = {"role"})
     @Query("SELECT u FROM User u WHERE " +
             "(:keyword IS NULL OR :keyword = '' OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR u.phone LIKE CONCAT('%', :keyword, '%')) AND " +
             "(:roleId IS NULL OR :roleId = '' OR u.role.roleId = :roleId) AND " +

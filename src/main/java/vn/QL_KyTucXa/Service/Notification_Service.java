@@ -328,8 +328,8 @@ public class Notification_Service {
                 break;
 
             case "STUDENT":
-                if (studentRepository != null) {
-                    if (targetId != null) {
+                if (targetId != null) {
+                    if (studentRepository != null) {
                         studentRepository.findById(targetId)
                                 .map(Student::getUser)
                                 .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
@@ -339,12 +339,10 @@ public class Notification_Service {
                                             .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
                                             .ifPresent(tap_nguoi_nhan::add);
                                 });
-                    } else {
-                        studentRepository.findAll().stream()
-                                .map(Student::getUser)
-                                .filter(Objects::nonNull)
-                                .filter(u -> "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .forEach(tap_nguoi_nhan::add);
+                    }
+                } else {
+                    if (userRepository != null) {
+                        tap_nguoi_nhan.addAll(userRepository.findActiveStudents());
                     }
                 }
                 break;

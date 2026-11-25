@@ -557,7 +557,7 @@
                         <div class="mb-3 d-none" id="notifTargetWrapper">
                             <label class="form-label small fw-semibold" id="notifTargetLabel">Chọn mục tiêu nhận <span
                                     class="text-danger">*</span></label>
-                            
+
                             <!-- Chọn Tòa nhà -->
                             <div id="targetBuildingBox" class="d-none">
                                 <select id="notifTargetBuildingSelect" class="form-select">
@@ -569,7 +569,8 @@
                             <div id="targetFloorBox" class="d-none">
                                 <div class="row g-2">
                                     <div class="col-6">
-                                        <select id="notifFloorBuildingFilter" class="form-select form-select-sm" onchange="onFilterFloorByBuilding()">
+                                        <select id="notifFloorBuildingFilter" class="form-select form-select-sm"
+                                            onchange="onFilterFloorByBuilding()">
                                             <option value="">-- Tất cả tòa nhà --</option>
                                         </select>
                                     </div>
@@ -585,7 +586,8 @@
                             <div id="targetRoomBox" class="d-none">
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <select id="notifRoomBuildingFilter" class="form-select form-select-sm" onchange="onFilterRoomByBuilding()">
+                                        <select id="notifRoomBuildingFilter" class="form-select form-select-sm"
+                                            onchange="onFilterRoomByBuilding()">
                                             <option value="">-- Tất cả tòa nhà --</option>
                                         </select>
                                     </div>
@@ -599,7 +601,8 @@
 
                             <!-- Chọn Sinh viên cụ thể -->
                             <div id="targetUserBox" class="d-none">
-                                <input type="text" id="notifStudentSearchInput" class="form-control form-control-sm mb-2"
+                                <input type="text" id="notifStudentSearchInput"
+                                    class="form-control form-control-sm mb-2"
                                     placeholder="🔍 Tìm nhanh theo Tên hoặc MSSV..." oninput="onFilterStudentList()">
                                 <select id="notifTargetUserSelect" class="form-select">
                                     <option value="">-- Chọn Sinh viên nhận thông báo --</option>
@@ -616,7 +619,7 @@
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary px-4 fw-semibold" onclick="saveNotification()">Đăng &
+                    <button type="button" class="btn btn-primary px-4 fw-semibold" id="btnSubmitNotification" onclick="saveNotification()">Đăng &
                         Phát hành ngay</button>
                 </div>
             </div>
@@ -982,7 +985,7 @@
             if (keyword) {
                 const kw = keyword.toLowerCase();
                 list = list.filter(s => (s.fullName && s.fullName.toLowerCase().includes(kw)) ||
-                                        (s.studentCode && s.studentCode.toLowerCase().includes(kw)));
+                    (s.studentCode && s.studentCode.toLowerCase().includes(kw)));
             }
             const displayList = list.slice(0, 100);
             sSelect.innerHTML = '<option value="">-- Chọn Sinh viên nhận thông báo --</option>' + displayList.map(s => {
@@ -1077,17 +1080,32 @@
                 }
             }
 
+            const btn = document.getElementById('btnSubmitNotification');
+            const originalHtml = btn ? btn.innerHTML : 'Đăng & Phát hành ngay';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang phát hành...';
+            }
+
             try {
                 await apiFetch('/notifications', {
                     method: 'POST',
                     body: JSON.stringify({ title, content, targetType, targetId, isPublished: true })
                 });
-                bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+                const modalEl = document.getElementById('notificationModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                if (modal) modal.hide();
                 showToastSuccess('Đã đăng và phát hành thông báo thành công!');
                 const user = Auth.getUser() || {};
                 await loadDashboardNotifications((user.role || 'ADMIN').toUpperCase());
             } catch (e) {
-                showToastError(e.message);
+                console.error('Lỗi khi đăng thông báo:', e);
+                showToastError(e.message || 'Lỗi khi đăng thông báo');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
             }
         }
 
