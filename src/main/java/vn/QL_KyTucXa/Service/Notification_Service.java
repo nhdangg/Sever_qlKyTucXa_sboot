@@ -344,17 +344,28 @@ public class Notification_Service {
 
             case "STAFF":
                 if (staffRepository != null) {
+                    boolean foundSpecificStaff = false;
                     if (targetId != null) {
-                        staffRepository.findById(targetId)
+                        var specificStaff = staffRepository.findById(targetId)
                                 .map(Staff::getUser)
-                                .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                .ifPresentOrElse(tap_nguoi_nhan::add, () -> {
-                                    staffRepository.findByUser_UserId(targetId)
-                                            .map(Staff::getUser)
-                                            .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()))
-                                            .ifPresent(tap_nguoi_nhan::add);
-                                });
-                    } else {
+                                .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()));
+                        if (specificStaff.isPresent()) {
+                            tap_nguoi_nhan.add(specificStaff.get());
+                            foundSpecificStaff = true;
+                        } else {
+                            var specificUser = staffRepository.findByUser_UserId(targetId)
+                                    .map(Staff::getUser)
+                                    .filter(u -> u != null && "ACTIVE".equalsIgnoreCase(u.getStatus()));
+                            if (specificUser.isPresent()) {
+                                tap_nguoi_nhan.add(specificUser.get());
+                                foundSpecificStaff = true;
+                            }
+                        }
+                    }
+
+                    // Nếu không tìm thấy nhân viên cụ thể hoặc targetId không phải staffId (ví dụ là mã đơn, biển số xe...)
+                    // thì tự động gửi đến toàn bộ Ban Quản lý & Cán bộ nhân viên KTX (Admin, Manager, Staff)
+                    if (!foundSpecificStaff) {
                         staffRepository.findAll().stream()
                                 .map(Staff::getUser)
                                 .filter(Objects::nonNull)
@@ -475,7 +486,7 @@ public class Notification_Service {
                     .title(title)
                     .content(content)
                     .targetType("STAFF")
-                    .targetId(targetId)
+                    .targetId(null)
                     .createdBy(managedActor)
                     .isPublished(true)
                     .publishedAt(LocalDateTime.now())

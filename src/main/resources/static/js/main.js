@@ -591,12 +591,12 @@ async function loadTopbarNotifications() {
                     typeBadge = '<span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">Hợp đồng</span>';
                     redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/contracts`;
                     redirectBtnText = (role === 'STUDENT') ? 'Xem hợp đồng của tôi' : 'Đi tới Quản lý Hợp đồng';
-                } else if (combined.includes('sửa chữa') || combined.includes('bảo trì')) {
+                } else if (combined.includes('sửa chữa') || combined.includes('bảo trì') || combined.includes('báo hỏng')) {
                     iconClass = 'bi-tools text-warning';
                     typeBadge = '<span class="badge bg-warning-subtle text-warning-emphasis" style="font-size: 0.65rem;">Bảo trì</span>';
                     redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/maintenance`;
                     redirectBtnText = (role === 'STUDENT') ? 'Xem yêu cầu sửa chữa' : 'Đi tới Quản lý Sửa chữa';
-                } else if (combined.includes('chuyển phòng')) {
+                } else if (combined.includes('chuyển phòng') || combined.includes('đổi phòng')) {
                     iconClass = 'bi-arrow-left-right text-info';
                     typeBadge = '<span class="badge bg-info-subtle text-info-emphasis" style="font-size: 0.65rem;">Chuyển phòng</span>';
                     redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/contracts`;
@@ -604,13 +604,13 @@ async function loadTopbarNotifications() {
                 } else if (combined.includes('xe') || combined.includes('phương tiện')) {
                     iconClass = 'bi-bicycle text-success';
                     typeBadge = '<span class="badge bg-success-subtle text-success" style="font-size: 0.65rem;">Gửi xe</span>';
-                    redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/students`;
-                    redirectBtnText = 'Xem chi tiết phương tiện';
+                    redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/admin/security`;
+                    redirectBtnText = (role === 'STUDENT') ? 'Xem chi tiết phương tiện' : 'Đi tới Quản lý Gửi xe';
                 } else if (combined.includes('khách')) {
                     iconClass = 'bi-person-badge-fill text-dark';
                     typeBadge = '<span class="badge bg-dark-subtle text-dark" style="font-size: 0.65rem;">Khách thăm</span>';
-                    redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/students`;
-                    redirectBtnText = 'Xem chi tiết khách thăm';
+                    redirectUrl = (role === 'STUDENT') ? `${CONTEXT_PATH}/student-portal` : `${CONTEXT_PATH}/admin/security`;
+                    redirectBtnText = (role === 'STUDENT') ? 'Xem chi tiết khách thăm' : 'Đi tới Quản lý Khách thăm';
                 } else if (combined.includes('phản hồi') || combined.includes('phản ánh') || combined.includes('góp ý')) {
                     iconClass = 'bi-chat-left-heart-fill text-purple';
                     typeBadge = '<span class="badge bg-purple-subtle text-purple" style="font-size: 0.65rem;">Phản ánh</span>';
