@@ -8,7 +8,7 @@
     <aside th:replace="~{fragments/layout :: sidebar('admin-audit-logs')}"></aside>
 
     <div class="main-wrapper">
-        <nav th:replace="~{fragments/layout :: topbar('Nhật ký Hoạt động Hệ thống (System Audit Logs)')}"></nav>
+        <nav th:replace="~{fragments/layout :: topbar('Nhật ký Hoạt động Hệ thống')}"></nav>
 
         <div class="content-body">
             <!-- Header Card tổng quan -->
@@ -20,13 +20,15 @@
                             <i class="bi bi-clock-history"></i>
                         </div>
                         <div>
-                            <h5 class="fw-bold mb-1 text-dark">Nhật ký Hoạt động Hệ thống (System Audit Logs)</h5>
-                            <p class="text-muted small mb-0">Theo dõi toàn bộ lịch sử thay đổi dữ liệu, thao tác quản trị và bảo mật</p>
+                            <h5 class="fw-bold mb-1 text-dark">Nhật ký Hoạt động Hệ thống</h5>
+                            <p class="text-muted small mb-0">Theo dõi toàn bộ lịch sử thay đổi dữ liệu, thao tác quản
+                                trị và bảo mật</p>
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 d-flex align-items-center gap-1">
-                            <i class="bi bi-shield-lock-fill text-warning"></i> Chế độ: Chỉ xem (Read-Only)
+                        <span
+                            class="badge bg-secondary-subtle text-secondary border px-3 py-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-shield-lock-fill text-warning"></i> Chế độ: Chỉ xem
                         </span>
                         <button class="btn btn-outline-primary btn-sm fw-semibold px-3" onclick="loadAuditLogs(1)">
                             <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
@@ -40,7 +42,8 @@
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-4">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <span class="input-group-text bg-light border-end-0"><i
+                                    class="bi bi-search text-muted"></i></span>
                             <input type="text" id="filterKeyword" class="form-control border-start-0"
                                 placeholder="Tìm theo tài khoản, IP, bảng, mã bản ghi..." oninput="onSearchChange()">
                         </div>
@@ -48,9 +51,9 @@
                     <div class="col-6 col-md-3">
                         <select id="filterAction" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
                             <option value="">-- Tất cả hành động --</option>
-                            <option value="CREATE">Thêm mới (CREATE)</option>
-                            <option value="UPDATE">Cập nhật (UPDATE)</option>
-                            <option value="DELETE">Xóa (DELETE)</option>
+                            <option value="CREATE">Thêm mới</option>
+                            <option value="UPDATE">Cập nhật</option>
+                            <option value="DELETE">Xóa</option>
                             <option value="RESET_PASSWORD">Đặt lại mật khẩu</option>
                             <option value="LOCK">Khóa tài khoản</option>
                             <option value="UNLOCK">Mở khóa tài khoản</option>
@@ -59,21 +62,22 @@
                     <div class="col-6 col-md-3">
                         <select id="filterTableName" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
                             <option value="">-- Tất cả bảng dữ liệu --</option>
-                            <option value="users">Tài khoản (users)</option>
-                            <option value="hopDong">Hợp đồng (hopDong)</option>
-                            <option value="phong">Phòng ở (phong)</option>
-                            <option value="giuong">Giường (giuong)</option>
-                            <option value="toaNha">Tòa nhà (toaNha)</option>
-                            <option value="hoaDon">Hóa đơn (hoaDon)</option>
-                            <option value="phieuBaoHong">Báo hỏng (phieuBaoHong)</option>
-                            <option value="taiSan">Tài sản (taiSan)</option>
-                            <option value="bienBanKyLuat">Kỷ luật (bienBanKyLuat)</option>
+                            <option value="users">Tài khoản</option>
+                            <option value="hopDong">Hợp đồng</option>
+                            <option value="phong">Phòng ở</option>
+                            <option value="giuong">Giường</option>
+                            <option value="toaNha">Tòa nhà</option>
+                            <option value="hoaDon">Hóa đơn</option>
+                            <option value="phieuBaoHong">Báo hỏng</option>
+                            <option value="taiSan">Tài sản</option>
+                            <option value="bienBanKyLuat">Kỷ luật</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-2 text-md-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-1">
                             <span class="text-muted small">Số dòng:</span>
-                            <select id="pageSizeSelect" class="form-select form-select-sm" style="width: 75px;" onchange="loadAuditLogs(1)">
+                            <select id="pageSizeSelect" class="form-select form-select-sm" style="width: 75px;"
+                                onchange="loadAuditLogs(1)">
                                 <option value="10">10</option>
                                 <option value="20" selected>20</option>
                                 <option value="50">50</option>
@@ -103,7 +107,8 @@
                         <tbody id="auditLogTableBody">
                             <tr>
                                 <td colspan="8" class="text-center py-4 text-muted">
-                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div> Đang tải dữ liệu nhật ký...
+                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div> Đang tải dữ
+                                    liệu nhật ký...
                                 </td>
                             </tr>
                         </tbody>
@@ -111,7 +116,8 @@
                 </div>
 
                 <!-- Phân trang -->
-                <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                <div
+                    class="card-footer bg-white border-top d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
                     <span class="small text-muted" id="auditPaginationInfo">Hiển thị 0 / 0 bản ghi</span>
                     <nav>
                         <ul class="pagination pagination-sm mb-0" id="auditPagination"></ul>
@@ -171,15 +177,19 @@
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label small fw-bold text-danger">
-                                <i class="bi bi-dash-circle me-1"></i>Giá trị trước thay đổi (Old Value)
+                                <i class="bi bi-dash-circle me-1"></i>Giá trị trước thay đổi
                             </label>
-                            <pre class="bg-light p-2 rounded border small text-dark" style="max-height: 250px; overflow: auto; font-family: monospace;" id="detailOldValue">Không có</pre>
+                            <pre class="bg-light p-2 rounded border small text-dark"
+                                style="max-height: 250px; overflow: auto; font-family: monospace;"
+                                id="detailOldValue">Không có</pre>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label small fw-bold text-success">
-                                <i class="bi bi-plus-circle me-1"></i>Giá trị sau thay đổi (New Value)
+                                <i class="bi bi-plus-circle me-1"></i>Giá trị sau thay đổi
                             </label>
-                            <pre class="bg-light p-2 rounded border small text-dark" style="max-height: 250px; overflow: auto; font-family: monospace;" id="detailNewValue">Không có</pre>
+                            <pre class="bg-light p-2 rounded border small text-dark"
+                                style="max-height: 250px; overflow: auto; font-family: monospace;"
+                                id="detailNewValue">Không có</pre>
                         </div>
                     </div>
                 </div>
