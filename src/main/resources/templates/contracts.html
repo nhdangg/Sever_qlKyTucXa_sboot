@@ -563,6 +563,7 @@
                                         placeholder="Gõ MSSV hoặc tên để tìm nhanh sinh viên..."
                                         oninput="searchStudentsForContractModal()">
                                     <select id="contractStudentSelect" class="form-select" required></select>
+                                    <div class="form-text small" id="studentHelpText"></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Bố trí Phòng & Giường nội trú <span
@@ -572,6 +573,7 @@
                                         oninput="filterBedsInContractModal()">
                                     <select id="contractBedSelect" class="form-select" required
                                         onchange="onContractBedSelected()"></select>
+                                    <div class="form-text small" id="bedHelpText"></div>
                                 </div>
                             </div>
                         </div>
@@ -594,11 +596,15 @@
                                     <label class="form-label">Trạng thái hợp đồng</label>
                                     <select id="contractStatus" class="form-select">
                                         <option value="ACTIVE">Đang hiệu lực</option>
+                                        <option value="PENDING">Chờ duyệt</option>
                                         <option value="PENDING_APPROVAL">Chờ Trưởng BQL duyệt</option>
                                         <option value="DRAFT">Bản nháp</option>
                                         <option value="EXPIRED">Hết hạn</option>
                                         <option value="TERMINATED">Đã thanh lý</option>
+                                        <option value="REJECTED">Bị từ chối</option>
+                                        <option value="CANCELLED">Đã hủy đơn</option>
                                     </select>
+                                    <div class="form-text small" id="contractStatusHelp"></div>
                                 </div>
                             </div>
                         </div>
@@ -1299,7 +1305,30 @@
             document.getElementById('contractCode').value = 'HD-KTX-' + Date.now().toString().slice(-6);
             document.getElementById('monthlyFee').value = '';
             document.getElementById('depositAmount').value = '';
-            document.getElementById('contractStatus').value = currentUserRole === 'STAFF' ? 'PENDING_APPROVAL' : 'ACTIVE';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+
+            // Mở khóa chọn sinh viên khi lập mới
+            const stuSelect = document.getElementById('contractStudentSelect');
+            stuSelect.disabled = false;
+            document.getElementById('studentFilterInModal').style.display = 'block';
+            document.getElementById('studentFilterInModal').value = '';
+            document.getElementById('studentHelpText').innerHTML = '<span class="text-muted">Tìm kiếm theo MSSV hoặc họ tên để chọn sinh viên làm hợp đồng.</span>';
+
+            // Mở khóa chọn giường trống khi lập mới
+            const bedSelect = document.getElementById('contractBedSelect');
+            bedSelect.disabled = false;
+            document.getElementById('bedFilterInModal').style.display = 'block';
+            document.getElementById('bedFilterInModal').value = '';
+            document.getElementById('bedHelpText').innerHTML = '<span class="text-muted">Chọn giường còn trống trong KTX.</span>';
+
+            // Trạng thái khi lập mới
+            const statusSelect = document.getElementById('contractStatus');
+            statusSelect.disabled = false;
+            statusSelect.value = currentUserRole === 'STAFF' ? 'PENDING_APPROVAL' : 'ACTIVE';
+            document.getElementById('contractStatusHelp').innerHTML = '<span class="text-muted">Hợp đồng mới sẽ được tạo theo trạng thái này.</span>';
+
+            filterBedsInContractModal();
             onContractBedSelected();
             contractModal.show();
         }
@@ -1310,29 +1339,84 @@
             document.getElementById('contractModalTitle').textContent = `Cập nhật Hợp đồng ${c.contractCode}`;
             document.getElementById('contractId').value = c.contractId;
             document.getElementById('contractCode').value = c.contractCode || '';
-            if (c.studentId) document.getElementById('contractStudentSelect').value = c.studentId;
-            if (c.bedId) document.getElementById('contractBedSelect').value = c.bedId;
+
+            // 1. Sinh viên: Khóa không cho đổi sang sinh viên khác (vì HĐ pháp lý thuộc về SV cụ thể)
+            const stuSelect = document.getElementById('contractStudentSelect');
+            if (c.studentId) {
+                let stuOpt = Array.from(stuSelect.options).find(opt => opt.value === c.studentId);
+                if (!stuOpt) {
+                    const stuText = `${c.studentCode || ''} - ${c.studentFullName || ''}`;
+                    stuSelect.insertAdjacentHTML('afterbegin', `<option value="${c.studentId}">${stuText}</option>`);
+                }
+                stuSelect.value = c.studentId;
+            }
+            stuSelect.disabled = true;
+            document.getElementById('studentFilterInModal').style.display = 'none';
+            document.getElementById('studentHelpText').innerHTML = '<span class="text-primary"><i class="bi bi-lock-fill me-1"></i>Hợp đồng cố định theo sinh viên này, không thể đổi sang sinh viên khác.</span>';
+
+            // 2. Bố trí Phòng & Giường: Nạp đúng phòng/giường hiện tại của hợp đồng
+            const bedSelect = document.getElementById('contractBedSelect');
+            if (c.bedId) {
+                let bedOpt = Array.from(bedSelect.options).find(opt => opt.value === c.bedId);
+                if (!bedOpt) {
+                    const bedText = `${c.buildingName ? c.buildingName + ' - ' : ''}Phòng ${c.roomNumber || ''} - Giường ${c.bedNumber || ''} [Giường hiện tại của HĐ]`;
+                    bedSelect.insertAdjacentHTML('afterbegin', `<option value="${c.bedId}" data-price="${c.monthlyFee || ''}">${bedText}</option>`);
+                }
+                bedSelect.value = c.bedId;
+            }
+
+            const isActive = c.status === 'ACTIVE';
+            if (isActive) {
+                // Với HĐ ACTIVE, backend cấm đổi giường qua update thường để tránh sai lệch dữ liệu KTX
+                bedSelect.disabled = true;
+                document.getElementById('bedFilterInModal').style.display = 'none';
+                document.getElementById('bedHelpText').innerHTML = '<span class="text-primary"><i class="bi bi-info-circle me-1"></i>HĐ đang hiệu lực: Để chuyển sang phòng/giường khác, vui lòng sử dụng tab <b>"Yêu cầu Chuyển phòng"</b>.</span>';
+            } else {
+                bedSelect.disabled = false;
+                document.getElementById('bedFilterInModal').style.display = 'block';
+                document.getElementById('bedHelpText').innerHTML = '<span class="text-muted">Có thể đổi giường khác khi HĐ đang ở trạng thái Chờ duyệt / Nháp.</span>';
+            }
+
+            // 3. Thời hạn & Trạng thái:
             if (c.periodId) document.getElementById('contractPeriodSelect').value = c.periodId;
             document.getElementById('startDate').value = c.startDate || '';
             document.getElementById('endDate').value = c.endDate || '';
             document.getElementById('monthlyFee').value = c.monthlyFee != null ? c.monthlyFee : '';
             document.getElementById('depositAmount').value = c.depositAmount != null ? c.depositAmount : '';
-            document.getElementById('contractStatus').value = c.status || 'ACTIVE';
+
+            const statusSelect = document.getElementById('contractStatus');
+            statusSelect.value = c.status || 'ACTIVE';
+            statusSelect.disabled = true; // Khóa trường trạng thái khi sửa
+            let statusHelp = '';
+            if (c.status === 'ACTIVE') {
+                statusHelp = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Đang hiệu lực. Để kết thúc, hãy dùng nút <b>Thanh lý</b> ngoài danh sách.</span>';
+            } else if (c.status === 'PENDING' || c.status === 'PENDING_APPROVAL' || c.status === 'DRAFT') {
+                statusHelp = '<span class="text-warning"><i class="bi bi-hourglass-split me-1"></i>Chờ duyệt. Quản lý có thể bấm <b>Duyệt</b> hoặc <b>Từ chối</b> ngoài danh sách.</span>';
+            } else if (c.status === 'EXPIRED') {
+                statusHelp = '<span class="text-dark"><i class="bi bi-clock-history me-1"></i>Hợp đồng đã hết hạn thời gian lưu trú.</span>';
+            } else if (c.status === 'TERMINATED') {
+                statusHelp = '<span class="text-danger"><i class="bi bi-x-octagon me-1"></i>Hợp đồng đã được thanh lý kết thúc.</span>';
+            } else {
+                statusHelp = `<span class="text-muted">${c.status || ''}</span>`;
+            }
+            document.getElementById('contractStatusHelp').innerHTML = statusHelp;
+
             contractModal.show();
         }
 
         async function saveContract() {
             const id = document.getElementById('contractId').value;
+            const currentContract = id ? allContracts.find(x => x.contractId === id) : null;
             const payload = {
                 contractCode: document.getElementById('contractCode').value.trim(),
-                studentId: document.getElementById('contractStudentSelect').value,
-                bedId: document.getElementById('contractBedSelect').value,
+                studentId: document.getElementById('contractStudentSelect').value || (currentContract ? currentContract.studentId : ''),
+                bedId: document.getElementById('contractBedSelect').value || (currentContract ? currentContract.bedId : ''),
                 periodId: document.getElementById('contractPeriodSelect').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
                 monthlyFee: parseFloat(document.getElementById('monthlyFee').value || 0),
                 depositAmount: parseFloat(document.getElementById('depositAmount').value || 0),
-                status: document.getElementById('contractStatus').value
+                status: document.getElementById('contractStatus').value || (currentContract ? currentContract.status : 'ACTIVE')
             };
 
             if (!payload.contractCode || !payload.startDate || !payload.endDate) {
