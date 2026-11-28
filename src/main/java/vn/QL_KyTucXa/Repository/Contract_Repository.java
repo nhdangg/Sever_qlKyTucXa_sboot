@@ -39,14 +39,17 @@ public interface Contract_Repository extends JpaRepository<Contract, String> {
 
         boolean existsByStatusAndEndDateBefore(String status, LocalDate date);
 
-        // Lấy danh sách hợp đồng có hiệu lực trong tháng của một phòng
+        // Lấy danh sách hợp đồng có hiệu lực trong tháng của một phòng:
+        // Nếu hợp đồng không phải trạng thái ACTIVE (TERMINATED / EXPIRED) thì từ tháng sau sẽ không thêm vào
         @Query("""
                         SELECT c FROM Contract c
                         JOIN c.bed b
                         WHERE b.room.roomId = :roomId
-                          AND c.status IN ('ACTIVE', 'EXPIRED', 'TERMINATED')
                           AND c.startDate <= :monthEnd
-                          AND c.endDate >= :monthStart
+                          AND (
+                              (c.status = 'ACTIVE' AND c.endDate >= :monthStart)
+                              OR (c.status IN ('EXPIRED', 'TERMINATED') AND COALESCE(c.terminatedDate, c.endDate) >= :monthStart)
+                          )
                         """)
         List<Contract> findEffectiveContractsByRoomIdAndMonth(
                         @Param("roomId") String roomId,

@@ -75,4 +75,16 @@ public class Contract {
     @UpdateTimestamp
     @Column(name = "ngayCapNhat", nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    public void syncTerminatedDate() {
+        if ("TERMINATED".equalsIgnoreCase(this.status) || "EXPIRED".equalsIgnoreCase(this.status)) {
+            if (this.terminatedDate == null) {
+                this.terminatedDate = LocalDate.now();
+            }
+        } else if ("ACTIVE".equalsIgnoreCase(this.status)) {
+            this.terminatedDate = null;
+        }
+    }
 }

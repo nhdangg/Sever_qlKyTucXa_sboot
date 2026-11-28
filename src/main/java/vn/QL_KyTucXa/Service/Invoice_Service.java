@@ -221,10 +221,10 @@ public class Invoice_Service {
                                     .ifPresent(rs -> {
                                         if (rs.getShareAmount() != null
                                                 && rs.getShareAmount().compareTo(BigDecimal.ZERO) > 0) {
-                                             String srvName = (reading.getServiceType() != null
+                                            String srvName = (reading.getServiceType() != null
                                                     && reading.getServiceType().getServiceName() != null)
-                                                             ? reading.getServiceType().getServiceName()
-                                                             : "Điện nước";
+                                                            ? reading.getServiceType().getServiceName()
+                                                            : "Điện nước";
                                             InvoiceItem utilityItem = InvoiceItem.builder()
                                                     .invoice(targetInvoice)
                                                     .itemType("UTILITY")
@@ -296,8 +296,9 @@ public class Invoice_Service {
 
             // Tự động gắn phí gửi xe (VEHICLE) đang hoạt động trong kỳ
             if (vehicleRegistrationRepository != null) {
-                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
-                        sinh_vien.getStudentId(), invoiceMonth, monthEnd);
+                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository
+                        .findActiveVehiclesForStudentInMonth(
+                                sinh_vien.getStudentId(), invoiceMonth, monthEnd);
                 for (VehicleRegistration vehicle : danh_sach_xe) {
                     if (vehicle.getMonthlyFee() != null && vehicle.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
                         String plateInfo = (vehicle.getLicensePlate() != null && !vehicle.getLicensePlate().isBlank())
@@ -320,7 +321,8 @@ public class Invoice_Service {
 
             // Tự động gắn tiền phạt vi phạm kỷ luật chưa tính vào hóa đơn (FINE)
             if (violationRepository != null) {
-                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(sinh_vien.getStudentId(),
+                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(
+                        sinh_vien.getStudentId(),
                         monthEnd);
                 for (Violation v : danh_sach_vi_pham) {
                     boolean alreadyBilled = invoiceItemRepository != null
@@ -727,7 +729,8 @@ public class Invoice_Service {
             List<Invoice> danh_sach_hoa_don_da_ton_tai = invoiceRepository
                     .findByContract_ContractIdAndInvoiceMonth(hop_dong.getContractId(), invoiceMonth);
             if (danh_sach_hoa_don_da_ton_tai != null
-                    && danh_sach_hoa_don_da_ton_tai.stream().anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
+                    && danh_sach_hoa_don_da_ton_tai.stream()
+                            .anyMatch(inv -> !"CANCELLED".equalsIgnoreCase(inv.getStatus()))) {
                 continue;
             }
 
@@ -783,7 +786,8 @@ public class Invoice_Service {
                     && hop_dong.getBed() != null && hop_dong.getBed().getRoom() != null) {
                 String roomId = hop_dong.getBed().getRoom().getRoomId();
                 LocalDate utilityMonth = invoiceMonth.minusMonths(1);
-                List<UtilityReading> danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId,
+                List<UtilityReading> danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(
+                        roomId,
                         utilityMonth);
                 if (danh_sach_chi_so.isEmpty()) {
                     danh_sach_chi_so = utilityReadingRepository.findByRoom_RoomIdAndReadingMonth(roomId, invoiceMonth);
@@ -859,7 +863,7 @@ public class Invoice_Service {
                     String roomNumber = hop_dong.getBed().getRoom().getRoomNumber();
                     long activeCountInRoom = danh_sach_hop_dong_hieu_luc.stream()
                             .filter(c -> c.getBed() != null && c.getBed().getRoom() != null
-                                     && roomId.equals(c.getBed().getRoom().getRoomId())
+                                    && roomId.equals(c.getBed().getRoom().getRoomId())
                                     && !c.getStartDate().isAfter(monthEnd) && !c.getEndDate().isBefore(invoiceMonth))
                             .count();
                     if (activeCountInRoom == 0) {
@@ -889,8 +893,9 @@ public class Invoice_Service {
 
             // Gắn phí gửi xe (VEHICLE) đang hoạt động trong kỳ
             if (vehicleRegistrationRepository != null) {
-                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository.findActiveVehiclesForStudentInMonth(
-                        sinh_vien.getStudentId(), invoiceMonth, monthEnd);
+                List<VehicleRegistration> danh_sach_xe = vehicleRegistrationRepository
+                        .findActiveVehiclesForStudentInMonth(
+                                sinh_vien.getStudentId(), invoiceMonth, monthEnd);
                 for (VehicleRegistration vehicle : danh_sach_xe) {
                     if (vehicle.getMonthlyFee() != null && vehicle.getMonthlyFee().compareTo(BigDecimal.ZERO) > 0) {
                         String plateInfo = (vehicle.getLicensePlate() != null && !vehicle.getLicensePlate().isBlank())
@@ -913,7 +918,8 @@ public class Invoice_Service {
 
             // Gắn tiền phạt vi phạm kỷ luật chưa tính vào hóa đơn (FINE)
             if (violationRepository != null) {
-                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(sinh_vien.getStudentId(),
+                List<Violation> danh_sach_vi_pham = violationRepository.findUnbilledFinesByStudent(
+                        sinh_vien.getStudentId(),
                         monthEnd);
                 for (Violation v : danh_sach_vi_pham) {
                     boolean alreadyBilled = invoiceItemRepository != null
@@ -953,8 +959,10 @@ public class Invoice_Service {
         return invoiceMapper.toResponseList(danh_sach_hoa_don_da_tao);
     }
 
-    // Tự động tính tổng tiền Điện + Nước + Dịch vụ của phòng chia cho số sinh viên có hợp đồng ACTIVE trong phòng,
-    // cộng thêm tiền phòng của từng sinh viên để sinh/cập nhật Hóa đơn cho từng sinh viên trong phòng
+    // Tự động tính tổng tiền Điện + Nước + Dịch vụ của phòng chia cho số sinh viên
+    // có hợp đồng ACTIVE trong phòng,
+    // cộng thêm tiền phòng của từng sinh viên để sinh/cập nhật Hóa đơn cho từng
+    // sinh viên trong phòng
     @Transactional
     public List<Invoice_Response> generateOrUpdateInvoicesForRoomReading(String roomId, LocalDate readingMonthInput) {
         if (roomId == null || roomId.isBlank()) {
@@ -964,7 +972,10 @@ public class Invoice_Service {
         LocalDate monthEnd = invoiceMonth.withDayOfMonth(invoiceMonth.lengthOfMonth());
         String monthLabel = invoiceMonth.format(DateTimeFormatter.ofPattern("MM/yyyy"));
 
-        List<Contract> activeContracts = contractRepository.findActiveContractsByRoomId(roomId);
+        List<Contract> activeContracts = contractRepository.findEffectiveContractsByRoomIdAndMonth(roomId, invoiceMonth, monthEnd);
+        if (activeContracts == null || activeContracts.isEmpty()) {
+            activeContracts = contractRepository.findActiveContractsByRoomId(roomId);
+        }
         if (activeContracts == null || activeContracts.isEmpty()) {
             return List.of();
         }

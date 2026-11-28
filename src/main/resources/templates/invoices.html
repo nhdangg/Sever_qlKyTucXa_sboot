@@ -1234,6 +1234,31 @@
             return formatDate(dateStr);
         }
 
+        // Lọc danh sách hợp đồng có hiệu lực trong kỳ tháng của phòng:
+        // Nếu hợp đồng không phải trạng thái ACTIVE (TERMINATED / EXPIRED) thì chỉ tính trong tháng thanh lý/hết hạn, từ tháng sau không thêm vào
+        function getEffectiveRoomContractsForMonth(roomId, roomNumber, monthStr) {
+            const targetMonth = String(monthStr || '').slice(0, 7);
+            return allContracts.filter(c => {
+                const matchRoom = (roomId && c.roomId === roomId) || (roomNumber && c.roomNumber === roomNumber);
+                if (!matchRoom) return false;
+                const st = (c.status || 'ACTIVE').toUpperCase();
+                if (!['ACTIVE', 'EXPIRED', 'TERMINATED'].includes(st)) return false;
+                if (!targetMonth) return st === 'ACTIVE';
+
+                const startM = c.startDate ? String(c.startDate).slice(0, 7) : '';
+                if (startM && startM > targetMonth) return false;
+
+                if (st === 'ACTIVE') {
+                    const endM = c.endDate ? String(c.endDate).slice(0, 7) : '';
+                    return !endM || endM >= targetMonth;
+                } else {
+                    const effectiveEndRaw = c.terminatedDate || c.endDate;
+                    const endM = effectiveEndRaw ? String(effectiveEndRaw).slice(0, 7) : '';
+                    return !endM || endM >= targetMonth;
+                }
+            });
+        }
+
         function renderReadings(groups) {
             const tbody = document.getElementById('readingTableBody');
             if (!groups || groups.length === 0) {
@@ -1299,13 +1324,10 @@
 
                 // 3. Tổng tiền phòng & Chia sinh viên
                 const totalAmount = elecAmount + waterAmount;
-                const activeContracts = allContracts.filter(c =>
-                    (c.roomId === g.roomId || c.roomNumber === g.roomNumber) &&
-                    (c.status === 'ACTIVE' || !c.status)
-                );
+                const readingMonthParam = g.readingMonth || (g.monthKey + '-01');
+                const activeContracts = getEffectiveRoomContractsForMonth(g.roomId, g.roomNumber, readingMonthParam);
                 const residentCount = activeContracts.length;
                 const perResident = residentCount > 0 ? Math.round(totalAmount / residentCount) : totalAmount;
-                const readingMonthParam = g.readingMonth || (g.monthKey + '-01');
 
                 return `
                 <tr>
@@ -2774,25 +2796,26 @@
 
             const totalRoomCost = elecTotal + waterTotal;
 
-            const activeContracts = allContracts.filter(c =>
-                (c.roomId === roomId || c.roomNumber === roomNumber) &&
-                (c.status === 'ACTIVE' || !c.status)
-            );
+            const activeContracts = getEffectiveRoomContractsForMonth(roomId, roomNumber, targetMonth);
+            const hasBackendShares = (elecData?.residentShares && elecData.residentShares.length > 0)
+                || (waterData?.residentShares && waterData.residentShares.length > 0);
             const activeCount = Math.max(elecData?.activeResidentCount || 0, waterData?.activeResidentCount || 0, activeContracts.length);
 
             const studentMap = new Map();
 
-            activeContracts.forEach(c => {
-                const sid = c.studentId || c.studentCode || c.contractId;
-                studentMap.set(sid, {
-                    studentId: c.studentId,
-                    studentCode: c.studentCode || '-',
-                    fullName: c.studentFullName || c.fullName || 'Sinh viên',
-                    contractCode: c.contractCode || '-',
-                    elecShare: 0,
-                    waterShare: 0
+            if (!hasBackendShares) {
+                activeContracts.forEach(c => {
+                    const sid = c.studentId || c.studentCode || c.contractId;
+                    studentMap.set(sid, {
+                        studentId: c.studentId,
+                        studentCode: c.studentCode || '-',
+                        fullName: c.studentFullName || c.fullName || 'Sinh viên',
+                        contractCode: c.contractCode || '-',
+                        elecShare: 0,
+                        waterShare: 0
+                    });
                 });
-            });
+            }
 
             if (elecData && elecData.residentShares) {
                 elecData.residentShares.forEach(s => {
